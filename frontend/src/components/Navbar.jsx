@@ -1,0 +1,253 @@
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { LogOut, User, CheckCircle2, Building, ShieldCheck, Menu, X } from 'lucide-react';
+
+export default function Navbar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  // Prevent body scroll when menu is open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    setMenuOpen(false);
+  };
+
+  const isActive = (path) => location.pathname === path;
+
+  return (
+    <nav className="navbar">
+      {/* Brand & Sponsors */}
+      <div className="flex items-center gap-2">
+        {/* HUASI Logo */}
+        <Link to="/" className="navbar-brand flex items-center no-underline group select-none mr-2">
+          <img 
+            src="/huasi_logo.jpg" 
+            alt="HUASI" 
+            className="h-[52px] w-auto object-contain group-hover:scale-105 transition-transform duration-300 max-[480px]:h-[40px]"
+          />
+        </Link>
+
+        {/* Sponsor UCC */}
+        <div className="hidden sm:flex items-center">
+          <div className="h-7 w-[1.5px] bg-ucc-border/80 mx-4" />
+          <a 
+            href="https://www.ucc.edu.co" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            title="Universidad Cooperativa de Colombia"
+            className="bg-white px-2.5 py-1.5 rounded-xl border border-ucc-border/40 shadow-custom-sm flex items-center justify-center hover:scale-105 transition-transform duration-200"
+          >
+            <img 
+              src="/ucc_logo.png" 
+              alt="UCC Logo" 
+              className="h-7 object-contain sponsor-logo-light"
+            />
+          </a>
+        </div>
+
+        {/* Sponsor INDESCO */}
+        <div className="hidden md:flex items-center">
+          <div className="h-7 w-[1.5px] bg-ucc-border/80 mx-4" />
+          <a 
+            href="https://www.ucc.edu.co/indesco" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            title="Instituto de Economía Social y Cooperativismo"
+            className="bg-white px-2.5 py-1.5 rounded-xl border border-ucc-border/40 shadow-custom-sm flex items-center justify-center hover:scale-105 transition-transform duration-200"
+          >
+            <img 
+              src="/indesco.png" 
+              alt="INDESCO Logo" 
+              className="h-6 object-contain sponsor-logo-light"
+            />
+          </a>
+        </div>
+      </div>
+
+      {/* Desktop Navigation Links */}
+      <div className="navbar-links flex items-center gap-2 md:gap-3">
+        <Link
+          to="/"
+          className={`px-4 py-2 rounded-full font-body text-sm font-semibold transition-all duration-200 ${
+            isActive('/') 
+              ? 'bg-ucc-green-light text-ucc-green' 
+              : 'text-ucc-muted hover:bg-ucc-green-light hover:text-ucc-green'
+          }`}
+        >
+          Explorar
+        </Link>
+
+        <Link
+          to="/quienes-somos"
+          className={`px-4 py-2 rounded-full font-body text-sm font-semibold transition-all duration-200 ${
+            isActive('/quienes-somos') 
+              ? 'bg-ucc-green-light text-ucc-green' 
+              : 'text-ucc-muted hover:bg-ucc-green-light hover:text-ucc-green'
+          }`}
+        >
+          ¿Quiénes Somos?
+        </Link>
+
+        {user ? (
+          <>
+            {user.verificado && (
+              <span className="hidden sm:inline-flex items-center gap-1 bg-ucc-green-light text-ucc-green px-3 py-1 rounded-full text-xs font-bold border border-ucc-green/20">
+                <CheckCircle2 size={12} className="stroke-[2.5]" /> Verificado
+              </span>
+            )}
+
+            {/* Admin panel link */}
+            {user.role === 'admin' && (
+              <Link
+                to="/admin"
+                className="inline-flex items-center gap-1.5 bg-gradient-to-r from-ucc-cyan to-ucc-green text-white px-4 py-1.5 rounded-full text-xs font-bold hover:shadow-custom transition-all duration-200"
+              >
+                <ShieldCheck size={14} /> Admin
+              </Link>
+            )}
+
+            <Link
+              to="/mis-reservas"
+              className={`px-4 py-2 rounded-full font-body text-sm font-semibold transition-all duration-200 ${
+                isActive('/mis-reservas') 
+                  ? 'bg-ucc-green-light text-ucc-green' 
+                  : 'text-ucc-muted hover:bg-ucc-green-light hover:text-ucc-green'
+              }`}
+            >
+              Mis reservas
+            </Link>
+
+            <Link
+              to="/host"
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-body text-sm font-semibold transition-all duration-200 ${
+                isActive('/host') 
+                  ? 'bg-ucc-green-light text-ucc-green' 
+                  : 'text-ucc-muted hover:bg-ucc-green-light hover:text-ucc-green'
+              }`}
+            >
+              <Building size={14} /> Anfitrión
+            </Link>
+
+            <Link
+              to="/perfil"
+              className="inline-flex items-center gap-1.5 bg-ucc-bg border border-ucc-border px-4 py-2 rounded-full font-body text-sm font-bold text-ucc-navy hover:bg-ucc-green-light hover:border-ucc-green/20 transition-all duration-200"
+            >
+              <User size={14} /> {user.nombre.split(' ')[0]}
+            </Link>
+
+            <button 
+              onClick={handleLogout} 
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-body text-sm font-semibold text-ucc-muted hover:bg-red-50 hover:text-red-600 transition-all duration-200"
+            >
+              <LogOut size={14} /> Salir
+            </button>
+          </>
+        ) : (
+          <>
+            <Link 
+              to="/login" 
+              className="px-4 py-2 rounded-full font-body text-sm font-semibold text-ucc-muted hover:bg-ucc-green-light hover:text-ucc-green transition-all duration-200"
+            >
+              Ingresar
+            </Link>
+            <Link 
+              to="/registro" 
+              className="bg-gradient-to-r from-ucc-green to-emerald-600 hover:from-ucc-green-hover hover:to-emerald-700 text-white px-5 py-2 rounded-full font-body text-sm font-bold shadow-custom hover:shadow-custom-md hover:-translate-y-0.5 transition-all duration-200"
+            >
+              Registrarse
+            </Link>
+          </>
+        )}
+      </div>
+
+      {/* Mobile Hamburger Button */}
+      <button 
+        className="mobile-menu-toggle"
+        onClick={() => setMenuOpen(!menuOpen)}
+        aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+      >
+        {menuOpen ? <X size={22} /> : <Menu size={22} />}
+      </button>
+
+      {/* Mobile Overlay */}
+      <div 
+        className={`mobile-nav-overlay ${menuOpen ? 'open' : ''}`}
+        onClick={() => setMenuOpen(false)}
+      />
+
+      {/* Mobile Navigation Menu */}
+      <div className={`mobile-nav-menu ${menuOpen ? 'open' : ''}`}>
+        <Link to="/" className={isActive('/') ? 'mobile-nav-active' : ''}>
+          Explorar
+        </Link>
+        <Link to="/quienes-somos" className={isActive('/quienes-somos') ? 'mobile-nav-active' : ''}>
+          ¿Quiénes Somos?
+        </Link>
+
+        {user ? (
+          <>
+            <div className="mobile-nav-divider" />
+
+            {user.verificado && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: '0.82rem', color: '#0d7c3d', fontWeight: 700 }}>
+                <CheckCircle2 size={14} /> Estudiante Verificado
+              </div>
+            )}
+
+            {user.role === 'admin' && (
+              <Link to="/admin" className={isActive('/admin') ? 'mobile-nav-active' : ''}>
+                <ShieldCheck size={16} /> Panel Admin
+              </Link>
+            )}
+
+            <Link to="/mis-reservas" className={isActive('/mis-reservas') ? 'mobile-nav-active' : ''}>
+              Mis reservas
+            </Link>
+
+            <Link to="/host" className={isActive('/host') ? 'mobile-nav-active' : ''}>
+              <Building size={16} /> Anfitrión
+            </Link>
+
+            <Link to="/perfil" className={isActive('/perfil') ? 'mobile-nav-active' : ''}>
+              <User size={16} /> {user.nombre.split(' ')[0]} — Mi Perfil
+            </Link>
+
+            <div className="mobile-nav-divider" />
+
+            <button onClick={handleLogout} style={{ color: '#dc2626' }}>
+              <LogOut size={16} /> Cerrar sesión
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="mobile-nav-divider" />
+            <Link to="/login">
+              Ingresar
+            </Link>
+            <Link to="/registro" className="mobile-nav-primary">
+              Registrarse
+            </Link>
+          </>
+        )}
+      </div>
+    </nav>
+  );
+}
