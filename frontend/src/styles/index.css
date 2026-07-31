@@ -2902,3 +2902,153 @@ body.dark .navbar {
     transform: translateY(0);
   }
 }
+
+/* ==========================================================================
+   TOAST NOTIFICATIONS SYSTEM (HIGH CONTRAST & LEGIBILITY)
+   ========================================================================== */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+  width: calc(100% - 48px);
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  font-weight: 700;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideInToast 0.35s ease forwards;
+}
+
+.toast.exiting {
+  animation: fadeOutToast 0.3s ease forwards;
+}
+
+@keyframes slideInToast {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes fadeOutToast {
+  to { opacity: 0; transform: translateY(10px) scale(0.95); }
+}
+
+.toast.success {
+  background: #0d7c3d !important;
+  color: #ffffff !important;
+  border: 1px solid #10b981 !important;
+}
+
+.toast.error {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: 1px solid #f87171 !important;
+}
+
+.toast.warning {
+  background: #d97706 !important;
+  color: #ffffff !important;
+  border: 1px solid #fbbf24 !important;
+}
+
+.toast.info {
+  background: #1e293b !important;
+  color: #ffffff !important;
+  border: 1px solid #38bdf8 !important;
+}
+
+.toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #ffffff !important;
+}
+
+.toast-text {
+  flex: 1;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  line-height: 1.4 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.toast-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   OPTIMIZACIÓN DE LEGIBILIDAD EXTREMA EN MODO OSCURO (HIGH CONTRAST)
+   ========================================================================== */
+.dark, body.dark {
+  color: #f8fafc !important;
+}
+
+.dark p, body.dark p,
+.dark .text-muted, body.dark .text-muted,
+.dark .text-ucc-muted, body.dark .text-ucc-muted {
+  color: #cbd5e1 !important; /* Texto secundario más brillante para alta legibilidad */
+}
+
+.dark h1, body.dark h1,
+.dark h2, body.dark h2,
+.dark h3, body.dark h3,
+.dark h4, body.dark h4,
+.dark h5, body.dark h5,
+.dark h6, body.dark h6,
+.dark strong, body.dark strong,
+.dark b, body.dark b {
+  color: #ffffff !important;
+}
+
+.dark label, body.dark label {
+  color: #e2e8f0 !important;
+  font-weight: 600 !important;
+}
+
+.dark input, body.dark input,
+.dark select, body.dark select,
+.dark textarea, body.dark textarea,
+.dark .form-control, body.dark .form-control {
+  background: #0a2118 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(13, 124, 61, 0.5) !important;
+}
+
+.dark input::placeholder, body.dark input::placeholder,
+.dark textarea::placeholder, body.dark textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.dark .badge, body.dark .badge {
+  font-weight: 800 !important;
+}
