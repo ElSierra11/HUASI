@@ -231,7 +231,7 @@ export default function MapaAlojamientos({ propiedades = [] }) {
               fontSize: '0.82rem',
               fontWeight: 700,
               display: 'flex',
-              align-items: 'center',
+              alignItems: 'center',
               gap: 6,
               cursor: 'pointer'
             }}
