@@ -3,6 +3,7 @@ import { Mail, User, GraduationCap, Calendar, Home, Check, X, Inbox, MessageSqua
 import api from '../api';
 import { useToast } from '../components/Toast';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
 
 const STATUS_LABELS = {
   pendiente: 'Pendiente',
@@ -13,6 +14,7 @@ const STATUS_LABELS = {
 };
 
 export default function HostReservas() {
+  const { refreshUser } = useAuth();
   const [reservas, setReservas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('pendiente');
@@ -34,6 +36,11 @@ export default function HostReservas() {
     setConfirmModal(m => ({ ...m, processing: true }));
     try {
       await api.patch(`/reservas/${reservaId}`, { estado });
+      try {
+        await refreshUser();
+      } catch (refreshErr) {
+        console.error('Error al refrescar balance:', refreshErr);
+      }
       setReservas(r => r.map(res => res.id === reservaId ? { ...res, estado } : res));
       const labels = { aceptada: 'Reserva aceptada', rechazada: 'Reserva rechazada' };
       toast.success(labels[estado] || 'Estado actualizado');
@@ -112,7 +119,7 @@ export default function HostReservas() {
             </p>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}><Mail size={16} /> {r.guest_email}</p>
             {r.guest_universidad && <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}><GraduationCap size={16} /> {r.guest_universidad} — {r.guest_tipo_vinculo}</p>}
-            {r.mensaje && <p style={{ fontSize: '0.95rem', fontStyle: 'italic', marginTop: 16, padding: 12, background: 'white', borderRadius: 8, border: '1px solid var(--border)' }}>"{r.mensaje}"</p>}
+            {r.mensaje && <p style={{ fontSize: '0.95rem', fontStyle: 'italic', marginTop: 16, padding: 12, background: 'var(--bg-card)', borderRadius: 8, border: '1px solid var(--border)' }}>"{r.mensaje}"</p>}
           </div>
           
           {r.estado === 'pendiente' && (

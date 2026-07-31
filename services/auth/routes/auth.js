@@ -198,6 +198,22 @@ router.post('/verify-otp', async (req, res) => {
       [cleanEmail]
     );
 
+    // Registrar transacción de bienvenida si no existe
+    try {
+      const hasWelcomeTrans = await pool.query(
+        "SELECT id FROM soles_transacciones WHERE user_id = $1 AND motivo = 'registro'",
+        [user.id]
+      );
+      if (hasWelcomeTrans.rows.length === 0) {
+        await pool.query(
+          "INSERT INTO soles_transacciones (user_id, cantidad, motivo) VALUES ($1, 100, 'registro')",
+          [user.id]
+        );
+      }
+    } catch (solesErr) {
+      console.error('Error al registrar soles de bienvenida:', solesErr);
+    }
+
     // Reutilizar el usuario ya cargado, actualizando los campos verificados en memoria
     user.email_verificado = true;
     user.verificado = true;
@@ -314,7 +330,7 @@ router.get('/me', async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, email, nombre, apellido, telefono, role, foto_perfil, verificado, created_at, campus
+      `SELECT id, email, nombre, apellido, telefono, role, foto_perfil, verificado, created_at, campus, soles_balance, preferencias_convivencia
        FROM users WHERE id = $1`,
       [req.user.id]
     );
@@ -617,5 +633,94 @@ const getOtpStatus = (user) => {
   const attemptsLeft = Math.max(0, MAX_OTP_ATTEMPTS - Number(user.otp_attempts || 0));
   return { locked, attemptsLeft };
 };
+
+// ============ GET SOLES TRANSACTION HISTORY ============
+router.get('/soles/historial', async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'No autenticado' });
+    }
+
+    const result = await pool.query(
+      `SELECT t.id, t.cantidad, t.motivo, t.created_at, r.fecha_inicio, r.fecha_fin, p.titulo AS propiedad_titulo
+       FROM soles_transacciones t
+       LEFT JOIN reservas r ON t.reserva_id = r.id
+       LEFT JOIN propiedades p ON r.propiedad_id = p.id
+       WHERE t.user_id = $1
+       ORDER BY t.created_at DESC`,
+      [req.user.id]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error obteniendo historial de soles:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ============ GET SOLIDARITY IMPACT DASHBOARD ============
+router.get('/impacto', async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'No autenticado' });
+    }
+
+    // 1. Calculate nights offered as host
+    const nightsResult = await pool.query(
+      `SELECT r.fecha_inicio, r.fecha_fin, r.guest_id
+       FROM reservas r
+       JOIN propiedades p ON r.propiedad_id = p.id
+       WHERE p.host_id = $1 AND r.estado IN ('aceptada', 'completada')`,
+      [req.user.id]
+    );
+
+    let totalNightsOffered = 0;
+    const uniqueGuests = new Set();
+
+    nightsResult.rows.forEach(r => {
+      const start = new Date(r.fecha_inicio);
+      const end = new Date(r.fecha_fin);
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      totalNightsOffered += diffDays;
+      uniqueGuests.add(r.guest_id);
+    });
+
+    const moneySaved = totalNightsOffered * 80000; // 80,000 COP per night average commercial rate
+
+    res.json({
+      noches_ofrecidas: totalNightsOffered,
+      estudiantes_apoyados: uniqueGuests.size,
+      dinero_ahorrado: moneySaved
+    });
+  } catch (err) {
+    console.error('Error obteniendo impacto solidario:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ============ SAVE/UPDATE CONVIVENCIA PREFERENCES ============
+router.post('/preferencias', async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'No autenticado' });
+    }
+
+    const { preferencias } = req.body;
+    if (!preferencias) {
+      return res.status(400).json({ error: 'Preferencias de convivencia no proporcionadas' });
+    }
+
+    const result = await pool.query(
+      `UPDATE users SET preferencias_convivencia = $1, updated_at = NOW() WHERE id = $2 RETURNING id, preferencias_convivencia`,
+      [JSON.stringify(preferencias), req.user.id]
+    );
+
+    res.json({ message: 'Preferencias de convivencia actualizadas con éxito', user: result.rows[0] });
+  } catch (err) {
+    console.error('Error guardando preferencias:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
 
 module.exports = router;

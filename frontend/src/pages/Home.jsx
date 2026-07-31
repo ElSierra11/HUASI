@@ -5,8 +5,27 @@ import PropertyCard from '../components/PropertyCard';
 import { 
   Search, MapPin, Calendar, Home as HomeIcon, Users, 
   Shield, Star, Building2, Heart, CheckCircle2, 
-  Sofa, Bed, Trees, GraduationCap, ShieldCheck, Coins
+  Sofa, Bed, Trees, GraduationCap, ShieldCheck, Coins,
+  Sliders
 } from 'lucide-react';
+
+function SkeletonCard() {
+  return (
+    <div className="property-card" style={{ cursor: 'default' }}>
+      <div className="card-img-wrapper shimmer-base" style={{ height: '200px', width: '100%' }}></div>
+      <div className="property-card-inner">
+        <div className="shimmer-base" style={{ height: '14px', width: '80px', borderRadius: '4px', marginBottom: '12px' }}></div>
+        <div className="shimmer-base" style={{ height: '20px', width: '85%', borderRadius: '4px', marginBottom: '8px' }}></div>
+        <div className="shimmer-base" style={{ height: '14px', width: '50%', borderRadius: '4px', marginBottom: '12px' }}></div>
+        <hr style={{ border: 0, borderTop: '1px solid var(--border)', margin: '12px 0' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+          <div className="shimmer-base" style={{ height: '14px', width: '60px', borderRadius: '4px' }}></div>
+          <div className="shimmer-base" style={{ height: '14px', width: '40px', borderRadius: '4px' }}></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const [solidarias, setSolidarias] = useState([]);
@@ -15,9 +34,11 @@ export default function Home() {
   const [loadingPagos, setLoadingPagos] = useState(true);
   const [filters, setFilters] = useState({ busqueda: '', tipo: '', ciudad: '', campus: '', fecha_inicio: '', fecha_fin: '' });
 
-  // Filtros independientes para alojamientos de pago
   const [filtroPagoCiudad, setFiltroPagoCiudad] = useState('');
   const [filtroPagoTipo, setFiltroPagoTipo] = useState('');
+
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('todos');
 
   const [showMap, setShowMap] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -176,18 +197,70 @@ export default function Home() {
     }
   };
 
+  const handleCategoryClick = (catId) => {
+    setActiveCategory(catId);
+    
+    let updatedFilters = { ...filters };
+    
+    if (catId === 'todos') {
+      updatedFilters.tipo = '';
+      setFilters(f => ({ ...f, tipo: '' }));
+      fetchTodas({ tipo: '' });
+    } else if (catId === 'habitacion') {
+      updatedFilters.tipo = 'habitacion';
+      setFilters(f => ({ ...f, tipo: 'habitacion' }));
+      fetchTodas({ tipo: 'habitacion' });
+    } else if (catId === 'sofa') {
+      updatedFilters.tipo = 'sofa';
+      setFilters(f => ({ ...f, tipo: 'sofa' }));
+      fetchTodas({ tipo: 'sofa' });
+    } else {
+      updatedFilters.tipo = '';
+      setFilters(f => ({ ...f, tipo: '' }));
+      fetchTodas({ tipo: '' });
+    }
+  };
+
+  const getFilteredSolidarias = () => {
+    return solidarias.filter(p => {
+      if (activeCategory === 'plus') return false;
+      if (activeCategory === 'estudio') {
+        const amen = p.amenidades || [];
+        return amen.some(a => {
+          const lower = a.toLowerCase();
+          return lower.includes('wifi') || lower.includes('escritorio') || lower.includes('estudio') || lower.includes('estudiar');
+        });
+      }
+      return true;
+    });
+  };
+
+  const getFilteredPagos = () => {
+    return pagos.filter(p => {
+      if (activeCategory === 'solidario') return false;
+      if (activeCategory === 'estudio') {
+        const amen = p.amenidades || [];
+        return amen.some(a => {
+          const lower = a.toLowerCase();
+          return lower.includes('wifi') || lower.includes('escritorio') || lower.includes('estudio') || lower.includes('estudiar');
+        });
+      }
+      return true;
+    });
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
       {/* ===== HERO (Premium UCC Redesign) ===== */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-white via-ucc-bg/20 to-white border border-ucc-border/30 rounded-xl-custom py-14 px-6 md:py-20 md:px-12 shadow-custom-sm mb-12">
+      <section className="relative overflow-hidden hero-section-card rounded-xl-custom py-14 px-6 md:py-20 md:px-12 shadow-custom-sm mb-12">
         {/* Decorative faint background HUASI text */}
-        <div className="absolute text-[9rem] md:text-[14rem] font-black text-ucc-navy/[0.02] font-heading tracking-widest pointer-events-none select-none -top-12 -left-6 z-0 leading-none">
+        <div className="absolute text-[9rem] md:text-[14rem] font-black text-ucc-navy/[0.02] dark:text-white/[0.02] font-heading tracking-widest pointer-events-none select-none -top-12 -left-6 z-0 leading-none">
           HUASI
         </div>
 
         {/* Glow blobs behind */}
-        <div className="absolute top-[-10%] left-[-5%] w-[300px] h-[300px] bg-gradient-to-r from-ucc-cyan/5 to-transparent rounded-full filter blur-[80px] pointer-events-none z-0"></div>
-        <div className="absolute bottom-[-15%] right-[-5%] w-[350px] h-[350px] bg-gradient-to-r from-ucc-green/5 to-transparent rounded-full filter blur-[80px] pointer-events-none z-0"></div>
+        <div className="absolute top-[-10%] left-[-5%] w-[300px] h-[300px] bg-gradient-to-r from-ucc-cyan/10 to-transparent rounded-full filter blur-[80px] pointer-events-none z-0"></div>
+        <div className="absolute bottom-[-15%] right-[-5%] w-[350px] h-[350px] bg-gradient-to-r from-ucc-green/10 to-transparent rounded-full filter blur-[80px] pointer-events-none z-0"></div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center relative z-10">
           
@@ -195,25 +268,25 @@ export default function Home() {
           <div className="lg:col-span-7 flex flex-col items-start text-left space-y-6">
             
             {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 bg-ucc-green/10 px-4 py-1.5 rounded-full text-xs md:text-sm font-extrabold text-ucc-green border border-ucc-green/20 shadow-custom-sm">
-              <Shield size={14} className="text-ucc-green" /> Red solidaria UCC · 100% solidario
+            <div className="inline-flex items-center gap-2 bg-ucc-green/10 dark:bg-ucc-green/20 px-4 py-1.5 rounded-full text-xs md:text-sm font-extrabold text-ucc-green dark:text-emerald-400 border border-ucc-green/20 dark:border-ucc-green/30 shadow-custom-sm">
+              <Shield size={14} className="text-ucc-green dark:text-emerald-400" /> Red solidaria UCC · 100% solidario
             </div>
 
             {/* Slogan Title */}
-            <h1 className="font-heading font-black text-4xl md:text-5xl lg:text-6xl text-ucc-navy leading-tight tracking-tight">
+            <h1 className="font-heading font-black text-4xl md:text-5xl lg:text-6xl text-ucc-navy dark:text-white leading-tight tracking-tight">
               La casa de mi <span className="bg-gradient-to-r from-ucc-green to-ucc-cyan bg-clip-text text-transparent">amig@</span>
             </h1>
 
             {/* Description */}
-            <p className="font-body text-sm md:text-base text-ucc-muted font-semibold leading-relaxed max-w-xl">
-              Encuentra alojamiento solidario gracias a la <strong>Universidad Cooperativa de Colombia</strong>, apoyado por <strong>INDESCO</strong>, para estudiantes, docentes y colaboradores de la comunidad UCC.
+            <p className="font-body text-sm md:text-base text-ucc-muted dark:text-slate-300 font-semibold leading-relaxed max-w-xl">
+              Encuentra alojamiento solidario gracias a la <strong className="text-ucc-navy dark:text-white">Universidad Cooperativa de Colombia</strong>, apoyado por <strong className="text-ucc-navy dark:text-white">INDESCO</strong>, para estudiantes, docentes y colaboradores de la comunidad UCC.
             </p>
 
             {/* Action Buttons */}
             <div className="flex gap-4 flex-wrap pt-2">
               <button 
                 onClick={() => scrollToSection('alojamientos')}
-                className="inline-flex items-center justify-center bg-white border-2 border-ucc-green text-ucc-navy hover:bg-ucc-green hover:text-white font-bold px-8 py-3.5 rounded-full text-sm shadow-custom hover:shadow-custom-md transition-all duration-200"
+                className="inline-flex items-center justify-center bg-white dark:bg-slate-800 border-2 border-ucc-green text-ucc-navy dark:text-white hover:bg-ucc-green hover:text-white font-bold px-8 py-3.5 rounded-full text-sm shadow-custom hover:shadow-custom-md transition-all duration-200"
               >
                 Ver alojamientos
               </button>
@@ -222,22 +295,22 @@ export default function Home() {
 
           {/* Right Column: Premium Interactive Card */}
           <div className="lg:col-span-5 flex justify-center w-full">
-            <div className="bg-white p-6 rounded-3xl border border-ucc-border/40 shadow-custom-lg flex flex-col items-center max-w-sm w-full relative z-10 hover:-translate-y-1 transition-transform duration-300">
+            <div className="hero-interactive-card p-6 rounded-3xl border border-ucc-border/40 dark:border-slate-700 shadow-custom-lg flex flex-col items-center max-w-sm w-full relative z-10 hover:-translate-y-1 transition-transform duration-300">
               
               {/* Logo Area */}
-              <div className="bg-slate-50/50 p-4 rounded-2xl w-full flex items-center justify-center h-48 border border-slate-100/50">
+              <div className="p-4 rounded-2xl w-full flex items-center justify-center h-48 logo-container">
                 <img 
                   src="/huasi_logo.jpg" 
                   alt="HUASI Logo" 
-                  className="h-full object-contain mix-blend-multiply" 
+                  className="h-full object-contain logo-img-light-file" 
                 />
               </div>
 
               {/* Title & Slogan */}
-              <h3 className="font-heading font-black text-xl text-ucc-navy mt-4 text-center">
+              <h3 className="font-heading font-black text-xl text-ucc-navy dark:text-white mt-4 text-center">
                 Alojamiento Solidario
               </h3>
-              <p className="text-ucc-muted text-xs font-semibold text-center mt-2 flex items-center justify-center gap-1.5">
+              <p className="text-ucc-muted dark:text-slate-300 text-xs font-semibold text-center mt-2 flex items-center justify-center gap-1.5">
                 <Heart size={12} className="text-red-500 fill-red-500" /> Hogares que apoyan estudiantes que avanzan.
               </p>
 
@@ -274,82 +347,146 @@ export default function Home() {
       </section>
 
       {/* ===== BARRA DE BÚSQUEDA FLOTANTE ===== */}
-      <section className="relative z-20 -mt-10 md:-mt-12 mb-16 px-2 md:px-4 max-w-5xl mx-auto">
-        <form className="bg-white p-3 rounded-2xl md:rounded-full shadow-custom-lg border border-ucc-border/40 hover:border-ucc-green/20 hover:shadow-custom-xl transition-all duration-300 flex flex-col md:flex-row items-center gap-2" onSubmit={handleSearch}>
-          <div className="w-full md:flex-1 flex items-center gap-2.5 px-4 py-2.5 hover:bg-ucc-bg/40 focus-within:bg-ucc-bg/40 rounded-full transition-colors">
-            <Search size={18} className="text-ucc-muted flex-shrink-0" />
-            <input
-              id="search-text"
-              type="text"
-              placeholder="Ciudad, barrio o título..."
-              className="w-full border-none bg-transparent outline-none font-body text-sm font-semibold text-ucc-text placeholder-ucc-muted/70"
-              value={filters.busqueda}
-              onChange={e => setFilters(f => ({ ...f, busqueda: e.target.value }))}
-            />
-          </div>
-          
-          <div className="w-full md:flex-1 flex items-center gap-2.5 px-4 py-2.5 hover:bg-ucc-bg/40 focus-within:bg-ucc-bg/40 rounded-full border-t md:border-t-0 md:border-l border-ucc-border/30 transition-colors">
-            <HomeIcon size={18} className="text-ucc-muted flex-shrink-0" />
-            <input
-              id="search-ciudad"
-              type="text"
-              placeholder="Ciudad"
-              className="w-full border-none bg-transparent outline-none font-body text-sm font-semibold text-ucc-text placeholder-ucc-muted/70"
-              value={filters.ciudad}
-              onChange={e => setFilters(f => ({ ...f, ciudad: e.target.value }))}
-            />
-          </div>
-
-          <div className="w-full md:flex-1 flex items-center gap-2.5 px-4 py-2.5 hover:bg-ucc-bg/40 focus-within:bg-ucc-bg/40 rounded-full border-t md:border-t-0 md:border-l border-ucc-border/30 transition-colors">
-            <Building2 size={18} className="text-ucc-muted flex-shrink-0" />
-            <select
-              id="search-campus"
-              className="w-full border-none bg-transparent outline-none font-body text-sm font-semibold text-ucc-text cursor-pointer"
-              value={filters.campus}
-              onChange={e => setFilters(f => ({ ...f, campus: e.target.value }))}
-            >
-              <option value="">Todos los campus</option>
-              <option value="Santa Marta">Santa Marta</option>
-              <option value="Bogotá">Bogotá</option>
-              <option value="Medellín">Medellín</option>
-              <option value="Bucaramanga">Bucaramanga</option>
-              <option value="Cali">Cali</option>
-              <option value="Ibagué">Ibagué</option>
-              <option value="Pasto">Pasto</option>
-              <option value="Popayán">Popayán</option>
-              <option value="Villavicencio">Villavicencio</option>
-              <option value="Montería">Montería</option>
-              <option value="Arauca">Arauca</option>
-              <option value="Barrancabermeja">Barrancabermeja</option>
-              <option value="Neiva">Neiva</option>
-            </select>
-          </div>
-
-          <div className="w-full md:flex-1 flex items-center gap-2.5 px-4 py-2.5 hover:bg-ucc-bg/40 focus-within:bg-ucc-bg/40 rounded-full border-t md:border-t-0 md:border-l border-ucc-border/30 transition-colors">
-            <Calendar size={18} className="text-ucc-muted flex-shrink-0" />
-            <div className="flex gap-2 items-center w-full">
-              <input 
-                id="search-fecha-inicio" 
-                type="date" 
-                className="w-full border-none bg-transparent outline-none font-body text-xs font-semibold text-ucc-text cursor-pointer"
-                value={filters.fecha_inicio} 
-                onChange={e => setFilters(f => ({ ...f, fecha_inicio: e.target.value }))} 
-              />
-              <span className="text-ucc-border">—</span>
-              <input 
-                id="search-fecha-fin" 
-                type="date" 
-                className="w-full border-none bg-transparent outline-none font-body text-xs font-semibold text-ucc-text cursor-pointer"
-                value={filters.fecha_fin} 
-                onChange={e => setFilters(f => ({ ...f, fecha_fin: e.target.value }))} 
+      <section className="relative z-20 -mt-10 md:-mt-12 mb-8 px-2 md:px-4 max-w-4xl mx-auto">
+        <div className="bg-white dark:bg-slate-800/95 p-3 rounded-2xl md:rounded-full shadow-custom-lg border border-ucc-border/40 dark:border-slate-700 hover:border-ucc-green/30 hover:shadow-custom-xl transition-all duration-300">
+          <form className="flex flex-col md:flex-row items-center gap-2" onSubmit={handleSearch}>
+            
+            {/* Ciudad */}
+            <div className="w-full md:flex-1 flex items-center gap-2.5 px-4 py-2.5 hover:bg-ucc-bg/40 dark:hover:bg-slate-700/40 focus-within:bg-ucc-bg/40 dark:focus-within:bg-slate-700/40 rounded-full transition-colors">
+              <MapPin size={18} className="text-ucc-muted dark:text-slate-400 flex-shrink-0" />
+              <input
+                id="search-ciudad"
+                type="text"
+                placeholder="¿A qué ciudad vas?"
+                className="w-full border-none bg-transparent outline-none font-body text-sm font-semibold text-ucc-text dark:text-white placeholder-ucc-muted/70 dark:placeholder-slate-400"
+                value={filters.ciudad}
+                onChange={e => setFilters(f => ({ ...f, ciudad: e.target.value }))}
               />
             </div>
-          </div>
 
-          <button id="search-btn" type="submit" className="bg-gradient-to-r from-ucc-green to-emerald-600 hover:from-ucc-green-hover hover:to-emerald-700 text-white font-bold px-8 py-3.5 rounded-full shadow-custom hover:shadow-custom-md hover:-translate-y-0.5 transition-all duration-200 w-full md:w-auto">
-            Buscar
-          </button>
-        </form>
+            {/* Campus UCC */}
+            <div className="w-full md:flex-1 flex items-center gap-2.5 px-4 py-2.5 hover:bg-ucc-bg/40 dark:hover:bg-slate-700/40 focus-within:bg-ucc-bg/40 dark:focus-within:bg-slate-700/40 rounded-full border-t md:border-t-0 md:border-l border-ucc-border/30 dark:border-slate-700 transition-colors">
+              <Building2 size={18} className="text-ucc-muted dark:text-slate-400 flex-shrink-0" />
+              <select
+                id="search-campus"
+                className="w-full border-none bg-transparent outline-none font-body text-sm font-semibold text-ucc-text dark:text-white cursor-pointer dark:bg-slate-800"
+                value={filters.campus}
+                onChange={e => setFilters(f => ({ ...f, campus: e.target.value }))}
+              >
+                <option value="">Cualquier campus UCC</option>
+                <option value="Santa Marta">Santa Marta</option>
+                <option value="Bogotá">Bogotá</option>
+                <option value="Medellín">Medellín</option>
+                <option value="Bucaramanga">Bucaramanga</option>
+                <option value="Cali">Cali</option>
+                <option value="Ibagué">Ibagué</option>
+                <option value="Pasto">Pasto</option>
+                <option value="Popayán">Popayán</option>
+                <option value="Villavicencio">Villavicencio</option>
+                <option value="Montería">Montería</option>
+                <option value="Arauca">Arauca</option>
+                <option value="Barrancabermeja">Barrancabermeja</option>
+                <option value="Neiva">Neiva</option>
+              </select>
+            </div>
+
+            {/* Botones de acción del formulario */}
+            <div className="w-full md:w-auto flex items-center gap-2 px-2 mt-2 md:mt-0">
+              {/* Botón de Filtros Avanzados */}
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className={`flex items-center justify-center p-3 rounded-full border transition-all duration-200 ${showAdvanced ? 'bg-ucc-navy text-white border-ucc-navy' : 'bg-ucc-bg dark:bg-slate-700/60 text-ucc-navy dark:text-white border-ucc-border/30 dark:border-slate-600 hover:bg-ucc-border/20'}`}
+                title="Filtros avanzados"
+              >
+                <Sliders size={18} />
+              </button>
+
+              {/* Botón de Buscar */}
+              <button 
+                id="search-btn" 
+                type="submit" 
+                className="bg-gradient-to-r from-ucc-green to-emerald-600 hover:from-ucc-green-hover hover:to-emerald-700 text-white font-bold px-8 py-3 rounded-full shadow-custom hover:shadow-custom-md hover:-translate-y-0.5 transition-all duration-200 flex-1 md:flex-initial"
+              >
+                Buscar
+              </button>
+            </div>
+          </form>
+
+          {/* Filtros avanzados expandibles */}
+          {showAdvanced && (
+            <div className="glass-panel mt-4 p-5 rounded-2xl flex flex-col md:flex-row gap-4 items-center animate-fadeIn shadow-custom-sm">
+              
+              {/* Búsqueda por texto (palabra clave) */}
+              <div className="w-full md:flex-1 flex items-center gap-2.5 px-4 py-2.5 bg-ucc-bg/30 dark:bg-slate-700/40 rounded-full border border-ucc-border/20 dark:border-slate-700">
+                <Search size={16} className="text-ucc-muted dark:text-slate-400 flex-shrink-0" />
+                <input
+                  id="search-text"
+                  type="text"
+                  placeholder="Palabra clave (barrio, título, regla...)"
+                  className="w-full border-none bg-transparent outline-none font-body text-xs font-semibold text-ucc-text dark:text-white placeholder-ucc-muted/70 dark:placeholder-slate-400"
+                  value={filters.busqueda}
+                  onChange={e => setFilters(f => ({ ...f, busqueda: e.target.value }))}
+                />
+              </div>
+
+              {/* Rango de Fechas */}
+              <div className="w-full md:flex-1 flex items-center gap-2.5 px-4 py-2 bg-ucc-bg/30 dark:bg-slate-700/40 rounded-full border border-ucc-border/20 dark:border-slate-700 font-body text-xs font-semibold text-ucc-text dark:text-white">
+                <Calendar size={16} className="text-ucc-muted dark:text-slate-400 flex-shrink-0" />
+                <div className="flex gap-2 items-center w-full">
+                  <span className="text-[10px] uppercase tracking-wider text-ucc-muted dark:text-slate-400 font-bold">Desde:</span>
+                  <input 
+                    id="search-fecha-inicio" 
+                    type="date" 
+                    className="w-full border-none bg-transparent outline-none font-body text-xs font-semibold text-ucc-text dark:text-white cursor-pointer"
+                    value={filters.fecha_inicio} 
+                    onChange={e => setFilters(f => ({ ...f, fecha_inicio: e.target.value }))} 
+                  />
+                  <span className="text-ucc-border">—</span>
+                  <span className="text-[10px] uppercase tracking-wider text-ucc-muted dark:text-slate-400 font-bold">Hasta:</span>
+                  <input 
+                    id="search-fecha-fin" 
+                    type="date" 
+                    className="w-full border-none bg-transparent outline-none font-body text-xs font-semibold text-ucc-text dark:text-white cursor-pointer"
+                    value={filters.fecha_fin} 
+                    onChange={e => setFilters(f => ({ ...f, fecha_fin: e.target.value }))} 
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ===== CATEGORÍAS DE ALOJAMIENTO (Visual Pills) ===== */}
+      <section className="mb-12 px-2 max-w-4xl mx-auto">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none justify-start md:justify-center">
+          {[
+            { id: 'todos', label: 'Todos', icon: <HomeIcon size={14} /> },
+            { id: 'solidario', label: 'Solidario UCC', icon: <Heart size={14} /> },
+            { id: 'plus', label: 'Alojamiento Plus', icon: <Coins size={14} /> },
+            { id: 'estudio', label: 'Zona de Estudio', icon: <GraduationCap size={14} /> },
+            { id: 'habitacion', label: 'Habitación Privada', icon: <Bed size={14} /> },
+            { id: 'sofa', label: 'Sofá / Sofá Cama', icon: <Sofa size={14} /> },
+          ].map(cat => {
+            const isActive = activeCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => handleCategoryClick(cat.id)}
+                className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 border cursor-pointer ${
+                  isActive 
+                    ? 'bg-ucc-green text-white border-ucc-green shadow-custom-sm scale-103' 
+                    : 'bg-white dark:bg-slate-800 text-ucc-navy dark:text-slate-200 border-ucc-border/40 dark:border-slate-700 hover:bg-ucc-bg dark:hover:bg-slate-700'
+                }`}
+              >
+                {cat.icon}
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       {/* Seccion Mapa Interactivo */}
@@ -404,107 +541,117 @@ export default function Home() {
         )}
       </div>
 
-      {loadingSolidarias ? (
-        <div className="flex justify-center items-center py-16">
-          <div className="animate-spin rounded-full h-10 w-10 border-4 border-ucc-border border-t-ucc-green"></div>
-        </div>
-      ) : solidarias.length === 0 ? (
-        <div className="text-center py-12 px-4 bg-white border-2 border-dashed border-ucc-border rounded-xl-custom mb-16">
-          <MapPin size={40} className="mx-auto text-ucc-muted mb-3" />
-          <h3 className="font-heading font-bold text-base text-ucc-navy mb-1">No encontramos alojamientos solidarios</h3>
-          <p className="text-ucc-muted text-xs font-semibold">Prueba cambiando los criterios de búsqueda.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
-          {solidarias.map(p => <PropertyCard key={p.id} propiedad={p} />)}
-        </div>
+      {activeCategory !== 'plus' && (
+        <>
+          {loadingSolidarias ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          ) : getFilteredSolidarias().length === 0 ? (
+            <div className="text-center py-12 px-4 bg-white border-2 border-dashed border-ucc-border rounded-xl-custom mb-16">
+              <MapPin size={40} className="mx-auto text-ucc-muted mb-3" />
+              <h3 className="font-heading font-bold text-base text-ucc-navy mb-1">No encontramos alojamientos solidarios</h3>
+              <p className="text-ucc-muted text-xs font-semibold">Prueba cambiando los criterios de búsqueda.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-20 slide-up-entrance">
+              {getFilteredSolidarias().map(p => <PropertyCard key={p.id} propiedad={p} />)}
+            </div>
+          )}
+        </>
       )}
 
       {/* ===== LISTINGS: DE PAGO ===== */}
-      <section className="bg-gradient-to-br from-amber-50/70 via-orange-50/30 to-white border border-amber-200/50 rounded-3xl p-6 md:p-10 mb-20 shadow-custom-sm relative overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute top-[-50px] right-[-50px] w-[150px] h-[150px] bg-amber-200/20 rounded-full filter blur-3xl pointer-events-none"></div>
+      {activeCategory !== 'solidario' && (
+        <section className="alojamientos-plus-section rounded-3xl p-6 md:p-10 mb-20 shadow-custom-sm relative overflow-hidden">
+          {/* Decorative elements */}
+          <div className="absolute top-[-50px] right-[-50px] w-[150px] h-[150px] bg-amber-200/20 dark:bg-amber-500/10 rounded-full filter blur-3xl pointer-events-none"></div>
 
-        <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 mb-8">
-          <div>
-            <div className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-800 text-[0.68rem] font-black uppercase tracking-wider px-3 py-1 rounded-full border border-amber-200/40 mb-3 shadow-custom-sm">
-              <Coins size={12} className="text-amber-700" />
-              <span>Alojamiento Plus</span>
+          <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 mb-8">
+            <div>
+              <div className="inline-flex items-center gap-1.5 bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[0.68rem] font-black uppercase tracking-wider px-3 py-1 rounded-full border border-amber-200/40 dark:border-amber-700/40 mb-3 shadow-custom-sm">
+                <Coins size={12} className="text-amber-700 dark:text-amber-300" />
+                <span>Alojamiento Plus</span>
+              </div>
+              <h2 className="font-heading font-black text-2xl md:text-3xl text-amber-950 dark:text-white flex items-center gap-2">
+                Alojamientos Plus
+                {!loadingPagos && <span className="text-base font-semibold text-amber-700/80 dark:text-amber-300/80 ml-1">({getFilteredPagos().length})</span>}
+              </h2>
+              <p className="text-xs font-semibold text-amber-800/80 dark:text-slate-300 mt-1">Alojamientos con precio asignado. Abiertos a visitantes, sin requisito de vinculación UCC ni verificación.</p>
             </div>
-            <h2 className="font-heading font-black text-2xl md:text-3xl text-amber-950 flex items-center gap-2">
-              Alojamientos Plus
-              {!loadingPagos && <span className="text-base font-semibold text-amber-700/80 ml-1">({pagos.length})</span>}
-            </h2>
-            <p className="text-xs font-semibold text-amber-800/80 mt-1">Alojamientos con precio asignado. Abiertos a visitantes, sin requisito de vinculación UCC ni verificación.</p>
           </div>
-        </div>
 
-        {/* Filtros específicos de la sección de pago */}
-        <div className="flex flex-wrap items-center gap-3.5 mb-8 bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-amber-200/30 shadow-custom-sm">
-          <span className="text-xs font-bold text-amber-900/80">Filtrar Alojamientos Plus por:</span>
-          
-          <select 
-            value={filtroPagoCiudad} 
-            onChange={e => setFiltroPagoCiudad(e.target.value)}
-            className="bg-white border border-amber-200 text-amber-950 text-xs font-bold rounded-full px-4 py-2 outline-none focus:border-amber-500 shadow-custom-sm cursor-pointer transition-colors"
-          >
-            <option value="">Todas las ciudades</option>
-            <option value="Santa Marta">Santa Marta</option>
-            <option value="Bogotá">Bogotá</option>
-            <option value="Medellín">Medellín</option>
-            <option value="Bucaramanga">Bucaramanga</option>
-            <option value="Cali">Cali</option>
-            <option value="Ibagué">Ibagué</option>
-            <option value="Pasto">Pasto</option>
-            <option value="Popayán">Popayán</option>
-            <option value="Villavicencio">Villavicencio</option>
-            <option value="Montería">Montería</option>
-            <option value="Arauca">Arauca</option>
-            <option value="Barrancabermeja">Barrancabermeja</option>
-            <option value="Neiva">Neiva</option>
-          </select>
-
-          <select 
-            value={filtroPagoTipo} 
-            onChange={e => setFiltroPagoTipo(e.target.value)}
-            className="bg-white border border-amber-200 text-amber-950 text-xs font-bold rounded-full px-4 py-2 outline-none focus:border-amber-500 shadow-custom-sm cursor-pointer transition-colors"
-          >
-            <option value="">Todos los tipos</option>
-            <option value="cama">Cama</option>
-            <option value="sofa">Sofá</option>
-            <option value="hamaca">Hamaca</option>
-            <option value="habitacion">Habitación</option>
-            <option value="alquiler">Alquiler</option>
-            <option value="alojamiento_plus">Alojamiento +</option>
-            <option value="otro">Otros</option>
-          </select>
-
-          {(filtroPagoCiudad || filtroPagoTipo) && (
-            <button 
-              onClick={() => { setFiltroPagoCiudad(''); setFiltroPagoTipo(''); }}
-              className="text-xs font-bold text-amber-700 hover:text-amber-900 transition-colors underline"
+          {/* Filtros específicos de la sección de pago */}
+          <div className="flex flex-wrap items-center gap-3.5 mb-8 bg-white/70 dark:bg-slate-800/80 backdrop-blur-md p-4 rounded-2xl border border-amber-200/30 dark:border-slate-700 shadow-custom-sm">
+            <span className="text-xs font-bold text-amber-900/80 dark:text-slate-200">Filtrar Alojamientos Plus por:</span>
+            
+            <select 
+              value={filtroPagoCiudad} 
+              onChange={e => setFiltroPagoCiudad(e.target.value)}
+              className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 text-amber-950 dark:text-white text-xs font-bold rounded-full px-4 py-2 outline-none focus:border-amber-500 shadow-custom-sm cursor-pointer transition-colors"
             >
-              Restablecer filtros de Alojamiento Plus
-            </button>
-          )}
-        </div>
+              <option value="">Todas las ciudades</option>
+              <option value="Santa Marta">Santa Marta</option>
+              <option value="Bogotá">Bogotá</option>
+              <option value="Medellín">Medellín</option>
+              <option value="Bucaramanga">Bucaramanga</option>
+              <option value="Cali">Cali</option>
+              <option value="Ibagué">Ibagué</option>
+              <option value="Pasto">Pasto</option>
+              <option value="Popayán">Popayán</option>
+              <option value="Villavicencio">Villavicencio</option>
+              <option value="Montería">Montería</option>
+              <option value="Arauca">Arauca</option>
+              <option value="Barrancabermeja">Barrancabermeja</option>
+              <option value="Neiva">Neiva</option>
+            </select>
 
-        {loadingPagos ? (
-          <div className="flex justify-center items-center py-16">
-            <div className="animate-spin rounded-full h-10 w-10 border-4 border-amber-200 border-t-amber-600"></div>
+            <select 
+              value={filtroPagoTipo} 
+              onChange={e => setFiltroPagoTipo(e.target.value)}
+              className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 text-amber-950 dark:text-white text-xs font-bold rounded-full px-4 py-2 outline-none focus:border-amber-500 shadow-custom-sm cursor-pointer transition-colors"
+            >
+              <option value="">Todos los tipos</option>
+              <option value="cama">Cama</option>
+              <option value="sofa">Sofá</option>
+              <option value="hamaca">Hamaca</option>
+              <option value="habitacion">Habitación</option>
+              <option value="alquiler">Alquiler</option>
+              <option value="alojamiento_plus">Alojamiento +</option>
+              <option value="otro">Otros</option>
+            </select>
+
+            {(filtroPagoCiudad || filtroPagoTipo) && (
+              <button 
+                onClick={() => { setFiltroPagoCiudad(''); setFiltroPagoTipo(''); }}
+                className="text-xs font-bold text-amber-700 hover:text-amber-900 transition-colors underline"
+              >
+                Restablecer filtros de Alojamiento Plus
+              </button>
+            )}
           </div>
-        ) : pagos.length === 0 ? (
-          <div className="text-center py-12 px-4 bg-white/50 border-2 border-dashed border-amber-200/60 rounded-xl-custom">
-            <MapPin size={40} className="mx-auto text-amber-600/60 mb-3" />
-            <h3 className="font-heading font-bold text-base text-amber-950 mb-1">No hay Alojamientos Plus</h3>
-            <p className="text-amber-800/80 text-xs font-semibold">No se encontraron resultados con los filtros actuales.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {pagos.map(p => <PropertyCard key={p.id} propiedad={p} />)}
-          </div>
-        )}
-      </section>
+
+          {loadingPagos ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          ) : getFilteredPagos().length === 0 ? (
+            <div className="text-center py-12 px-4 bg-white/50 border-2 border-dashed border-amber-200/60 rounded-xl-custom">
+              <MapPin size={40} className="mx-auto text-amber-600/60 mb-3" />
+              <h3 className="font-heading font-bold text-base text-amber-950 mb-1">No hay Alojamientos Plus</h3>
+              <p className="text-amber-800/80 text-xs font-semibold">No se encontraron resultados con los filtros actuales.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 slide-up-entrance">
+              {getFilteredPagos().map(p => <PropertyCard key={p.id} propiedad={p} />)}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ===== ¿CÓMO FUNCIONA? ===== */}
       <section id="como-funciona" className="mb-20 scroll-mt-24">
@@ -637,12 +784,12 @@ export default function Home() {
       {/* ===== FOOTER ===== */}
       <footer className="mt-20 border-t border-ucc-border/30 pt-10 pb-8 text-center text-ucc-muted font-body">
         <div className="flex items-center justify-center gap-6 mb-6">
-          <a href="https://www.ucc.edu.co" target="_blank" rel="noopener noreferrer" className="bg-white px-4 py-2 rounded-xl border border-ucc-border/40 shadow-custom-sm flex items-center justify-center hover:scale-105 transition-transform duration-200">
-            <img src="/ucc_logo.png" alt="UCC" className="h-8 object-contain sponsor-logo-light" />
+          <a href="https://www.ucc.edu.co" target="_blank" rel="noopener noreferrer" className="logo-container hover:scale-105 transition-transform duration-200">
+            <img src="/ucc_logo.png" alt="UCC" className="h-8 object-contain logo-img-dark-file" />
           </a>
-          <div className="h-6 w-[1px] bg-ucc-border/80" />
-          <a href="https://www.ucc.edu.co/indesco" target="_blank" rel="noopener noreferrer" className="bg-white px-4 py-2 rounded-xl border border-ucc-border/40 shadow-custom-sm flex items-center justify-center hover:scale-105 transition-transform duration-200">
-            <img src="/indesco.png" alt="INDESCO" className="h-7 object-contain sponsor-logo-light" />
+          <div className="h-6 w-[1px] bg-ucc-border/80 dark:bg-emerald-900/60" />
+          <a href="https://www.ucc.edu.co/indesco" target="_blank" rel="noopener noreferrer" className="logo-container hover:scale-105 transition-transform duration-200">
+            <img src="/indesco.png" alt="INDESCO" className="h-7 object-contain logo-img-dark-file" />
           </a>
         </div>
         <p className="font-heading font-black text-sm text-ucc-navy tracking-wide uppercase">HUASI — La casa de mi amig@</p>

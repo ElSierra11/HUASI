@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { MapPin, Star, Users, Home, CheckCircle2, Calendar, MessageSquare, Award, GraduationCap, Bed, Sofa, Trees, Coins, Sparkles, HelpCircle } from 'lucide-react';
+import { MapPin, Star, Users, Home, CheckCircle2, Calendar, MessageSquare, Award, GraduationCap, Bed, Sofa, Trees, Coins, Sparkles, HelpCircle, Sun } from 'lucide-react';
 import api from '../api';
 
 const TIPO_LABELS = {
@@ -181,7 +181,7 @@ function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], fechaIn
   };
 
   return (
-    <div className="custom-calendar-container" style={{ margin: '16px 0', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px', background: '#fff' }}>
+    <div className="custom-calendar-container" style={{ margin: '16px 0', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px', background: 'var(--bg-card)' }}>
       <style>{`
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .cal-header button { background: none; border: none; font-weight: bold; cursor: pointer; color: var(--primary); padding: 4px 8px; font-size: 1rem; }
@@ -192,9 +192,12 @@ function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], fechaIn
         .cal-empty { cursor: default; }
         .cal-past { color: #cbd5e1; cursor: not-allowed; text-decoration: line-through; }
         .cal-booked { background: #fee2e2; color: #ef4444; cursor: not-allowed; text-decoration: line-through; }
+        .dark .cal-booked { background: rgba(239, 68, 68, 0.2); color: #f87171; }
         .cal-unavailable { color: #94a3b8; cursor: not-allowed; opacity: 0.6; }
         .cal-available { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .dark .cal-available { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
         .cal-available:hover { background: #dcfce7; }
+        .dark .cal-available:hover { background: rgba(16, 185, 129, 0.25); }
         .cal-selected { background: var(--ucc-green) !important; color: white !important; border: 1px solid var(--ucc-green) !important; }
         .cal-legend { display: flex; gap: 10px; justify-content: center; font-size: 0.65rem; font-weight: bold; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; flex-wrap: wrap; }
         .cal-leg-item { display: flex; align-items: center; gap: 4px; }
@@ -264,10 +267,53 @@ export default function PropertyDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const getNights = () => {
+    if (!booking.fecha_inicio || !booking.fecha_fin) return 0;
+    const start = new Date(booking.fecha_inicio + 'T00:00:00');
+    const end = new Date(booking.fecha_fin + 'T00:00:00');
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) return 0;
+    const diffTime = Math.abs(end - start);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const nights = getNights();
+  const solesPorNoche = prop?.soles_por_noche || 50;
+  const totalSolesRequired = nights * solesPorNoche;
+  const hasEnoughSoles = user ? user.soles_balance >= totalSolesRequired : false;
+
+  const getCompatibilityScore = () => {
+    if (!user || !user.preferencias_convivencia || !prop?.host_preferencias) {
+      return null;
+    }
+    try {
+      const uPrefs = typeof user.preferencias_convivencia === 'string' 
+        ? JSON.parse(user.preferencias_convivencia) 
+        : user.preferencias_convivencia;
+      const hPrefs = typeof prop.host_preferencias === 'string' 
+        ? JSON.parse(prop.host_preferencias) 
+        : prop.host_preferencias;
+      if (!uPrefs || !hPrefs) return null;
+      let matches = 0;
+      let totalFields = 5;
+      if (uPrefs.estudio === hPrefs.estudio) matches++;
+      if (uPrefs.ruido === hPrefs.ruido) matches++;
+      if (uPrefs.mascotas === hPrefs.mascotas) matches++;
+      if (uPrefs.visitas === hPrefs.visitas) matches++;
+      if (uPrefs.fumar === hPrefs.fumar) matches++;
+      return Math.round((matches / totalFields) * 100);
+    } catch (e) {
+      console.error('Error calculating compatibility:', e);
+      return null;
+    }
+  };
+
+  const compScore = getCompatibilityScore();
+
   const handleBooking = async (e) => {
     e.preventDefault();
     if (!user) { navigate('/login'); return; }
     if (!prop.es_pago && !user.verificado) { setError('Debes completar la verificación de tu correo institucional primero'); return; }
+    if (!prop.es_pago && !hasEnoughSoles) { setError('Saldo insuficiente para completar la reserva'); return; }
     setBookingLoading(true);
     setError('');
     try {
@@ -337,8 +383,8 @@ export default function PropertyDetail() {
               De Pago · ${Number(prop.precio_por_noche).toLocaleString('es-CO')}/noche
             </span>
           ) : (
-            <span className="badge" style={{ background: 'rgba(22, 163, 74, 0.1)', color: '#16a34a', borderColor: 'rgba(22, 163, 74, 0.2)', fontWeight: 805 }}>
-              💚 Hospedaje Solidario (Gratis)
+            <span className="badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(22, 163, 74, 0.1)', color: '#16a34a', borderColor: 'rgba(22, 163, 74, 0.2)', fontWeight: 805 }}>
+              <Sun size={14} className="text-amber-500 fill-amber-500" /> Hospedaje Solidario · {prop.soles_por_noche || 50} Soles/noche
             </span>
           )}
           {isOwner && (
@@ -363,7 +409,6 @@ export default function PropertyDetail() {
         overflow: 'hidden',
         position: 'relative'
       }}>
-        {/* Decorative background shapes */}
         <div style={{
           position: 'absolute',
           width: '300px',
@@ -407,6 +452,47 @@ export default function PropertyDetail() {
               </button>
             )}
           </section>
+
+          {user && compScore !== null && (
+            <section style={{ display: 'flex', alignItems: 'center', gap: 20, background: 'var(--bg-light)', border: '1px solid var(--border)', padding: '20px 24px', borderRadius: 18, marginTop: 16 }}>
+              <div style={{ position: 'relative', width: 68, height: 68, flexShrink: 0 }}>
+                <svg width="68" height="68" viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="rgba(0,0,0,0.05)"
+                    strokeWidth="3.2"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke={compScore >= 70 ? 'var(--ucc-green)' : 'var(--accent)'}
+                    strokeWidth="3.2"
+                    strokeDasharray={`${compScore}, 100`}
+                  />
+                </svg>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 900, color: 'var(--text)' }}>
+                  {compScore}%
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <strong style={{ fontSize: '0.95rem', display: 'block', color: 'var(--text)', marginBottom: 4 }}>Compatibilidad de Convivencia</strong>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  {compScore >= 80 
+                    ? '¡Excelente compatibilidad! Comparten hábitos y normas de convivencia muy similares.' 
+                    : compScore >= 60 
+                    ? 'Compatibilidad aceptable. Hay algunas diferencias menores de estilo de vida, conversen en el chat.' 
+                    : 'Compatibilidad baja. Consideren charlar previamente para alinear expectativas de orden y ruido.'}
+                </span>
+              </div>
+            </section>
+          )}
+
+          {user && compScore === null && (
+            <section style={{ background: 'var(--bg-light)', border: '1px dashed var(--border)', padding: '16px 20px', borderRadius: 18, marginTop: 16, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              ¿Quieres ver tu compatibilidad con {prop.host_nombre}? Completa el <strong>Cuestionario de Convivencia</strong> en tu perfil para calcularla.
+            </section>
+          )}
 
           <section>
             <h2>Acerca de este espacio</h2>
@@ -475,8 +561,8 @@ export default function PropertyDetail() {
                 </>
               ) : (
                 <>
-                  <Award size={20} style={{ marginRight: 8, verticalAlign: 'text-bottom' }} color="var(--accent)" />
-                  <span>Hospedaje solidario</span>
+                  <Sun size={20} style={{ marginRight: 8, verticalAlign: 'text-bottom' }} className="text-amber-500 fill-amber-500" />
+                  <span>Hospedaje Solidario · {prop.soles_por_noche || 50} Soles</span>
                 </>
               )}
             </h3>
@@ -572,7 +658,39 @@ export default function PropertyDetail() {
                   <textarea className="form-control" placeholder="Preséntate y cuéntale al anfitrión sobre tu visita..."
                     value={booking.mensaje} onChange={e => setBooking(b => ({ ...b, mensaje: e.target.value }))} />
                 </div>
-                <button type="submit" className="btn btn-primary btn-block" disabled={bookingLoading}>
+                
+                {!prop.es_pago && nights > 0 && (
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '12px 16px', marginBottom: 16, fontSize: '0.85rem', color: '#92400e' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span>Costo por noche:</span>
+                      <strong style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Sun size={14} className="text-amber-500 fill-amber-500" /> {solesPorNoche} Soles
+                      </strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span>Noches de estadía:</span>
+                      <strong>{nights} {nights === 1 ? 'noche' : 'noches'}</strong>
+                    </div>
+                    <hr style={{ border: 0, borderTop: '1px solid #fde68a', margin: '8px 0' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '0.95rem' }}>
+                      <span>Total requerido:</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Sun size={16} className="text-amber-500 fill-amber-500" /> {totalSolesRequired} Soles
+                      </span>
+                    </div>
+                    {user && !hasEnoughSoles && (
+                      <div style={{ color: '#dc2626', fontSize: '0.75rem', fontWeight: 700, marginTop: 8 }}>
+                        Saldo insuficiente (Tienes {user.soles_balance} soles).
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <button 
+                  type="submit" 
+                  className="btn btn-primary btn-block" 
+                  disabled={bookingLoading || (!prop.es_pago && user && !hasEnoughSoles)}
+                >
                   {bookingLoading ? 'Enviando solicitud...' : 'Solicitar reserva'}
                 </button>
                 {!user && <p style={{ fontSize: '0.85rem', textAlign: 'center', marginTop: 12, color: 'var(--text-muted)' }}>Debes iniciar sesión para reservar</p>}

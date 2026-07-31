@@ -6,7 +6,7 @@ import { Send, MessageCircle, X, ArrowLeft, ChevronDown, Home, Eye, MoreHorizont
 import api from '../api';
 
 export default function ChatWidget() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [conversaciones, setConversaciones] = useState([]);
@@ -30,6 +30,11 @@ export default function ChatWidget() {
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const moreOptionsRef = useRef(null);
+  const activeConvRef = useRef(null);
+
+  useEffect(() => {
+    activeConvRef.current = activeConv;
+  }, [activeConv]);
 
   // Listen for external "open-chat" events (e.g., from PropertyDetail)
   useEffect(() => {
@@ -72,11 +77,11 @@ export default function ChatWidget() {
     if (!user) return;
 
     const getCookie = (name) => {
-      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-      return match ? match[2] : '';
+      const match = document.cookie.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
+      return match ? match[1] : '';
     };
 
-    const token = getCookie('stayu_token') || getCookie('stayu_admin_token');
+    const token = getCookie('stayu_token') || getCookie('stayu_admin_token') || localStorage.getItem('stayu_token') || localStorage.getItem('token') || '';
 
     const socket = io({
       path: '/chat-socket',
@@ -87,25 +92,40 @@ export default function ChatWidget() {
     socketRef.current = socket;
 
     socket.on('new_message', (msg) => {
-      setMessages(prev => {
-        if (prev.some(m => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
+      const currentActiveConv = activeConvRef.current;
+      const isActive = currentActiveConv && currentActiveConv.id === msg.conversacion_id;
 
-      setConversaciones(prev =>
-        prev.map(c => c.id === msg.conversacion_id
+      if (isActive) {
+        socket.emit('mark_read', { conversacion_id: msg.conversacion_id });
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      }
+
+      setConversaciones(prev => {
+        const exists = prev.some(c => c.id === msg.conversacion_id);
+        if (!exists) {
+          // Si la conversación no existe en la lista, la recargamos de la API
+          api.get('/chat/conversaciones')
+            .then(res => setConversaciones(res.data))
+            .catch(err => console.error('Error loading conversations:', err));
+          return prev;
+        }
+
+        return prev.map(c => c.id === msg.conversacion_id
           ? {
             ...c,
             ultimo_mensaje: msg.contenido,
             ultimo_mensaje_fecha: msg.created_at,
-            no_leidos: msg.sender_id !== user.id ? (c.no_leidos || 0) + 1 : c.no_leidos
+            no_leidos: (msg.sender_id !== user.id && !isActive) ? (c.no_leidos || 0) + 1 : c.no_leidos
           }
           : c
-        ).sort((a, b) => new Date(b.ultimo_mensaje_fecha || b.updated_at) - new Date(a.ultimo_mensaje_fecha || a.updated_at))
-      );
+        ).sort((a, b) => new Date(b.ultimo_mensaje_fecha || b.updated_at) - new Date(a.ultimo_mensaje_fecha || a.updated_at));
+      });
 
       // Update global unread count
-      if (msg.sender_id !== user.id) {
+      if (msg.sender_id !== user.id && !isActive) {
         setUnreadTotal(prev => prev + 1);
       }
     });
@@ -114,8 +134,12 @@ export default function ChatWidget() {
       setTyping(data.conversacion_id);
     });
 
-    socket.on('user_stop_typing', () => {
-      setTyping(false);
+    socket.on('user_stop_typing', (data) => {
+      if (data && data.conversacion_id) {
+        setTyping(prev => prev === data.conversacion_id ? false : prev);
+      } else {
+        setTyping(false);
+      }
     });
 
     return () => socket.disconnect();
@@ -225,18 +249,36 @@ export default function ChatWidget() {
 
   // ===== RESERVATION ACTIONS (from chat, like Marketplace) =====
   const handleReservationAction = async (action) => {
-    if (!reservaInfo) return;
+    if (!reservaInfo || !activeConv) return;
     try {
       await api.post('/reservas/chat/command', {
         reservationId: reservaInfo.reserva_id,
         action
       });
+      try {
+        await refreshUser();
+      } catch (err) {
+        console.error('Error refreshing user in chat widget:', err);
+      }
+
+      // Emit system message over socket so both host and guest get it live in real time!
+      if (socketRef.current) {
+        const systemMsgMap = {
+          aceptar: '✅ Reserva aceptada por el anfitrión.',
+          rechazar: '❌ Reserva rechazada por el anfitrión.',
+          archivar: '📦 Publicación archivada por el anfitrión.'
+        };
+        if (systemMsgMap[action]) {
+          socketRef.current.emit('send_message', {
+            conversacion_id: activeConv.id,
+            contenido: systemMsgMap[action]
+          });
+        }
+      }
+
       // Refresh reservation info
       const res = await api.get(`/chat/conversaciones/${activeConv.id}/reserva`);
       setReservaInfo(res.data);
-      // Refresh messages (system message was inserted)
-      const msgRes = await api.get(`/chat/conversaciones/${activeConv.id}/mensajes`);
-      setMessages(msgRes.data);
       setShowMoreOptions(false);
     } catch (err) {
       console.error('Error en acción de reserva:', err);
@@ -317,7 +359,15 @@ export default function ChatWidget() {
 
   // Detect system messages (reservation actions)
   const isSystemMessage = (contenido) => {
-    return contenido?.startsWith('✅') || contenido?.startsWith('❌') || contenido?.startsWith('📦') || contenido?.startsWith('📅');
+    if (!contenido) return false;
+    return contenido.startsWith('✅') || 
+           contenido.startsWith('❌') || 
+           contenido.startsWith('📦') || 
+           contenido.startsWith('📅') || 
+           contenido.startsWith('🎓') || 
+           contenido.startsWith('ℹ️') || 
+           contenido.startsWith('🎉') || 
+           contenido.includes('SOLICITUD DE RESERVA');
   };
 
   const isHost = reservaInfo && reservaInfo.host_id === user?.id;
@@ -449,7 +499,7 @@ export default function ChatWidget() {
               )}
 
               {showBookingModal ? (
-                <div className="chat-w-messages" style={{ background: '#fff', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div className="chat-w-messages" style={{ background: 'var(--bg-card)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <h4 style={{ fontFamily: 'var(--font-heading)', fontWeight: 'bold', fontSize: '1rem', color: 'var(--primary)', borderBottom: '1px solid var(--border)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Calendar size={18} className="text-ucc-green" />
                     <span>Solicitar Reserva</span>
@@ -550,58 +600,14 @@ export default function ChatWidget() {
                   {messages.map(msg => {
                     const isSys = isSystemMessage(msg.contenido);
                     const isMine = msg.sender_id === user.id;
-                    
-                    let bubbleStyle = {};
-                    let textStyle = { margin: 0 };
-                    let timeStyle = { display: 'block', fontSize: '0.62rem', marginTop: '4px', opacity: 0.7 };
-                    
-                    if (isSys) {
-                      bubbleStyle = {
-                        alignSelf: 'center',
-                        background: '#f0fdf4',
-                        color: '#166534',
-                        border: '1px solid #bbf7d0',
-                        borderRadius: '12px',
-                        textAlign: 'center',
-                        maxWidth: '90%',
-                        padding: '8px 14px',
-                      };
-                      textStyle.color = '#166534';
-                      timeStyle.textAlign = 'center';
-                      timeStyle.color = '#166534';
-                    } else if (isMine) {
-                      bubbleStyle = {
-                        alignSelf: 'flex-end',
-                        background: 'linear-gradient(135deg, #0d7c3d 0%, #0a9e50 100%)',
-                        color: '#ffffff',
-                        borderBottomRightRadius: '5px',
-                        boxShadow: '0 2px 10px rgba(13, 124, 61, 0.2)',
-                      };
-                      textStyle.color = '#ffffff';
-                      timeStyle.color = 'rgba(255, 255, 255, 0.8)';
-                      timeStyle.textAlign = 'right';
-                    } else {
-                      bubbleStyle = {
-                        alignSelf: 'flex-start',
-                        background: '#e8f5ee',
-                        color: '#0f2a1a',
-                        border: '1px solid #c8ddd2',
-                        borderBottomLeftRadius: '5px',
-                        boxShadow: '0 1px 4px rgba(0, 0, 0, 0.05)',
-                      };
-                      textStyle.color = '#0f2a1a';
-                      timeStyle.color = '#5c6b82';
-                      timeStyle.textAlign = 'left';
-                    }
 
                     return (
                       <div
                         key={msg.id}
                         className={`chat-w-bubble ${isSys ? 'system' : isMine ? 'mine' : 'other'}`}
-                        style={bubbleStyle}
                       >
-                        <p style={textStyle}>{msg.contenido}</p>
-                        <span className="chat-w-time" style={timeStyle}>
+                        <p>{msg.contenido}</p>
+                        <span className="chat-w-time">
                           {new Date(msg.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>

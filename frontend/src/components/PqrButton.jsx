@@ -64,7 +64,8 @@ export default function PqrButton() {
         >
           <div
             style={{
-              background: 'white',
+              background: 'var(--bg-card)',
+              color: 'var(--text)',
               width: '100%',
               maxWidth: 480,
               borderRadius: 16,
@@ -144,13 +145,13 @@ export default function PqrButton() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                background: 'white',
-                border: '1px solid #cbd5e1',
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
                 borderRadius: 8,
                 padding: '10px 14px',
                 fontSize: '0.95rem',
                 fontWeight: 600,
-                color: '#0f172a'
+                color: 'var(--text)'
               }}>
                 <span style={{ wordBreak: 'break-all' }}>{email}</span>
                 <button

@@ -19,39 +19,73 @@ export default function Chat() {
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const activeConvRef = useRef(null);
+
+  useEffect(() => {
+    activeConvRef.current = activeConv;
+  }, [activeConv]);
 
   // Connect to Socket.IO
   useEffect(() => {
     if (!user) return;
 
+    const getCookie = (name) => {
+      const match = document.cookie.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
+      return match ? match[1] : '';
+    };
+
+    const token = getCookie('stayu_token') || getCookie('stayu_admin_token') || localStorage.getItem('stayu_token') || localStorage.getItem('token') || '';
+
     const socket = io({
       path: '/chat-socket',
-      auth: { token: document.cookie.split('stayu_token=')[1]?.split(';')[0] || '' },
+      auth: { token },
       withCredentials: true
     });
 
     socketRef.current = socket;
 
     socket.on('new_message', (msg) => {
-      setMessages((prev) => {
-        if (prev.some(m => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
-      // Update conversation list
-      setConversaciones((prev) =>
-        prev.map(c => c.id === msg.conversacion_id
-          ? { ...c, ultimo_mensaje: msg.contenido, ultimo_mensaje_fecha: msg.created_at, no_leidos: msg.sender_id !== user.id ? (c.no_leidos || 0) + 1 : c.no_leidos }
+      const currentActiveConv = activeConvRef.current;
+      const isActive = currentActiveConv && currentActiveConv.id === msg.conversacion_id;
+
+      if (isActive) {
+        socket.emit('mark_read', { conversacion_id: msg.conversacion_id });
+        setMessages((prev) => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      }
+
+      setConversaciones((prev) => {
+        const exists = prev.some(c => c.id === msg.conversacion_id);
+        if (!exists) {
+          // Si la conversación no existe en la lista, la recargamos de la API
+          api.get('/chat/conversaciones')
+            .then(res => setConversaciones(res.data))
+            .catch(err => console.error('Error loading conversations:', err));
+          return prev;
+        }
+
+        return prev.map(c => c.id === msg.conversacion_id
+          ? { 
+              ...c, 
+              ultimo_mensaje: msg.contenido, 
+              ultimo_mensaje_fecha: msg.created_at, 
+              no_leidos: (msg.sender_id !== user.id && !isActive) ? (c.no_leidos || 0) + 1 : c.no_leidos 
+            }
           : c
-        ).sort((a, b) => new Date(b.ultimo_mensaje_fecha || b.updated_at) - new Date(a.ultimo_mensaje_fecha || a.updated_at))
-      );
+        ).sort((a, b) => new Date(b.ultimo_mensaje_fecha || b.updated_at) - new Date(a.ultimo_mensaje_fecha || a.updated_at));
+      });
     });
 
     socket.on('user_typing', (data) => {
-      if (data.conversacion_id === activeConv?.id) setTyping(true);
+      const currentActiveConv = activeConvRef.current;
+      if (data.conversacion_id === currentActiveConv?.id) setTyping(true);
     });
 
     socket.on('user_stop_typing', (data) => {
-      if (data.conversacion_id === activeConv?.id) setTyping(false);
+      const currentActiveConv = activeConvRef.current;
+      if (data.conversacion_id === currentActiveConv?.id) setTyping(false);
     });
 
     socket.on('messages_read', () => {

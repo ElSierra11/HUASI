@@ -188,14 +188,14 @@ router.get('/:id', async (req, res) => {
 
     const result = await pool.query(
       `SELECT p.*, u.nombre AS host_nombre, u.apellido AS host_apellido,
-              u.foto_perfil AS host_foto, u.created_at AS host_desde,
+              u.foto_perfil AS host_foto, u.created_at AS host_desde, u.preferencias_convivencia AS host_preferencias,
               COALESCE(AVG(r.calificacion), 0) AS calificacion_promedio,
               COUNT(DISTINCT r.id) AS num_resenas
        FROM propiedades p
        JOIN users u ON p.host_id = u.id
        LEFT JOIN resenas r ON r.propiedad_id = p.id
        WHERE p.id = $1
-       GROUP BY p.id, u.nombre, u.apellido, u.foto_perfil, u.created_at`,
+       GROUP BY p.id, u.nombre, u.apellido, u.foto_perfil, u.created_at, u.preferencias_convivencia`,
       [id]
     );
 
@@ -311,6 +311,26 @@ router.post('/', async (req, res) => {
        RETURNING *`,
       [req.user.id, String(titulo).trim(), String(descripcion).trim(), String(direccion).trim(), barrio ? String(barrio).trim() : null, tipoFinal, parseInt(capacidad, 10), amenidadesArr, reglas ? String(reglas).trim() : null, latitud || null, longitud || null, campus_cercano || null, duracion_maxima ? parseInt(duracion_maxima, 10) : null, esPago, precioFinal]
     );
+
+    // Otorgar 200 Soles de premio por primer alojamiento publicado
+    try {
+      const hasPropTrans = await pool.query(
+        "SELECT id FROM soles_transacciones WHERE user_id = $1 AND motivo = 'registro_propiedad'",
+        [req.user.id]
+      );
+      if (hasPropTrans.rows.length === 0) {
+        await pool.query(
+          "UPDATE users SET soles_balance = soles_balance + 200 WHERE id = $1",
+          [req.user.id]
+        );
+        await pool.query(
+          "INSERT INTO soles_transacciones (user_id, cantidad, motivo) VALUES ($1, 200, 'registro_propiedad')",
+          [req.user.id]
+        );
+      }
+    } catch (solesErr) {
+      console.error('Error al otorgar soles por primer alojamiento:', solesErr);
+    }
 
     res.status(201).json(result.rows[0]);
   } catch (err) {

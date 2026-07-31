@@ -103,6 +103,26 @@ router.post('/',
           'UPDATE users SET verificado = TRUE, updated_at = NOW() WHERE id = $1',
           [req.user.id]
         );
+
+        // Otorgar 150 Soles por verificación de vinculación universitaria UCC
+        try {
+          const hasVerifTrans = await pool.query(
+            "SELECT id FROM soles_transacciones WHERE user_id = $1 AND motivo = 'verificacion_email'",
+            [req.user.id]
+          );
+          if (hasVerifTrans.rows.length === 0) {
+            await pool.query(
+              "UPDATE users SET soles_balance = soles_balance + 150 WHERE id = $1",
+              [req.user.id]
+            );
+            await pool.query(
+              "INSERT INTO soles_transacciones (user_id, cantidad, motivo) VALUES ($1, 150, 'verificacion_email')",
+              [req.user.id]
+            );
+          }
+        } catch (solesErr) {
+          console.error('Error al otorgar soles de verificación:', solesErr);
+        }
       }
 
       res.status(201).json(result.rows[0]);
@@ -182,12 +202,33 @@ router.patch('/admin/:id', async (req, res) => {
       return res.status(404).json({ error: 'Verificación no encontrada' });
     }
 
-    // Si se aprobó, marcar al usuario como verificado
+    // Si se aprobó, marcar al usuario como verificado y premiar con soles
     if (estado === 'aprobado') {
+      const targetUserId = result.rows[0].user_id;
       await pool.query(
         'UPDATE users SET verificado = TRUE, updated_at = NOW() WHERE id = $1',
-        [result.rows[0].user_id]
+        [targetUserId]
       );
+
+      // Otorgar 150 Soles por verificación de vinculación universitaria UCC
+      try {
+        const hasVerifTrans = await pool.query(
+          "SELECT id FROM soles_transacciones WHERE user_id = $1 AND motivo = 'verificacion_email'",
+          [targetUserId]
+        );
+        if (hasVerifTrans.rows.length === 0) {
+          await pool.query(
+            "UPDATE users SET soles_balance = soles_balance + 150 WHERE id = $1",
+            [targetUserId]
+          );
+          await pool.query(
+            "INSERT INTO soles_transacciones (user_id, cantidad, motivo) VALUES ($1, 150, 'verificacion_email')",
+            [targetUserId]
+          );
+        }
+      } catch (solesErr) {
+        console.error('Error al otorgar soles de verificación admin:', solesErr);
+      }
     }
 
     res.json(result.rows[0]);

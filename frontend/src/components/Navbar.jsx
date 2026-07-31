@@ -1,13 +1,29 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, User, CheckCircle2, Building, ShieldCheck, Menu, X } from 'lucide-react';
+import { LogOut, User, CheckCircle2, Building, ShieldCheck, Menu, X, Sun, Moon } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem('theme') === 'dark' || 
+    (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  );
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -37,46 +53,46 @@ export default function Navbar() {
       {/* Brand & Sponsors */}
       <div className="flex items-center gap-2">
         {/* HUASI Logo */}
-        <Link to="/" className="navbar-brand flex items-center no-underline group select-none mr-2">
+        <Link to="/" className="navbar-brand flex items-center no-underline group select-none mr-2 logo-container">
           <img 
             src="/huasi_logo.jpg" 
             alt="HUASI" 
-            className="h-[52px] w-auto object-contain group-hover:scale-105 transition-transform duration-300 max-[480px]:h-[40px]"
+            className="h-[44px] w-auto object-contain group-hover:scale-105 transition-transform duration-300 max-[480px]:h-[36px] logo-img-light-file"
           />
         </Link>
 
         {/* Sponsor UCC */}
         <div className="hidden sm:flex items-center">
-          <div className="h-7 w-[1.5px] bg-ucc-border/80 mx-4" />
+          <div className="h-7 w-[1.5px] bg-ucc-border/80 dark:bg-emerald-900/60 mx-4" />
           <a 
             href="https://www.ucc.edu.co" 
             target="_blank" 
             rel="noopener noreferrer" 
             title="Universidad Cooperativa de Colombia"
-            className="bg-white px-2.5 py-1.5 rounded-xl border border-ucc-border/40 shadow-custom-sm flex items-center justify-center hover:scale-105 transition-transform duration-200"
+            className="logo-container hover:scale-105 transition-transform duration-200"
           >
             <img 
               src="/ucc_logo.png" 
               alt="UCC Logo" 
-              className="h-7 object-contain sponsor-logo-light"
+              className="h-7 object-contain logo-img-dark-file"
             />
           </a>
         </div>
 
         {/* Sponsor INDESCO */}
         <div className="hidden md:flex items-center">
-          <div className="h-7 w-[1.5px] bg-ucc-border/80 mx-4" />
+          <div className="h-7 w-[1.5px] bg-ucc-border/80 dark:bg-emerald-900/60 mx-4" />
           <a 
             href="https://www.ucc.edu.co/indesco" 
             target="_blank" 
             rel="noopener noreferrer" 
             title="Instituto de Economía Social y Cooperativismo"
-            className="bg-white px-2.5 py-1.5 rounded-xl border border-ucc-border/40 shadow-custom-sm flex items-center justify-center hover:scale-105 transition-transform duration-200"
+            className="logo-container hover:scale-105 transition-transform duration-200"
           >
             <img 
               src="/indesco.png" 
               alt="INDESCO Logo" 
-              className="h-6 object-contain sponsor-logo-light"
+              className="h-6 object-contain logo-img-dark-file"
             />
           </a>
         </div>
@@ -146,6 +162,15 @@ export default function Navbar() {
               <Building size={14} /> Anfitrión
             </Link>
 
+            {user.soles_balance !== undefined && (
+              <span 
+                className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3.5 py-2 rounded-full text-xs font-black border border-amber-200 shadow-custom-sm select-none"
+                title="Tus Soles HUASI"
+              >
+                <Sun size={14} className="text-amber-500 fill-amber-500 animate-pulse" /> {user.soles_balance} Soles
+              </span>
+            )}
+
             <Link
               to="/perfil"
               className="inline-flex items-center gap-1.5 bg-ucc-bg border border-ucc-border px-4 py-2 rounded-full font-body text-sm font-bold text-ucc-navy hover:bg-ucc-green-light hover:border-ucc-green/20 transition-all duration-200"
@@ -176,6 +201,14 @@ export default function Navbar() {
             </Link>
           </>
         )}
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className="inline-flex items-center justify-center p-2 rounded-full hover:bg-ucc-green-light transition-all duration-200"
+          style={{ border: 'none', background: 'transparent', cursor: 'pointer', outline: 'none' }}
+          title={darkMode ? 'Activar modo claro' : 'Activar modo oscuro'}
+        >
+          {darkMode ? <Sun size={18} className="text-amber-500 fill-amber-500 animate-pulse" /> : <Moon size={18} className="text-ucc-muted" />}
+        </button>
       </div>
 
       {/* Mobile Hamburger Button */}
@@ -205,6 +238,12 @@ export default function Navbar() {
         {user ? (
           <>
             <div className="mobile-nav-divider" />
+
+            {user.soles_balance !== undefined && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: '0.85rem', color: '#b45309', fontWeight: 800 }}>
+                <Sun size={15} className="text-amber-500 fill-amber-500" /> {user.soles_balance} Soles disponibles
+              </div>
+            )}
 
             {user.verificado && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: '0.82rem', color: '#0d7c3d', fontWeight: 700 }}>
@@ -247,6 +286,21 @@ export default function Navbar() {
             </Link>
           </>
         )}
+        <div className="mobile-nav-divider" />
+        <button 
+          onClick={() => setDarkMode(!darkMode)}
+          style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '12px 16px', fontSize: '1rem', fontWeight: 600, color: 'var(--text)' }}
+        >
+          {darkMode ? (
+            <>
+              <Sun size={18} className="text-amber-500 fill-amber-500" /> <span>Tema Claro</span>
+            </>
+          ) : (
+            <>
+              <Moon size={18} className="text-ucc-muted" /> <span>Tema Oscuro</span>
+            </>
+          )}
+        </button>
       </div>
     </nav>
   );

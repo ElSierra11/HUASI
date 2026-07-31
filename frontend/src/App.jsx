@@ -12,9 +12,12 @@ import HostDashboard from './pages/HostDashboard';
 import HostPropertyForm from './pages/HostPropertyForm';
 import HostReservas from './pages/HostReservas';
 import Perfil from './pages/Perfil';
+import Verificacion from './pages/Verificacion';
 import Terminos from './pages/Terminos';
 import Privacidad from './pages/Privacidad';
 import QuienesSomos from './pages/QuienesSomos';
+
+import CoachDashboard from './pages/CoachDashboard';
 
 function App() {
   return (
@@ -23,6 +26,8 @@ function App() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/entrenador" element={<CoachDashboard />} />
+          <Route path="/coach" element={<CoachDashboard />} />
           <Route path="/propiedad/:id" element={<PropertyDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Register />} />
@@ -31,6 +36,7 @@ function App() {
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/mis-reservas" element={<ProtectedRoute><MisReservas /></ProtectedRoute>} />
           <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+          <Route path="/verificacion" element={<ProtectedRoute><Verificacion /></ProtectedRoute>} />
           <Route path="/host" element={<ProtectedRoute><HostDashboard /></ProtectedRoute>} />
           <Route path="/host/nueva-propiedad" element={<ProtectedRoute><HostPropertyForm /></ProtectedRoute>} />
           <Route path="/host/editar/:id" element={<ProtectedRoute><HostPropertyForm /></ProtectedRoute>} />

@@ -56,14 +56,29 @@ router.post('/', async (req, res) => {
       return res.status(404).json({ error: 'Propiedad no encontrada o no disponible' });
     }
 
-    // Verificar que el usuario está verificado si la propiedad es solidaria (gratuita)
+    // Verificar que el usuario está verificado y tiene soles suficientes si la propiedad es solidaria (gratuita)
     if (!prop.rows[0].es_pago) {
-      const userCheck = await pool.query('SELECT verificado FROM users WHERE id = $1', [req.user.id]);
+      const userCheck = await pool.query('SELECT verificado, soles_balance FROM users WHERE id = $1', [req.user.id]);
       const isVerificado = userCheck.rows.length > 0 && userCheck.rows[0].verificado;
       if (!isVerificado) {
         return res.status(403).json({
           error: 'Debes verificar tu vinculación universitaria antes de reservar un alojamiento solidario',
           requiere_verificacion: true
+        });
+      }
+
+      // Calcular soles requeridos
+      const start = new Date(fecha_inicio);
+      const end = new Date(fecha_fin);
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const solesPorNoche = prop.rows[0].soles_por_noche || 50;
+      const totalSoles = diffDays * solesPorNoche;
+
+      const currentBalance = userCheck.rows.length > 0 ? userCheck.rows[0].soles_balance : 0;
+      if (currentBalance < totalSoles) {
+        return res.status(400).json({
+          error: `Saldo de soles insuficiente. Necesitas ${totalSoles} soles (tienes ${currentBalance} soles). Puedes obtener soles hospedando a otros estudiantes en tu casa.`
         });
       }
     }
@@ -264,7 +279,7 @@ router.patch('/:id', async (req, res) => {
 
     // Obtener la reserva
     const reserva = await pool.query(
-      `SELECT r.*, p.host_id, p.titulo AS propiedad_titulo FROM reservas r
+      `SELECT r.*, p.host_id, p.titulo AS propiedad_titulo, p.es_pago, p.soles_por_noche FROM reservas r
        JOIN propiedades p ON r.propiedad_id = p.id
        WHERE r.id = $1`,
       [id]
@@ -294,6 +309,78 @@ router.patch('/:id', async (req, res) => {
     // Archivar publicación automáticamente si se acepta
     if (estadoNormalizado === 'aceptada') {
       await pool.query(`UPDATE propiedades SET activo = FALSE WHERE id = $1`, [res_data.propiedad_id]);
+
+      // Transferir soles si la propiedad es solidaria
+      if (!res_data.es_pago) {
+        try {
+          const start = new Date(res_data.fecha_inicio);
+          const end = new Date(res_data.fecha_fin);
+          const diffTime = Math.abs(end - start);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          const solesPorNoche = res_data.soles_por_noche || 50;
+          const totalSoles = diffDays * solesPorNoche;
+
+          // Descontar al huésped
+          await pool.query(
+            "UPDATE users SET soles_balance = soles_balance - $1 WHERE id = $2",
+            [totalSoles, res_data.guest_id]
+          );
+          // Abonar al anfitrión
+          await pool.query(
+            "UPDATE users SET soles_balance = soles_balance + $1 WHERE id = $2",
+            [totalSoles, res_data.host_id]
+          );
+
+          // Registrar transacciones
+          await pool.query(
+            "INSERT INTO soles_transacciones (user_id, reserva_id, cantidad, motivo) VALUES ($1, $2, $3, 'hospedaje_gasto')",
+            [res_data.guest_id, id, -totalSoles]
+          );
+          await pool.query(
+            "INSERT INTO soles_transacciones (user_id, reserva_id, cantidad, motivo) VALUES ($1, $2, $3, 'hospedaje_ganancia')",
+            [res_data.host_id, id, totalSoles]
+          );
+          console.log(`[Soles] Transferidos ${totalSoles} soles de ${res_data.guest_id} a ${res_data.host_id} por reserva ${id}`);
+        } catch (solesErr) {
+          console.error('Error al transferir soles:', solesErr);
+        }
+      }
+    }
+
+    // Devolución/Reembolso de soles si se cancela una reserva que ya estaba aceptada
+    if (estadoNormalizado === 'cancelada' && res_data.estado === 'aceptada' && !res_data.es_pago) {
+      try {
+        const start = new Date(res_data.fecha_inicio);
+        const end = new Date(res_data.fecha_fin);
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const solesPorNoche = res_data.soles_por_noche || 50;
+        const totalSoles = diffDays * solesPorNoche;
+
+        // Devolver al huésped
+        await pool.query(
+          "UPDATE users SET soles_balance = soles_balance + $1 WHERE id = $2",
+          [totalSoles, res_data.guest_id]
+        );
+        // Descontar al anfitrión
+        await pool.query(
+          "UPDATE users SET soles_balance = soles_balance - $1 WHERE id = $2",
+          [totalSoles, res_data.host_id]
+        );
+
+        // Registrar transacciones de reembolso
+        await pool.query(
+          "INSERT INTO soles_transacciones (user_id, reserva_id, cantidad, motivo) VALUES ($1, $2, $3, 'hospedaje_reembolso')",
+          [res_data.guest_id, id, totalSoles]
+        );
+        await pool.query(
+          "INSERT INTO soles_transacciones (user_id, reserva_id, cantidad, motivo) VALUES ($1, $2, $3, 'hospedaje_devolucion')",
+          [res_data.host_id, id, -totalSoles]
+        );
+        console.log(`[Soles] Reembolsados ${totalSoles} soles de ${res_data.host_id} a ${res_data.guest_id} por cancelación de reserva ${id}`);
+      } catch (solesErr) {
+        console.error('Error al reembolsar soles:', solesErr);
+      }
     }
 
     // Enviar correo de notificación por cambio de estado
@@ -360,7 +447,7 @@ router.post('/chat/command', async (req, res) => {
 
     // Load reservation and related property
     const reservaResult = await pool.query(
-      `SELECT r.*, p.host_id, p.titulo AS propiedad_titulo, p.activo, p.id AS propiedad_id, r.guest_id
+      `SELECT r.*, p.host_id, p.titulo AS propiedad_titulo, p.activo, p.id AS propiedad_id, r.guest_id, p.es_pago, p.soles_por_noche
        FROM reservas r
        JOIN propiedades p ON r.propiedad_id = p.id
        WHERE r.id = $1`,
@@ -388,6 +475,42 @@ router.post('/chat/command', async (req, res) => {
       // Archivar publicación automáticamente si se acepta
       if (action === 'aceptar') {
         await pool.query(`UPDATE propiedades SET activo = FALSE WHERE id = $1`, [reserva.propiedad_id]);
+
+        // Transferir soles si la propiedad es solidaria
+        if (!reserva.es_pago) {
+          try {
+            const start = new Date(reserva.fecha_inicio);
+            const end = new Date(reserva.fecha_fin);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const solesPorNoche = reserva.soles_por_noche || 50;
+            const totalSoles = diffDays * solesPorNoche;
+
+            // Descontar al huésped
+            await pool.query(
+              "UPDATE users SET soles_balance = soles_balance - $1 WHERE id = $2",
+              [totalSoles, reserva.guest_id]
+            );
+            // Abonar al anfitrión
+            await pool.query(
+              "UPDATE users SET soles_balance = soles_balance + $1 WHERE id = $2",
+              [totalSoles, reserva.host_id]
+            );
+
+            // Registrar transacciones
+            await pool.query(
+              "INSERT INTO soles_transacciones (user_id, reserva_id, cantidad, motivo) VALUES ($1, $2, $3, 'hospedaje_gasto')",
+              [reserva.guest_id, reservationId, -totalSoles]
+            );
+            await pool.query(
+              "INSERT INTO soles_transacciones (user_id, reserva_id, cantidad, motivo) VALUES ($1, $2, $3, 'hospedaje_ganancia')",
+              [reserva.host_id, reservationId, totalSoles]
+            );
+            console.log(`[Soles Chat] Transferidos ${totalSoles} soles de ${reserva.guest_id} a ${reserva.host_id} por reserva ${reservationId}`);
+          } catch (solesErr) {
+            console.error('Error al transferir soles por chat command:', solesErr);
+          }
+        }
       }
 
       // Enviar correo de notificación
