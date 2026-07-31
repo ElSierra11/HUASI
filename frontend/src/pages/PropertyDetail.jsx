@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MapPin, Star, Users, Home, CheckCircle2, Calendar, MessageSquare, Award, GraduationCap, Bed, Sofa, Trees, Coins, Sparkles, HelpCircle, Sun } from 'lucide-react';
 import api from '../api';
+import SistemaReputacion from '../components/SistemaReputacion';
 
 const TIPO_LABELS = {
   cama: 'Cama',
@@ -517,24 +518,9 @@ export default function PropertyDetail() {
             </section>
           )}
 
-          {prop.resenas?.length > 0 && (
-            <section style={{ borderBottom: 'none' }}>
-              <h2>Reseñas ({prop.resenas.length})</h2>
-              {prop.resenas.map(r => (
-                <div key={r.id} className="review-card">
-                  <div className="review-header">
-                    <span className="review-author">{r.autor_nombre} {r.autor_apellido}</span>
-                    <span className="review-stars">
-                      {Array.from({ length: r.calificacion }).map((_, i) => (
-                        <Star key={i} size={14} fill="var(--accent)" color="var(--accent)" />
-                      ))}
-                    </span>
-                  </div>
-                  {r.comentario && <p className="review-text">{r.comentario}</p>}
-                </div>
-              ))}
-            </section>
-          )}
+          <section style={{ borderBottom: 'none', padding: 0 }}>
+            <SistemaReputacion targetUser={prop.anfitrion_nombre} initialRating={prop.promedio_calificacion || 4.8} initialReviews={prop.resenas || []} />
+          </section>
 
           {prop.disponibilidad?.length > 0 && (
             <section>

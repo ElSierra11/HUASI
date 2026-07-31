@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
 import PropertyCard from '../components/PropertyCard';
+import MapaAlojamientos from '../components/MapaAlojamientos';
 import { 
   Search, MapPin, Calendar, Home as HomeIcon, Users, 
   Shield, Star, Building2, Heart, CheckCircle2, 
@@ -501,18 +502,9 @@ export default function Home() {
         </button>
 
         {showMap && (
-          <div 
-            id="home-map" 
-            style={{ 
-              height: '400px', 
-              width: '100%', 
-              borderRadius: '24px', 
-              border: '2px solid rgba(0, 168, 224, 0.2)', 
-              marginTop: '16px',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-              overflow: 'hidden'
-            }} 
-          />
+          <div style={{ marginTop: '16px', marginBottom: '24px' }}>
+            <MapaAlojamientos propiedades={[...solidarias, ...pagos]} />
+          </div>
         )}
       </div>
 
