@@ -17,8 +17,6 @@ import Terminos from './pages/Terminos';
 import Privacidad from './pages/Privacidad';
 import QuienesSomos from './pages/QuienesSomos';
 
-import CoachDashboard from './pages/CoachDashboard';
-
 function App() {
   return (
     <div className="app">
@@ -26,8 +24,6 @@ function App() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/entrenador" element={<CoachDashboard />} />
-          <Route path="/coach" element={<CoachDashboard />} />
           <Route path="/propiedad/:id" element={<PropertyDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Register />} />
