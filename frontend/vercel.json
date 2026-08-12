@@ -1,5 +1,7 @@
 {
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://huasi.onrender.com/api/$1" },
+    { "source": "/chat-socket/(.*)", "destination": "https://huasi.onrender.com/chat-socket/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
