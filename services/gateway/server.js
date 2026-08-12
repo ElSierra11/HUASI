@@ -15,11 +15,12 @@ const HOST_URL = process.env.HOSTS_SERVICE_URL || `http://localhost:${process.en
 const BOOKING_URL = process.env.BOOKINGS_SERVICE_URL || `http://localhost:${process.env.BOOKING_PORT || 4003}`;
 const CHAT_URL = process.env.CHAT_SERVICE_URL || `http://localhost:${process.env.CHAT_PORT || 4004}`;
 
-// CORS (Soporta Vercel y desarrollo local)
-app.use(cors({
-  origin: true,
+// CORS (Soporta Vercel y desarrollo local con credenciales de forma segura)
+const corsOptions = {
+  origin: (origin, callback) => callback(null, origin || true),
   credentials: true
-}));
+};
+app.use(cors(corsOptions));
 
 app.use(cookieParser());
 

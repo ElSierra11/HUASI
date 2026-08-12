@@ -17,7 +17,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
 
 // CORS
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'],
+  origin: (origin, callback) => callback(null, origin || true),
   credentials: true
 }));
 app.use(express.json());

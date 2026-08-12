@@ -12,7 +12,10 @@ const PORT = process.env.BOOKING_PORT || 4003;
 const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: (origin, callback) => callback(null, origin || true),
+  credentials: true
+}));
 app.use(express.json());
 
 // JWT middleware
