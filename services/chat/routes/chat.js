@@ -112,6 +112,43 @@ router.get('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
   }
 });
 
+// ============ POST MESSAGE (REST API FALLBACK) ============
+router.post('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const convId = req.params.id;
+    const { contenido } = req.body;
+
+    if (!contenido || !contenido.trim()) {
+      return res.status(400).json({ error: 'El contenido del mensaje es requerido' });
+    }
+
+    const conv = await pool.query(
+      'SELECT * FROM conversaciones WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)',
+      [convId, userId]
+    );
+
+    if (conv.rows.length === 0) {
+      return res.status(403).json({ error: 'No tienes acceso a esta conversación' });
+    }
+
+    const insertResult = await pool.query(
+      `INSERT INTO mensajes (conversacion_id, sender_id, contenido)
+       VALUES ($1, $2, $3)
+       RETURNING id, conversacion_id, sender_id, contenido, leido, created_at`,
+      [convId, userId, contenido.trim()]
+    );
+
+    await pool.query('UPDATE conversaciones SET updated_at = NOW() WHERE id = $1', [convId]);
+
+    const msg = insertResult.rows[0];
+    res.status(201).json(msg);
+  } catch (err) {
+    console.error('Error enviando mensaje por API:', err);
+    res.status(500).json({ error: 'Error enviando mensaje' });
+  }
+});
+
 // ============ GET UNREAD COUNT ============
 router.get('/no-leidos', requireAuth, async (req, res) => {
   try {

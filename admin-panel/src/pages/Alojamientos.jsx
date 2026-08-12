@@ -123,8 +123,6 @@ export default function Alojamientos() {
             style={{ width: '160px', height: 40, padding: '0 12px' }}
           >
             <option value="">Todos los tipos</option>
-            <option value="solidario">Solidarios (Gratis)</option>
-            <option value="pago">Alojamiento Plus</option>
           </select>
 
           {/* Filtro Campus */}
@@ -188,15 +186,9 @@ export default function Alojamientos() {
                     <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{p.campus_cercano || 'Santa Marta'}</span>
                   </td>
                   <td>
-                    {p.es_pago ? (
-                      <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', border: '1px solid rgba(245, 158, 11, 0.2)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <Sparkles size={12} /> Alojamiento Plus
-                      </span>
-                    ) : (
-                      <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#16a34a', border: '1px solid rgba(16, 185, 129, 0.2)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <Heart size={12} fill="currentColor" /> Solidario
-                      </span>
-                    )}
+                    <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#16a34a', border: '1px solid rgba(16, 185, 129, 0.2)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <Heart size={12} fill="currentColor" /> Hospedaje UCC
+                    </span>
                   </td>
                   <td>
                     {p.activo ? (

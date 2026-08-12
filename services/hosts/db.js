@@ -9,13 +9,18 @@ types.setTypeParser(1114, function(stringValue) {
 
 console.log('🔌 [Hosts DB] Intentando conectar en el puerto:', process.env.DB_PORT || 5432);
 
-const pool = new Pool({
+const poolConfig = process.env.DATABASE_URL ? {
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+} : {
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || 'stayu',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
-});
+};
+
+const pool = new Pool(poolConfig);
 
 pool.on('error', (err) => {
   console.error('Error inesperado en pool de PostgreSQL:', err);

@@ -8,7 +8,6 @@ const TIPO_LABELS = {
   hamaca: 'Hamaca',
   habitacion: 'Habitación',
   alquiler: 'Alquiler',
-  alojamiento_plus: 'Alojamiento +',
   otro: 'Otros',
   'Habitación Privada': 'Habitación Privada',
   'Sofá Cama': 'Sofá Cama',
@@ -23,7 +22,6 @@ const getNormalizedTipo = (tipo) => {
   if (t.includes('hamaca')) return 'hamaca';
   if (t.includes('habitacion') || t.includes('habitación')) return 'habitacion';
   if (t.includes('alquiler')) return 'alquiler';
-  if (t.includes('+') || t.includes('plus') || t.includes('alojamiento_plus')) return 'alojamiento_plus';
   return 'otro';
 };
 
@@ -33,7 +31,6 @@ const TIPO_ICON = {
   hamaca: <Trees size={48} />,
   habitacion: <Home size={48} />,
   alquiler: <Coins size={48} />,
-  alojamiento_plus: <Sparkles size={48} />,
   otro: <HelpCircle size={48} />
 };
 
@@ -43,7 +40,6 @@ const TIPO_ICON_SMALL = {
   hamaca: <Trees size={14} />,
   habitacion: <Home size={14} />,
   alquiler: <Coins size={14} />,
-  alojamiento_plus: <Sparkles size={14} />,
   otro: <HelpCircle size={14} />
 };
 
@@ -72,11 +68,6 @@ const TIPO_THEMES = {
     gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', // Cyan
     colorClass: 'text-cyan-600',
     dotClass: 'bg-cyan-500'
-  },
-  alojamiento_plus: {
-    gradient: 'linear-gradient(135deg, #ec4899, #be185d)', // Rosado
-    colorClass: 'text-pink-600',
-    dotClass: 'bg-pink-500'
   },
   otro: {
     gradient: 'linear-gradient(135deg, #1a3a5c, #334155)', // Navy / Pizarra
@@ -116,21 +107,7 @@ export default function PropertyCard({ propiedad }) {
           {getTipoLabel(propiedad.tipo)}
         </span>
 
-        {/* Badge: Precio o Solidario */}
-        {propiedad.es_pago && propiedad.precio_por_noche ? (
-          <span className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full text-[0.7rem] font-black z-10 shadow-custom"
-            style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white' }}
-          >
-            <DollarSign size={11} />
-            {Number(propiedad.precio_por_noche).toLocaleString('es-CO')}/noche
-          </span>
-        ) : !propiedad.es_pago ? (
-          <span className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full text-[0.7rem] font-black z-10 shadow-custom"
-            style={{ background: 'rgba(22,163,74,0.85)', color: 'white' }}
-          >
-            <Heart size={10} fill="white" /> Solidario
-          </span>
-        ) : null}
+
 
         {/* Big Icon */}
         <div className="text-white flex items-center justify-center group-hover:scale-115 group-hover:rotate-3 transition-all duration-500">

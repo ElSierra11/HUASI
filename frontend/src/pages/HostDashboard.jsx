@@ -10,7 +10,6 @@ const getNormalizedTipo = (tipo) => {
   if (t.includes('hamaca')) return 'hamaca';
   if (t.includes('habitacion') || t.includes('habitación')) return 'habitacion';
   if (t.includes('alquiler')) return 'alquiler';
-  if (t.includes('+') || t.includes('plus') || t.includes('alojamiento_plus')) return 'alojamiento_plus';
   return 'otro';
 };
 
@@ -20,7 +19,6 @@ const TIPO_ICON = {
   hamaca: <Trees size={32} />,
   habitacion: <Home size={32} />,
   alquiler: <Coins size={32} />,
-  alojamiento_plus: <Sparkles size={32} />,
   otro: <HelpCircle size={32} />
 };
 
@@ -30,7 +28,6 @@ const TIPO_ICON_SMALL = {
   hamaca: <Trees size={12} />,
   habitacion: <Home size={12} />,
   alquiler: <Coins size={12} />,
-  alojamiento_plus: <Sparkles size={12} />,
   otro: <HelpCircle size={12} />
 };
 
@@ -40,7 +37,6 @@ const TIPO_THEMES = {
   hamaca: { gradient: 'linear-gradient(135deg, #10b981, #047857)' },
   habitacion: { gradient: 'linear-gradient(135deg, #0d9488, #0f766e)' },
   alquiler: { gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
-  alojamiento_plus: { gradient: 'linear-gradient(135deg, #ec4899, #be185d)' },
   otro: { gradient: 'linear-gradient(135deg, #64748b, #334155)' }
 };
 import api from '../api';

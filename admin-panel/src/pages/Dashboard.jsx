@@ -185,7 +185,6 @@ export default function Dashboard() {
     hamaca: 'Hamaca',
     habitacion: 'Habitación Privada',
     alquiler: 'Alquiler Completo',
-    alojamiento_plus: 'Alojamiento Plus',
     otro: 'Otro Tipo',
   };
 

@@ -33,13 +33,6 @@ const validateForm = (form) => {
     errors.duracion_maxima = 'La duración máxima debe ser entre 1 y 365 días.';
   }
 
-  // Validar precio si es de pago
-  if (form.es_pago) {
-    if (!form.precio_por_noche || Number(form.precio_por_noche) <= 0) {
-      errors.precio_por_noche = 'El precio por noche es obligatorio para alojamientos de pago.';
-    }
-  }
-
   return errors;
 };
 
@@ -52,8 +45,7 @@ export default function HostPropertyForm() {
 
   const [form, setForm] = useState({
     titulo: '', descripcion: '', direccion: '', barrio: '', tipo: 'habitacion',
-    capacidad: 1, amenidades: [], reglas: '', campus_cercano: '', duracion_maxima: '',
-    es_pago: false, precio_por_noche: ''
+    capacidad: 1, amenidades: [], reglas: '', campus_cercano: '', duracion_maxima: ''
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -147,7 +139,6 @@ export default function HostPropertyForm() {
     hamaca: 'Hamaca',
     habitacion: 'Habitación',
     alquiler: 'Alquiler',
-    alojamiento_plus: 'Alojamiento +',
     otro: 'Otro'
   }[form.tipo] || 'Alojamiento';
 
@@ -162,111 +153,7 @@ export default function HostPropertyForm() {
       {error && <div className="alert alert-error"><AlertCircle size={16} style={{ marginRight: 8 }} />{error}</div>}
 
       <form onSubmit={handleSubmit} className="card" style={{ padding: 32 }}>
-        {/* ===== TOGGLE: SOLIDARIO vs PAGO ===== */}
-        <div style={{
-          marginBottom: 28,
-          padding: '20px 24px',
-          borderRadius: 12,
-          background: form.es_pago
-            ? 'linear-gradient(135deg, #fffbeb, #fef3c7)'
-            : 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
-          border: form.es_pago ? '2px solid #f59e0b' : '2px solid #16a34a',
-          transition: 'all 0.3s ease'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-            <Tag size={20} color={form.es_pago ? '#d97706' : '#16a34a'} />
-            <strong style={{ fontSize: '1rem', color: form.es_pago ? '#92400e' : '#14532d' }}>
-              Tipo de alojamiento
-            </strong>
-          </div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => { updateField('es_pago', false); updateField('precio_por_noche', ''); }}
-              style={{
-                flex: 1,
-                minWidth: 180,
-                padding: '14px 20px',
-                borderRadius: 10,
-                border: '2px solid',
-                borderColor: !form.es_pago ? '#16a34a' : '#e2e8f0',
-                background: !form.es_pago ? '#16a34a' : 'white',
-                color: !form.es_pago ? 'white' : '#64748b',
-                fontWeight: 700,
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8
-              }}
-            >
-              <Heart size={16} fill={!form.es_pago ? 'white' : 'none'} />
-              Solidario (Gratis)
-            </button>
-            <button
-              type="button"
-              onClick={() => updateField('es_pago', true)}
-              style={{
-                flex: 1,
-                minWidth: 180,
-                padding: '14px 20px',
-                borderRadius: 10,
-                border: '2px solid',
-                borderColor: form.es_pago ? '#d97706' : '#e2e8f0',
-                background: form.es_pago ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'white',
-                color: form.es_pago ? 'white' : '#64748b',
-                fontWeight: 700,
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8
-              }}
-            >
-              <DollarSign size={16} />
-              De Pago (con precio)
-            </button>
-          </div>
 
-          {!form.es_pago && (
-            <p style={{ fontSize: '0.82rem', color: '#166534', marginTop: 10, fontWeight: 600 }}>
-              💚 Alojamiento solidario: visible solo para la comunidad UCC verificada, sin costo.
-            </p>
-          )}
-
-          {/* Campo precio — solo visible si es pago */}
-          {form.es_pago && (
-            <div style={{ marginTop: 16 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 8, color: '#92400e' }}>
-                <DollarSign size={15} /> Precio por noche (COP) *
-              </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{
-                  position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-                  fontWeight: 800, color: '#92400e', fontSize: '1rem', pointerEvents: 'none'
-                }}>$</span>
-                <input
-                  type="number"
-                  className="form-control"
-                  placeholder="Ej: 45000"
-                  min="1"
-                  step="1"
-                  value={form.precio_por_noche}
-                  onChange={e => updateField('precio_por_noche', e.target.value)}
-                  style={{ paddingLeft: 30, fontWeight: 700 }}
-                />
-              </div>
-              <small style={{ color: '#92400e', fontWeight: 600 }}>
-                Precio en pesos colombianos (COP). Este alojamiento será visible para cualquier visitante.
-              </small>
-              {errors.precio_por_noche && <small style={{ color: 'var(--danger)', display: 'block' }}>{errors.precio_por_noche}</small>}
-            </div>
-          )}
-        </div>
         <div className="form-group">
           <label>Título del anuncio *</label>
           <input type="text" className="form-control" placeholder="Ej: Habitación acogedora cerca del campus UCC" required maxLength={80}
@@ -292,7 +179,6 @@ export default function HostPropertyForm() {
               <option value="hamaca">Hamaca</option>
               <option value="habitacion">Habitación</option>
               <option value="alquiler">Alquiler</option>
-              <option value="alojamiento_plus">Alojamiento +</option>
               <option value="otro">Otro</option>
             </select>
           </div>
@@ -391,12 +277,6 @@ export default function HostPropertyForm() {
               <span>📍 {form.barrio || 'Barrio'}</span>
               <span>👥 {form.capacidad || 1} huésped(es)</span>
               <span>🏫 {form.campus_cercano || 'Campus'}</span>
-              {form.es_pago && form.precio_por_noche && (
-                <span style={{ color: '#d97706', fontWeight: 700 }}>
-                  💰 ${Number(form.precio_por_noche).toLocaleString('es-CO')}/noche
-                </span>
-              )}
-              {!form.es_pago && <span style={{ color: '#16a34a', fontWeight: 700 }}>💚 Solidario</span>}
             </div>
           </div>
         </div>

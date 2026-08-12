@@ -10,7 +10,6 @@ const TIPO_LABELS = {
   hamaca: 'Hamaca',
   habitacion: 'Habitación',
   alquiler: 'Alquiler',
-  alojamiento_plus: 'Alojamiento +',
   otro: 'Otro',
   'Habitación Privada': 'Habitación Privada',
   'Sofá Cama': 'Sofá Cama',
@@ -25,7 +24,6 @@ const getNormalizedTipo = (tipo) => {
   if (t.includes('hamaca')) return 'hamaca';
   if (t.includes('habitacion') || t.includes('habitación')) return 'habitacion';
   if (t.includes('alquiler')) return 'alquiler';
-  if (t.includes('+') || t.includes('plus') || t.includes('alojamiento_plus')) return 'alojamiento_plus';
   return 'otro';
 };
 
@@ -35,7 +33,6 @@ const TIPO_ICON = {
   hamaca: <Trees size={48} />, 
   habitacion: <Home size={48} />, 
   alquiler: <Coins size={48} />, 
-  alojamiento_plus: <Sparkles size={48} />, 
   otro: <HelpCircle size={48} />
 };
 
@@ -45,7 +42,6 @@ const TIPO_THEMES = {
   hamaca: { gradient: 'linear-gradient(135deg, #84cc16, #15803d)', dotClass: 'bg-lime-500' },
   habitacion: { gradient: 'linear-gradient(135deg, #0d7c3d, #059669)', dotClass: 'bg-ucc-green' },
   alquiler: { gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', dotClass: 'bg-cyan-500' },
-  alojamiento_plus: { gradient: 'linear-gradient(135deg, #ec4899, #be185d)', dotClass: 'bg-pink-500' },
   otro: { gradient: 'linear-gradient(135deg, #1a3a5c, #334155)', dotClass: 'bg-ucc-navy' }
 };
 

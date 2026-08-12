@@ -147,7 +147,7 @@ export default function Verificacion() {
           <ShieldAlert size={28} className="text-ucc-green" /> Verificación Universitaria
         </h1>
         <p className="text-sm text-ucc-muted font-body">
-          Valida tu vinculación con la UCC para acceder a hospedajes solidarios gratis y ganar **+150 Ecosoles**.
+          Valida tu vinculación con la UCC para acceder a los alojamientos estudiantiles y reservar sin restricciones.
         </p>
       </div>
 
@@ -309,16 +309,8 @@ export default function Verificacion() {
           </div>
           <h2 className="text-2xl font-heading font-black text-ucc-navy mb-3">¡Felicidades! Cuenta Verificada</h2>
           <p className="text-sm text-ucc-muted mb-8 max-w-md mx-auto">
-            Hemos validado exitosamente tu vinculación universitaria con la UCC. Tu perfil cuenta ahora con la insignia de **Verificado** y hemos depositado tu bono.
+            Hemos validado exitosamente tu vinculación universitaria con la UCC. Tu perfil cuenta ahora con la insignia de <strong>Estudiante Verificado</strong>.
           </p>
-
-          <div className="flex gap-4 justify-center items-center bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-8 max-w-sm mx-auto">
-            <Sun size={32} className="text-amber-500 fill-amber-500 animate-spin" style={{ animationDuration: '6s' }} />
-            <div className="text-left">
-              <strong className="text-sm text-amber-800 uppercase block font-bold">Bono Acreditado</strong>
-              <span className="text-xl font-black text-amber-900">+150 Ecosoles HUASI</span>
-            </div>
-          </div>
 
           <button onClick={() => navigate('/')} className="btn btn-primary px-8">
             Comenzar a Explorar

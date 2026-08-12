@@ -7,7 +7,7 @@ import {
   Search, MapPin, Calendar, Home as HomeIcon, Users, 
   Shield, Star, Building2, Heart, CheckCircle2, 
   Sofa, Bed, Trees, GraduationCap, ShieldCheck, Coins,
-  Sliders
+  Sliders, Dog, BookOpen, CigaretteOff, Building
 } from 'lucide-react';
 
 function SkeletonCard() {
@@ -29,14 +29,9 @@ function SkeletonCard() {
 }
 
 export default function Home() {
-  const [solidarias, setSolidarias] = useState([]);
-  const [pagos, setPagos] = useState([]);
-  const [loadingSolidarias, setLoadingSolidarias] = useState(true);
-  const [loadingPagos, setLoadingPagos] = useState(true);
+  const [propiedades, setPropiedades] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ busqueda: '', tipo: '', ciudad: '', campus: '', fecha_inicio: '', fecha_fin: '' });
-
-  const [filtroPagoCiudad, setFiltroPagoCiudad] = useState('');
-  const [filtroPagoTipo, setFiltroPagoTipo] = useState('');
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [activeCategory, setActiveCategory] = useState('todos');
@@ -49,7 +44,6 @@ export default function Home() {
   useEffect(() => {
     if (!showMap || mapLoaded) return;
 
-    // Avoid double loading
     if (document.getElementById('leaflet-js')) {
       setMapLoaded(true);
       return;
@@ -74,13 +68,11 @@ export default function Home() {
   useEffect(() => {
     if (!showMap || !mapLoaded || !window.L || !document.getElementById('home-map')) return;
 
-    // Clean up previous map instance
     if (leafletInstanceRef.current) {
       leafletInstanceRef.current.remove();
       leafletInstanceRef.current = null;
     }
 
-    // Default center UCC Santa Marta: 11.2257, -74.1868
     const map = window.L.map('home-map').setView([11.2257, -74.1868], 13);
     leafletInstanceRef.current = map;
 
@@ -90,8 +82,7 @@ export default function Home() {
 
     const markers = [];
 
-    // Add solidarias
-    solidarias.forEach(p => {
+    propiedades.forEach(p => {
       if (p.latitud && p.longitud) {
         const lat = parseFloat(p.latitud);
         const lng = parseFloat(p.longitud);
@@ -101,29 +92,8 @@ export default function Home() {
             .bindPopup(`
               <div style="font-family: Arial, sans-serif; font-size: 13px; line-height: 1.4; min-width: 150px;">
                 <strong style="color: #0d7c3d; display:block; margin-bottom:4px;">${p.titulo}</strong>
-                <span style="background: rgba(22, 163, 74, 0.1); color: #16a34a; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; display: inline-block; margin-bottom: 6px;">Solidario (Gratis)</span>
+                <span style="background: rgba(22, 163, 74, 0.1); color: #16a34a; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; display: inline-block; margin-bottom: 6px;">Hospedaje UCC</span>
                 <p style="margin: 4px 0 0 0; color: #555;">Sede: ${p.campus_cercano || 'Santa Marta'}</p>
-                <a href="/propiedad/${p.id}" style="color: #00a8e0; font-weight: bold; text-decoration: none; display: block; margin-top: 8px;">Ver alojamiento →</a>
-              </div>
-            `);
-          markers.push([lat, lng]);
-        }
-      }
-    });
-
-    // Add pagos
-    pagos.forEach(p => {
-      if (p.latitud && p.longitud) {
-        const lat = parseFloat(p.latitud);
-        const lng = parseFloat(p.longitud);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          window.L.marker([lat, lng])
-            .addTo(map)
-            .bindPopup(`
-              <div style="font-family: Arial, sans-serif; font-size: 13px; line-height: 1.4; min-width: 150px;">
-                <strong style="color: #d97706; display:block; margin-bottom:4px;">${p.titulo}</strong>
-                <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; display: inline-block; margin-bottom: 6px;">Alojamiento Plus</span>
-                <p style="margin: 4px 0 0 0; color: #555;">Precio: $${Number(p.precio_por_noche).toLocaleString('es-CO')}/noche</p>
                 <a href="/propiedad/${p.id}" style="color: #00a8e0; font-weight: bold; text-decoration: none; display: block; margin-top: 8px;">Ver alojamiento →</a>
               </div>
             `);
@@ -135,60 +105,29 @@ export default function Home() {
     if (markers.length > 0) {
       map.fitBounds(markers, { padding: [30, 30] });
     }
-  }, [showMap, mapLoaded, solidarias, pagos]);
+  }, [showMap, mapLoaded, propiedades]);
 
-  const fetchSolidarias = async (params = {}) => {
-    setLoadingSolidarias(true);
+  const fetchPropiedades = async (params = {}) => {
+    setLoading(true);
     try {
       const query = new URLSearchParams();
-      query.set('es_pago', 'false');
       Object.entries({ ...filters, ...params }).forEach(([k, v]) => { if (v) query.set(k, v); });
       const res = await api.get(`/propiedades?${query.toString()}`);
-      setSolidarias(res.data.propiedades);
+      setPropiedades(res.data.propiedades || []);
     } catch (err) {
-      console.error('Error cargando propiedades solidarias:', err);
+      console.error('Error cargando propiedades:', err);
     } finally {
-      setLoadingSolidarias(false);
+      setLoading(false);
     }
-  };
-
-  const fetchPagos = async (params = {}) => {
-    setLoadingPagos(true);
-    try {
-      const query = new URLSearchParams();
-      query.set('es_pago', 'true');
-      const combinedParams = {
-        ...filters,
-        ciudad: params.ciudad !== undefined ? params.ciudad : (filtroPagoCiudad || filters.ciudad),
-        tipo: params.tipo !== undefined ? params.tipo : (filtroPagoTipo || filters.tipo),
-        ...params
-      };
-      Object.entries(combinedParams).forEach(([k, v]) => { if (v) query.set(k, v); });
-      const res = await api.get(`/propiedades?${query.toString()}`);
-      setPagos(res.data.propiedades);
-    } catch (err) {
-      console.error('Error cargando propiedades de pago:', err);
-    } finally {
-      setLoadingPagos(false);
-    }
-  };
-
-  const fetchTodas = (params = {}) => {
-    fetchSolidarias(params);
-    fetchPagos(params);
   };
 
   useEffect(() => {
-    fetchTodas();
+    fetchPropiedades();
   }, []);
-
-  useEffect(() => {
-    fetchPagos();
-  }, [filtroPagoCiudad, filtroPagoTipo]);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchTodas();
+    fetchPropiedades();
   };
 
   const scrollToSection = (id) => {
@@ -203,49 +142,45 @@ export default function Home() {
     
     let updatedFilters = { ...filters };
     
-    if (catId === 'todos') {
-      updatedFilters.tipo = '';
-      setFilters(f => ({ ...f, tipo: '' }));
-      fetchTodas({ tipo: '' });
-    } else if (catId === 'habitacion') {
+    if (catId === 'habitacion') {
       updatedFilters.tipo = 'habitacion';
       setFilters(f => ({ ...f, tipo: 'habitacion' }));
-      fetchTodas({ tipo: 'habitacion' });
+      fetchPropiedades({ tipo: 'habitacion' });
     } else if (catId === 'sofa') {
       updatedFilters.tipo = 'sofa';
       setFilters(f => ({ ...f, tipo: 'sofa' }));
-      fetchTodas({ tipo: 'sofa' });
+      fetchPropiedades({ tipo: 'sofa' });
     } else {
       updatedFilters.tipo = '';
       setFilters(f => ({ ...f, tipo: '' }));
-      fetchTodas({ tipo: '' });
+      fetchPropiedades({ tipo: '' });
     }
   };
 
-  const getFilteredSolidarias = () => {
-    return solidarias.filter(p => {
-      if (activeCategory === 'plus') return false;
-      if (activeCategory === 'estudio') {
-        const amen = p.amenidades || [];
-        return amen.some(a => {
-          const lower = a.toLowerCase();
-          return lower.includes('wifi') || lower.includes('escritorio') || lower.includes('estudio') || lower.includes('estudiar');
-        });
-      }
-      return true;
-    });
-  };
+  const getFilteredPropiedades = () => {
+    return propiedades.filter(p => {
+      const amen = Array.isArray(p.amenidades) ? p.amenidades : [];
+      const reglas = p.reglas ? p.reglas.toLowerCase() : '';
+      const desc = p.descripcion ? p.descripcion.toLowerCase() : '';
+      const tit = p.titulo ? p.titulo.toLowerCase() : '';
 
-  const getFilteredPagos = () => {
-    return pagos.filter(p => {
-      if (activeCategory === 'solidario') return false;
       if (activeCategory === 'estudio') {
-        const amen = p.amenidades || [];
         return amen.some(a => {
-          const lower = a.toLowerCase();
+          const lower = String(a).toLowerCase();
           return lower.includes('wifi') || lower.includes('escritorio') || lower.includes('estudio') || lower.includes('estudiar');
-        });
+        }) || desc.includes('estudio') || desc.includes('escritorio');
       }
+
+      if (activeCategory === 'mascotas') {
+        return amen.some(a => String(a).toLowerCase().includes('mascota')) || 
+               reglas.includes('mascota') || desc.includes('mascota') || desc.includes('perro') || desc.includes('gato');
+      }
+
+      if (activeCategory === 'sin_humo') {
+        return amen.some(a => String(a).toLowerCase().includes('fumar')) || 
+               reglas.includes('no fumar') || reglas.includes('libre de humo') || desc.includes('no fumar');
+      }
+
       return true;
     });
   };
@@ -332,7 +267,7 @@ export default function Home() {
         {/* Stats Row */}
         <div className="relative z-10 flex justify-center gap-8 md:gap-16 flex-wrap">
           {[
-            { label: 'Alojamientos disponibles', value: (loadingSolidarias || loadingPagos) ? '...' : (solidarias.length + pagos.length), icon: <HomeIcon size={16} /> },
+            { label: 'Alojamientos disponibles', value: loading ? '...' : propiedades.length, icon: <HomeIcon size={16} /> },
             { label: 'Sedes UCC cubiertas', value: '13+', icon: <Users size={16} /> },
             { label: 'Calificación promedio', value: '4.8 ★', icon: <Star size={16} /> },
             { label: 'Comunidad Solidaria', value: '100%', icon: <Heart size={16} fill="currentColor" /> },
@@ -459,16 +394,46 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== CATEGORÍAS DE ALOJAMIENTO (Visual Pills) ===== */}
-      <section className="mb-12 px-2 max-w-4xl mx-auto">
+      {/* ===== BARRA RÁPIDA DE CAMPUS UCC ===== */}
+      <section className="mb-6 px-2 max-w-5xl mx-auto">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none justify-start md:justify-center">
+          <span className="text-xs font-bold text-ucc-muted flex items-center gap-1 mr-1 flex-shrink-0">
+            <Building2 size={13} className="text-ucc-green" /> Campus UCC:
+          </span>
+          {['Todos', 'Santa Marta', 'Bogotá', 'Medellín', 'Bucaramanga', 'Cali', 'Ibagué', 'Pasto'].map(c => {
+            const isSelected = (c === 'Todos' && !filters.campus) || filters.campus === c;
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => {
+                  const newCampus = c === 'Todos' ? '' : c;
+                  setFilters(f => ({ ...f, campus: newCampus }));
+                  fetchPropiedades({ campus: newCampus });
+                }}
+                className={`px-3 py-1 rounded-full text-[0.75rem] font-bold transition-all duration-200 border cursor-pointer whitespace-nowrap ${
+                  isSelected
+                    ? 'bg-ucc-navy text-white border-ucc-navy shadow-custom-sm'
+                    : 'bg-white/80 dark:bg-slate-800 text-ucc-navy dark:text-slate-200 border-ucc-border/50 hover:bg-ucc-green-light hover:text-ucc-green'
+                }`}
+              >
+                {c}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ===== CATEGORÍAS Y FILTROS DE CONVIVENCIA ===== */}
+      <section className="mb-12 px-2 max-w-5xl mx-auto">
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none justify-start md:justify-center">
           {[
             { id: 'todos', label: 'Todos', icon: <HomeIcon size={14} /> },
-            { id: 'solidario', label: 'Solidario UCC', icon: <Heart size={14} /> },
-            { id: 'plus', label: 'Alojamiento Plus', icon: <Coins size={14} /> },
-            { id: 'estudio', label: 'Zona de Estudio', icon: <GraduationCap size={14} /> },
+            { id: 'estudio', label: 'Estudio Silencioso', icon: <BookOpen size={14} /> },
             { id: 'habitacion', label: 'Habitación Privada', icon: <Bed size={14} /> },
             { id: 'sofa', label: 'Sofá / Sofá Cama', icon: <Sofa size={14} /> },
+            { id: 'mascotas', label: 'Pet Friendly', icon: <Dog size={14} /> },
+            { id: 'sin_humo', label: 'Libre de Humo', icon: <CigaretteOff size={14} /> },
           ].map(cat => {
             const isActive = activeCategory === cat.id;
             return (
@@ -476,7 +441,7 @@ export default function Home() {
                 key={cat.id}
                 type="button"
                 onClick={() => handleCategoryClick(cat.id)}
-                className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 border cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 border cursor-pointer ${
                   isActive 
                     ? 'bg-ucc-green text-white border-ucc-green shadow-custom-sm scale-103' 
                     : 'bg-white dark:bg-slate-800 text-ucc-navy dark:text-slate-200 border-ucc-border/40 dark:border-slate-700 hover:bg-ucc-bg dark:hover:bg-slate-700'
@@ -503,146 +468,50 @@ export default function Home() {
 
         {showMap && (
           <div style={{ marginTop: '16px', marginBottom: '24px' }}>
-            <MapaAlojamientos propiedades={[...solidarias, ...pagos]} />
+            <MapaAlojamientos propiedades={propiedades} />
           </div>
         )}
       </div>
 
-      {/* ===== LISTINGS: SOLIDARIOS ===== */}
+      {/* ===== LISTINGS: PROPIEDADES ===== */}
       <div id="alojamientos" className="flex justify-between items-center mb-6 scroll-mt-24">
         <div className="flex flex-col">
           <h2 className="font-heading font-black text-2xl md:text-3xl text-ucc-navy flex items-center gap-2">
             <Heart size={26} className="text-ucc-green fill-ucc-green" />
-            <span>Hospedajes Solidarios UCC</span>
-            {!loadingSolidarias && <span className="text-base font-semibold text-ucc-muted ml-1">({solidarias.length})</span>}
+            <span>Hospedajes UCC</span>
+            {!loading && <span className="text-base font-semibold text-ucc-muted ml-1">({getFilteredPropiedades().length})</span>}
           </h2>
-          <p className="text-xs font-semibold text-ucc-muted mt-1">Exclusivo para estudiantes, egresados y personal verificado de la UCC. 100% gratuito.</p>
+          <p className="text-xs font-semibold text-ucc-muted mt-1">Alojamientos universitarios compartidos de estudiante a estudiante.</p>
         </div>
         {(filters.busqueda || filters.tipo || filters.fecha_inicio || filters.ciudad || filters.campus) && (
           <button
             className="bg-white border border-ucc-border text-ucc-navy hover:bg-ucc-green-light hover:text-ucc-green font-bold text-xs px-4 py-2 rounded-full transition-all duration-200"
             onClick={() => {
               setFilters({ busqueda: '', tipo: '', ciudad: '', campus: '', fecha_inicio: '', fecha_fin: '' });
-              setFiltroPagoCiudad('');
-              setFiltroPagoTipo('');
-              fetchTodas({ busqueda: '', tipo: '', ciudad: '', campus: '', fecha_inicio: '', fecha_fin: '' });
+              fetchPropiedades({ busqueda: '', tipo: '', ciudad: '', campus: '', fecha_inicio: '', fecha_fin: '' });
             }}
           >
-            Limpiar filtros principales
+            Limpiar filtros
           </button>
         )}
       </div>
 
-      {activeCategory !== 'plus' && (
-        <>
-          {loadingSolidarias ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-            </div>
-          ) : getFilteredSolidarias().length === 0 ? (
-            <div className="text-center py-12 px-4 bg-white border-2 border-dashed border-ucc-border rounded-xl-custom mb-16">
-              <MapPin size={40} className="mx-auto text-ucc-muted mb-3" />
-              <h3 className="font-heading font-bold text-base text-ucc-navy mb-1">No encontramos alojamientos solidarios</h3>
-              <p className="text-ucc-muted text-xs font-semibold">Prueba cambiando los criterios de búsqueda.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-20 slide-up-entrance">
-              {getFilteredSolidarias().map(p => <PropertyCard key={p.id} propiedad={p} />)}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ===== LISTINGS: DE PAGO ===== */}
-      {activeCategory !== 'solidario' && (
-        <section className="alojamientos-plus-section rounded-3xl p-6 md:p-10 mb-20 shadow-custom-sm relative overflow-hidden">
-          {/* Decorative elements */}
-          <div className="absolute top-[-50px] right-[-50px] w-[150px] h-[150px] bg-amber-200/20 dark:bg-amber-500/10 rounded-full filter blur-3xl pointer-events-none"></div>
-
-          <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 mb-8">
-            <div>
-              <div className="inline-flex items-center gap-1.5 bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[0.68rem] font-black uppercase tracking-wider px-3 py-1 rounded-full border border-amber-200/40 dark:border-amber-700/40 mb-3 shadow-custom-sm">
-                <Coins size={12} className="text-amber-700 dark:text-amber-300" />
-                <span>Alojamiento Plus</span>
-              </div>
-              <h2 className="font-heading font-black text-2xl md:text-3xl text-amber-950 dark:text-white flex items-center gap-2">
-                Alojamientos Plus
-                {!loadingPagos && <span className="text-base font-semibold text-amber-700/80 dark:text-amber-300/80 ml-1">({getFilteredPagos().length})</span>}
-              </h2>
-              <p className="text-xs font-semibold text-amber-800/80 dark:text-slate-300 mt-1">Alojamientos con precio asignado. Abiertos a visitantes, sin requisito de vinculación UCC ni verificación.</p>
-            </div>
-          </div>
-
-          {/* Filtros específicos de la sección de pago */}
-          <div className="flex flex-wrap items-center gap-3.5 mb-8 bg-white/70 dark:bg-slate-800/80 backdrop-blur-md p-4 rounded-2xl border border-amber-200/30 dark:border-slate-700 shadow-custom-sm">
-            <span className="text-xs font-bold text-amber-900/80 dark:text-slate-200">Filtrar Alojamientos Plus por:</span>
-            
-            <select 
-              value={filtroPagoCiudad} 
-              onChange={e => setFiltroPagoCiudad(e.target.value)}
-              className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 text-amber-950 dark:text-white text-xs font-bold rounded-full px-4 py-2 outline-none focus:border-amber-500 shadow-custom-sm cursor-pointer transition-colors"
-            >
-              <option value="">Todas las ciudades</option>
-              <option value="Santa Marta">Santa Marta</option>
-              <option value="Bogotá">Bogotá</option>
-              <option value="Medellín">Medellín</option>
-              <option value="Bucaramanga">Bucaramanga</option>
-              <option value="Cali">Cali</option>
-              <option value="Ibagué">Ibagué</option>
-              <option value="Pasto">Pasto</option>
-              <option value="Popayán">Popayán</option>
-              <option value="Villavicencio">Villavicencio</option>
-              <option value="Montería">Montería</option>
-              <option value="Arauca">Arauca</option>
-              <option value="Barrancabermeja">Barrancabermeja</option>
-              <option value="Neiva">Neiva</option>
-            </select>
-
-            <select 
-              value={filtroPagoTipo} 
-              onChange={e => setFiltroPagoTipo(e.target.value)}
-              className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 text-amber-950 dark:text-white text-xs font-bold rounded-full px-4 py-2 outline-none focus:border-amber-500 shadow-custom-sm cursor-pointer transition-colors"
-            >
-              <option value="">Todos los tipos</option>
-              <option value="cama">Cama</option>
-              <option value="sofa">Sofá</option>
-              <option value="hamaca">Hamaca</option>
-              <option value="habitacion">Habitación</option>
-              <option value="alquiler">Alquiler</option>
-              <option value="alojamiento_plus">Alojamiento +</option>
-              <option value="otro">Otros</option>
-            </select>
-
-            {(filtroPagoCiudad || filtroPagoTipo) && (
-              <button 
-                onClick={() => { setFiltroPagoCiudad(''); setFiltroPagoTipo(''); }}
-                className="text-xs font-bold text-amber-700 hover:text-amber-900 transition-colors underline"
-              >
-                Restablecer filtros de Alojamiento Plus
-              </button>
-            )}
-          </div>
-
-          {loadingPagos ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-            </div>
-          ) : getFilteredPagos().length === 0 ? (
-            <div className="text-center py-12 px-4 bg-white/50 border-2 border-dashed border-amber-200/60 rounded-xl-custom">
-              <MapPin size={40} className="mx-auto text-amber-600/60 mb-3" />
-              <h3 className="font-heading font-bold text-base text-amber-950 mb-1">No hay Alojamientos Plus</h3>
-              <p className="text-amber-800/80 text-xs font-semibold">No se encontraron resultados con los filtros actuales.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 slide-up-entrance">
-              {getFilteredPagos().map(p => <PropertyCard key={p.id} propiedad={p} />)}
-            </div>
-          )}
-        </section>
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      ) : getFilteredPropiedades().length === 0 ? (
+        <div className="text-center py-12 px-4 bg-white border-2 border-dashed border-ucc-border rounded-xl-custom mb-16">
+          <MapPin size={40} className="mx-auto text-ucc-muted mb-3" />
+          <h3 className="font-heading font-bold text-base text-ucc-navy mb-1">No encontramos alojamientos disponibles</h3>
+          <p className="text-ucc-muted text-xs font-semibold">Prueba cambiando los criterios de búsqueda.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-20 slide-up-entrance">
+          {getFilteredPropiedades().map(p => <PropertyCard key={p.id} propiedad={p} />)}
+        </div>
       )}
 
       {/* ===== ¿CÓMO FUNCIONA? ===== */}

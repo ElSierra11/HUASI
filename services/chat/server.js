@@ -57,7 +57,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok', service: 'chat' }));
 // ============ SOCKET.IO ============
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'],
+    origin: true,
     credentials: true
   },
   path: '/chat-socket'

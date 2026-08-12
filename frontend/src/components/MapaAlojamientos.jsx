@@ -168,7 +168,7 @@ export default function MapaAlojamientos({ propiedades = [] }) {
             align-items: center;
             gap: 4px;
           ">
-            <span>${prop.tipo === 'alojamiento_plus' ? '$' + Number(prop.precio_noche).toLocaleString() : '100 Soles'}</span>
+            <span>Hospedaje UCC</span>
           </div>
         `,
         iconSize: [80, 26],

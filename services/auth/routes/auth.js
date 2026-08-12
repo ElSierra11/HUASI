@@ -198,21 +198,7 @@ router.post('/verify-otp', async (req, res) => {
       [cleanEmail]
     );
 
-    // Registrar transacción de bienvenida si no existe
-    try {
-      const hasWelcomeTrans = await pool.query(
-        "SELECT id FROM soles_transacciones WHERE user_id = $1 AND motivo = 'registro'",
-        [user.id]
-      );
-      if (hasWelcomeTrans.rows.length === 0) {
-        await pool.query(
-          "INSERT INTO soles_transacciones (user_id, cantidad, motivo) VALUES ($1, 100, 'registro')",
-          [user.id]
-        );
-      }
-    } catch (solesErr) {
-      console.error('Error al registrar soles de bienvenida:', solesErr);
-    }
+
 
     // Reutilizar el usuario ya cargado, actualizando los campos verificados en memoria
     user.email_verificado = true;
@@ -636,26 +622,7 @@ const getOtpStatus = (user) => {
 
 // ============ GET SOLES TRANSACTION HISTORY ============
 router.get('/soles/historial', async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ error: 'No autenticado' });
-    }
-
-    const result = await pool.query(
-      `SELECT t.id, t.cantidad, t.motivo, t.created_at, r.fecha_inicio, r.fecha_fin, p.titulo AS propiedad_titulo
-       FROM soles_transacciones t
-       LEFT JOIN reservas r ON t.reserva_id = r.id
-       LEFT JOIN propiedades p ON r.propiedad_id = p.id
-       WHERE t.user_id = $1
-       ORDER BY t.created_at DESC`,
-      [req.user.id]
-    );
-
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error obteniendo historial de soles:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
+  res.json([]);
 });
 
 // ============ GET SOLIDARITY IMPACT DASHBOARD ============

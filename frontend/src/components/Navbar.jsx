@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, User, CheckCircle2, Building, ShieldCheck, Menu, X, Sun, Moon } from 'lucide-react';
+import { LogOut, User, CheckCircle2, Building, ShieldCheck, Menu, X, Sun, Moon, Download, Smartphone } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -25,10 +25,25 @@ export default function Navbar() {
     }
   }, [darkMode]);
 
-  // Close mobile menu on route change
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
   useEffect(() => {
-    setMenuOpen(false);
-  }, [location.pathname]);
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -162,14 +177,7 @@ export default function Navbar() {
               <Building size={14} /> Anfitrión
             </Link>
 
-            {user.soles_balance !== undefined && (
-              <span 
-                className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3.5 py-2 rounded-full text-xs font-black border border-amber-200 shadow-custom-sm select-none"
-                title="Tus Soles HUASI"
-              >
-                <Sun size={14} className="text-amber-500 fill-amber-500 animate-pulse" /> {user.soles_balance} Soles
-              </span>
-            )}
+
 
             <Link
               to="/perfil"
@@ -200,6 +208,15 @@ export default function Navbar() {
               Registrarse
             </Link>
           </>
+        )}
+        {deferredPrompt && (
+          <button
+            onClick={handleInstallPWA}
+            className="inline-flex items-center gap-1.5 bg-ucc-green/10 text-ucc-green hover:bg-ucc-green hover:text-white px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 border border-ucc-green/30 cursor-pointer"
+            title="Instalar StayU HUASI en tu dispositivo"
+          >
+            <Smartphone size={14} /> Instalar App
+          </button>
         )}
         <button
           onClick={() => setDarkMode(!darkMode)}
@@ -239,11 +256,7 @@ export default function Navbar() {
           <>
             <div className="mobile-nav-divider" />
 
-            {user.soles_balance !== undefined && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: '0.85rem', color: '#b45309', fontWeight: 800 }}>
-                <Sun size={15} className="text-amber-500 fill-amber-500" /> {user.soles_balance} Soles disponibles
-              </div>
-            )}
+
 
             {user.verificado && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: '0.82rem', color: '#0d7c3d', fontWeight: 700 }}>

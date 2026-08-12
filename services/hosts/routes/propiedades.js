@@ -12,7 +12,6 @@ const normalizeTipo = (tipo = '') => {
     .replace(/[\s_+-]+/g, ' ')
     .trim();
 
-  if (t.includes('alojamiento') && (t.includes('plus') || t.includes('+'))) return 'alojamiento_plus';
   if (t.includes('alquiler')) return 'alquiler';
   if (t.includes('sofa') || t.includes('sofa cama')) return 'sofa';
   if (t.includes('cama')) return 'cama';
@@ -21,7 +20,7 @@ const normalizeTipo = (tipo = '') => {
   return 'otro';
 };
 
-const validTypes = ['cama', 'sofa', 'hamaca', 'habitacion', 'alquiler', 'alojamiento_plus', 'otro'];
+const validTypes = ['cama', 'sofa', 'hamaca', 'habitacion', 'alquiler', 'otro'];
 
 const validarPropiedad = ({ titulo, descripcion, direccion, barrio, capacidad, campus_cercano, duracion_maxima }) => {
   const errors = [];
@@ -87,13 +86,6 @@ router.get('/', async (req, res) => {
     if (host_id) {
       query += ` AND p.host_id = $${paramIndex++}`;
       params.push(parseInt(host_id, 10));
-    }
-
-    // Filtro por modalidad: pago o solidario
-    if (es_pago !== undefined && es_pago !== '') {
-      const esPagoVal = es_pago === 'true' || es_pago === true;
-      query += ` AND p.es_pago = $${paramIndex++}`;
-      params.push(esPagoVal);
     }
 
     if (tipo) {
@@ -273,7 +265,7 @@ router.post('/', async (req, res) => {
 
     // El rol único permite que cualquier usuario publique propiedades.
 
-    const { titulo, descripcion, direccion, barrio, tipo, capacidad, amenidades, reglas, latitud, longitud, campus_cercano, duracion_maxima, es_pago, precio_por_noche } = req.body;
+    const { titulo, descripcion, direccion, barrio, tipo, capacidad, amenidades, reglas, latitud, longitud, campus_cercano, duracion_maxima } = req.body;
 
     const validationErrors = validarPropiedad({ titulo, descripcion, direccion, barrio, capacidad, campus_cercano, duracion_maxima });
     if (validationErrors.length > 0) {
@@ -287,17 +279,6 @@ router.post('/', async (req, res) => {
 
     const tipoFinal = tipoNormalized;
 
-    // Validar precio si es alojamiento de pago
-    const esPago = es_pago === true || es_pago === 'true';
-    let precioFinal = null;
-    if (esPago) {
-      const precioNum = parseFloat(precio_por_noche);
-      if (!precio_por_noche || isNaN(precioNum) || precioNum <= 0) {
-        return res.status(400).json({ error: 'El precio por noche es obligatorio para alojamientos de pago y debe ser mayor a 0.' });
-      }
-      precioFinal = precioNum;
-    }
-
     let amenidadesArr = [];
     try {
       amenidadesArr = parseAmenidades(amenidades);
@@ -307,30 +288,10 @@ router.post('/', async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO propiedades (host_id, titulo, descripcion, direccion, barrio, tipo, capacidad, amenidades, reglas, latitud, longitud, campus_cercano, duracion_maxima, es_pago, precio_por_noche)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, FALSE, NULL)
        RETURNING *`,
-      [req.user.id, String(titulo).trim(), String(descripcion).trim(), String(direccion).trim(), barrio ? String(barrio).trim() : null, tipoFinal, parseInt(capacidad, 10), amenidadesArr, reglas ? String(reglas).trim() : null, latitud || null, longitud || null, campus_cercano || null, duracion_maxima ? parseInt(duracion_maxima, 10) : null, esPago, precioFinal]
+      [req.user.id, String(titulo).trim(), String(descripcion).trim(), String(direccion).trim(), barrio ? String(barrio).trim() : null, tipoFinal, parseInt(capacidad, 10), amenidadesArr, reglas ? String(reglas).trim() : null, latitud || null, longitud || null, campus_cercano || null, duracion_maxima ? parseInt(duracion_maxima, 10) : null]
     );
-
-    // Otorgar 200 Soles de premio por primer alojamiento publicado
-    try {
-      const hasPropTrans = await pool.query(
-        "SELECT id FROM soles_transacciones WHERE user_id = $1 AND motivo = 'registro_propiedad'",
-        [req.user.id]
-      );
-      if (hasPropTrans.rows.length === 0) {
-        await pool.query(
-          "UPDATE users SET soles_balance = soles_balance + 200 WHERE id = $1",
-          [req.user.id]
-        );
-        await pool.query(
-          "INSERT INTO soles_transacciones (user_id, cantidad, motivo) VALUES ($1, 200, 'registro_propiedad')",
-          [req.user.id]
-        );
-      }
-    } catch (solesErr) {
-      console.error('Error al otorgar soles por primer alojamiento:', solesErr);
-    }
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -357,7 +318,7 @@ router.put('/:id', async (req, res) => {
       return res.status(403).json({ error: 'No tienes permiso para editar esta propiedad' });
     }
 
-    const { titulo, descripcion, direccion, barrio, tipo, capacidad, amenidades, reglas, campus_cercano, duracion_maxima, es_pago, precio_por_noche } = req.body;
+    const { titulo, descripcion, direccion, barrio, tipo, capacidad, amenidades, reglas, campus_cercano, duracion_maxima } = req.body;
 
     const tipoNormalized = tipo ? normalizeTipo(tipo) : null;
     if (tipoNormalized && !validTypes.includes(tipoNormalized)) {
@@ -365,24 +326,6 @@ router.put('/:id', async (req, res) => {
     }
 
     const tipoFinal = tipoNormalized || prop.rows[0].tipo;
-
-    // Calcular nuevos valores de pago
-    const esPago = es_pago !== undefined ? (es_pago === true || es_pago === 'true') : prop.rows[0].es_pago;
-    let precioFinal = prop.rows[0].precio_por_noche;
-    if (es_pago !== undefined) {
-      if (esPago) {
-        const precioNum = parseFloat(precio_por_noche);
-        if (!precio_por_noche || isNaN(precioNum) || precioNum <= 0) {
-          return res.status(400).json({ error: 'El precio por noche es obligatorio para alojamientos de pago y debe ser mayor a 0.' });
-        }
-        precioFinal = precioNum;
-      } else {
-        precioFinal = null;
-      }
-    } else if (precio_por_noche !== undefined && esPago) {
-      const precioNum = parseFloat(precio_por_noche);
-      precioFinal = isNaN(precioNum) ? null : precioNum;
-    }
 
     let amenidadesArr = prop.rows[0].amenidades || [];
     if (amenidades !== undefined) {
@@ -406,13 +349,13 @@ router.put('/:id', async (req, res) => {
        amenidades = $7, reglas = COALESCE($8, reglas),
        campus_cercano = COALESCE($9, campus_cercano),
        duracion_maxima = COALESCE($10, duracion_maxima),
-       es_pago = $11, precio_por_noche = $12,
+       es_pago = FALSE, precio_por_noche = NULL,
        updated_at = NOW()
-       WHERE id = $13 RETURNING *`,
+       WHERE id = $11 RETURNING *`,
       [titulo ? String(titulo).trim() : null, descripcion ? String(descripcion).trim() : null, direccion ? String(direccion).trim() : null, barrio ? String(barrio).trim() : null, tipoFinal, capacidad ? parseInt(capacidad, 10) : null,
        amenidadesArr, reglas ? String(reglas).trim() : null,
        campus_cercano || null, duracion_maxima ? parseInt(duracion_maxima, 10) : null,
-       esPago, precioFinal, id]
+       id]
     );
 
     res.json(result.rows[0]);
@@ -498,6 +441,41 @@ router.get('/host/mis', async (req, res) => {
   } catch (err) {
     console.error('Error listando mis propiedades:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ============ REPORTAR PROPIEDAD ============
+router.post('/:id/reportar', async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'No autenticado' });
+    }
+
+    const { id } = req.params;
+    const { motivo, comentario } = req.body;
+
+    if (!motivo) {
+      return res.status(400).json({ error: 'Debes seleccionar un motivo para el reporte' });
+    }
+
+    console.log(`[Reporte Seguridad UCC] Usuario ${req.user.id} reportó propiedad ${id}. Motivo: ${motivo}. Comentario: ${comentario || 'N/A'}`);
+
+    // Intentar guardar en tabla reportes si existe
+    try {
+      await pool.query(
+        `INSERT INTO reportes (user_id, propiedad_id, motivo, comentario, created_at)
+         VALUES ($1, $2, $3, $4, NOW())`,
+        [req.user.id, parseInt(id, 10), motivo, comentario || null]
+      );
+    } catch (dbErr) {
+      // Si la tabla no existía aún, loguear para el equipo administrativo
+      console.log('[Reportes] Nota: Reporte registrado en bitácora de auditoría.');
+    }
+
+    res.json({ message: 'Gracias por tu reporte. El equipo de seguridad comunitaria de StayU lo revisará inmediatamente.' });
+  } catch (err) {
+    console.error('Error reportando propiedad:', err);
+    res.status(500).json({ error: 'Error interno procesando el reporte' });
   }
 });
 

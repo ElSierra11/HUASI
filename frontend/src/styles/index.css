@@ -2497,18 +2497,7 @@ body.dark .hero-interactive-card {
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* Alojamientos Plus section dark mode gradient */
-.alojamientos-plus-section {
-  background: linear-gradient(135deg, rgba(254, 243, 199, 0.7) 0%, rgba(255, 237, 213, 0.3) 50%, #ffffff 100%);
-  border: 1px solid rgba(253, 230, 138, 0.5);
-}
 
-.dark .alojamientos-plus-section,
-body.dark .alojamientos-plus-section {
-  background: linear-gradient(135deg, #071912 0%, #15291c 50%, #061510 100%) !important;
-  border: 1px solid rgba(245, 158, 11, 0.3) !important;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
-}
 
 /* UNIFIED LOGO SYSTEM FOR LIGHT & DARK MODE */
 .logo-container {

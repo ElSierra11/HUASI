@@ -37,15 +37,21 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'propiedad_id, fecha_inicio y fecha_fin son obligatorios' });
     }
 
-    if (new Date(fecha_inicio) >= new Date(fecha_fin)) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const partsInicio = String(fecha_inicio).split('T')[0].split('-');
+    const inicio = new Date(Number(partsInicio[0]), Number(partsInicio[1]) - 1, Number(partsInicio[2]));
+    inicio.setHours(0, 0, 0, 0);
+
+    const partsFin = String(fecha_fin).split('T')[0].split('-');
+    const fin = new Date(Number(partsFin[0]), Number(partsFin[1]) - 1, Number(partsFin[2]));
+    fin.setHours(0, 0, 0, 0);
+
+    if (inicio >= fin) {
       return res.status(400).json({ error: 'La fecha de inicio debe ser anterior a la fecha de fin' });
     }
 
-    // Permitir reserva para el día de hoy
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const inicio = new Date(fecha_inicio);
-    inicio.setHours(0, 0, 0, 0);
     if (inicio < hoy) {
       return res.status(400).json({ error: 'No puedes reservar en fechas pasadas' });
     }
@@ -56,31 +62,14 @@ router.post('/', async (req, res) => {
       return res.status(404).json({ error: 'Propiedad no encontrada o no disponible' });
     }
 
-    // Verificar que el usuario está verificado y tiene soles suficientes si la propiedad es solidaria (gratuita)
-    if (!prop.rows[0].es_pago) {
-      const userCheck = await pool.query('SELECT verificado, soles_balance FROM users WHERE id = $1', [req.user.id]);
-      const isVerificado = userCheck.rows.length > 0 && userCheck.rows[0].verificado;
-      if (!isVerificado) {
-        return res.status(403).json({
-          error: 'Debes verificar tu vinculación universitaria antes de reservar un alojamiento solidario',
-          requiere_verificacion: true
-        });
-      }
-
-      // Calcular soles requeridos
-      const start = new Date(fecha_inicio);
-      const end = new Date(fecha_fin);
-      const diffTime = Math.abs(end - start);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      const solesPorNoche = prop.rows[0].soles_por_noche || 50;
-      const totalSoles = diffDays * solesPorNoche;
-
-      const currentBalance = userCheck.rows.length > 0 ? userCheck.rows[0].soles_balance : 0;
-      if (currentBalance < totalSoles) {
-        return res.status(400).json({
-          error: `Saldo de soles insuficiente. Necesitas ${totalSoles} soles (tienes ${currentBalance} soles). Puedes obtener soles hospedando a otros estudiantes en tu casa.`
-        });
-      }
+    // Verificar que el usuario está verificado
+    const userCheck = await pool.query('SELECT verificado FROM users WHERE id = $1', [req.user.id]);
+    const isVerificado = userCheck.rows.length > 0 && userCheck.rows[0].verificado;
+    if (!isVerificado) {
+      return res.status(403).json({
+        error: 'Debes verificar tu vinculación universitaria antes de reservar un alojamiento',
+        requiere_verificacion: true
+      });
     }
 
     // No puede reservar su propia propiedad
@@ -161,41 +150,40 @@ router.post('/', async (req, res) => {
     }
 
     // --- INTEGRACIÓN CON CHAT ---
-    // Si hay un mensaje, crear conversación y enviarlo al chat automáticamente
-    if (mensaje && mensaje.trim()) {
-      try {
-        const hostId = prop.rows[0].host_id;
-        
-        // 1. Obtener o crear conversación
-        let convResult = await pool.query(`
-          SELECT id FROM conversaciones 
-          WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1)
-        `, [req.user.id, hostId]);
+    // Crear conversación y enviar tarjeta de reserva al chat automáticamente siempre
+    try {
+      const hostId = prop.rows[0].host_id;
+      const textoDetalle = (mensaje && mensaje.trim()) ? mensaje.trim() : 'Hola, me gustaría hospedarme en tu alojamiento.';
+      
+      // 1. Obtener o crear conversación
+      let convResult = await pool.query(`
+        SELECT id FROM conversaciones 
+        WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1)
+      `, [req.user.id, hostId]);
 
-        let conversacionId;
-        if (convResult.rows.length === 0) {
-          const newConv = await pool.query(
-            'INSERT INTO conversaciones (user1_id, user2_id) VALUES ($1, $2) RETURNING id',
-            [req.user.id, hostId]
-          );
-          conversacionId = newConv.rows[0].id;
-        } else {
-          conversacionId = convResult.rows[0].id;
-        }
-
-        // 2. Insertar el mensaje de la reserva en el chat
-        await pool.query(
-          `INSERT INTO mensajes (conversacion_id, sender_id, contenido)
-           VALUES ($1, $2, $3)`,
-          [conversacionId, req.user.id, `SOLICITUD DE RESERVA (${fecha_inicio} a ${fecha_fin}): ${mensaje}`]
+      let conversacionId;
+      if (convResult.rows.length === 0) {
+        const newConv = await pool.query(
+          'INSERT INTO conversaciones (user1_id, user2_id) VALUES ($1, $2) RETURNING id',
+          [req.user.id, hostId]
         );
-
-        // Actualizar timestamp de la conversación
-        await pool.query('UPDATE conversaciones SET updated_at = NOW() WHERE id = $1', [conversacionId]);
-      } catch (chatErr) {
-        console.error('Error al crear chat automático tras reserva:', chatErr);
-        // No bloqueamos la respuesta de la reserva si el chat falla
+        conversacionId = newConv.rows[0].id;
+      } else {
+        conversacionId = convResult.rows[0].id;
       }
+
+      // 2. Insertar el mensaje de la reserva en el chat
+      await pool.query(
+        `INSERT INTO mensajes (conversacion_id, sender_id, contenido)
+         VALUES ($1, $2, $3)`,
+        [conversacionId, req.user.id, `SOLICITUD DE RESERVA (${fecha_inicio} a ${fecha_fin}): ${textoDetalle}`]
+      );
+
+      // Actualizar timestamp de la conversación
+      await pool.query('UPDATE conversaciones SET updated_at = NOW() WHERE id = $1', [conversacionId]);
+    } catch (chatErr) {
+      console.error('Error al crear chat automático tras reserva:', chatErr);
+      // No bloqueamos la respuesta de la reserva si el chat falla
     }
 
     res.status(201).json({ ...reserva, host_id: prop.rows[0].host_id });
@@ -309,78 +297,6 @@ router.patch('/:id', async (req, res) => {
     // Archivar publicación automáticamente si se acepta
     if (estadoNormalizado === 'aceptada') {
       await pool.query(`UPDATE propiedades SET activo = FALSE WHERE id = $1`, [res_data.propiedad_id]);
-
-      // Transferir soles si la propiedad es solidaria
-      if (!res_data.es_pago) {
-        try {
-          const start = new Date(res_data.fecha_inicio);
-          const end = new Date(res_data.fecha_fin);
-          const diffTime = Math.abs(end - start);
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          const solesPorNoche = res_data.soles_por_noche || 50;
-          const totalSoles = diffDays * solesPorNoche;
-
-          // Descontar al huésped
-          await pool.query(
-            "UPDATE users SET soles_balance = soles_balance - $1 WHERE id = $2",
-            [totalSoles, res_data.guest_id]
-          );
-          // Abonar al anfitrión
-          await pool.query(
-            "UPDATE users SET soles_balance = soles_balance + $1 WHERE id = $2",
-            [totalSoles, res_data.host_id]
-          );
-
-          // Registrar transacciones
-          await pool.query(
-            "INSERT INTO soles_transacciones (user_id, reserva_id, cantidad, motivo) VALUES ($1, $2, $3, 'hospedaje_gasto')",
-            [res_data.guest_id, id, -totalSoles]
-          );
-          await pool.query(
-            "INSERT INTO soles_transacciones (user_id, reserva_id, cantidad, motivo) VALUES ($1, $2, $3, 'hospedaje_ganancia')",
-            [res_data.host_id, id, totalSoles]
-          );
-          console.log(`[Soles] Transferidos ${totalSoles} soles de ${res_data.guest_id} a ${res_data.host_id} por reserva ${id}`);
-        } catch (solesErr) {
-          console.error('Error al transferir soles:', solesErr);
-        }
-      }
-    }
-
-    // Devolución/Reembolso de soles si se cancela una reserva que ya estaba aceptada
-    if (estadoNormalizado === 'cancelada' && res_data.estado === 'aceptada' && !res_data.es_pago) {
-      try {
-        const start = new Date(res_data.fecha_inicio);
-        const end = new Date(res_data.fecha_fin);
-        const diffTime = Math.abs(end - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        const solesPorNoche = res_data.soles_por_noche || 50;
-        const totalSoles = diffDays * solesPorNoche;
-
-        // Devolver al huésped
-        await pool.query(
-          "UPDATE users SET soles_balance = soles_balance + $1 WHERE id = $2",
-          [totalSoles, res_data.guest_id]
-        );
-        // Descontar al anfitrión
-        await pool.query(
-          "UPDATE users SET soles_balance = soles_balance - $1 WHERE id = $2",
-          [totalSoles, res_data.host_id]
-        );
-
-        // Registrar transacciones de reembolso
-        await pool.query(
-          "INSERT INTO soles_transacciones (user_id, reserva_id, cantidad, motivo) VALUES ($1, $2, $3, 'hospedaje_reembolso')",
-          [res_data.guest_id, id, totalSoles]
-        );
-        await pool.query(
-          "INSERT INTO soles_transacciones (user_id, reserva_id, cantidad, motivo) VALUES ($1, $2, $3, 'hospedaje_devolucion')",
-          [res_data.host_id, id, -totalSoles]
-        );
-        console.log(`[Soles] Reembolsados ${totalSoles} soles de ${res_data.host_id} a ${res_data.guest_id} por cancelación de reserva ${id}`);
-      } catch (solesErr) {
-        console.error('Error al reembolsar soles:', solesErr);
-      }
     }
 
     // Enviar correo de notificación por cambio de estado
@@ -475,42 +391,6 @@ router.post('/chat/command', async (req, res) => {
       // Archivar publicación automáticamente si se acepta
       if (action === 'aceptar') {
         await pool.query(`UPDATE propiedades SET activo = FALSE WHERE id = $1`, [reserva.propiedad_id]);
-
-        // Transferir soles si la propiedad es solidaria
-        if (!reserva.es_pago) {
-          try {
-            const start = new Date(reserva.fecha_inicio);
-            const end = new Date(reserva.fecha_fin);
-            const diffTime = Math.abs(end - start);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const solesPorNoche = reserva.soles_por_noche || 50;
-            const totalSoles = diffDays * solesPorNoche;
-
-            // Descontar al huésped
-            await pool.query(
-              "UPDATE users SET soles_balance = soles_balance - $1 WHERE id = $2",
-              [totalSoles, reserva.guest_id]
-            );
-            // Abonar al anfitrión
-            await pool.query(
-              "UPDATE users SET soles_balance = soles_balance + $1 WHERE id = $2",
-              [totalSoles, reserva.host_id]
-            );
-
-            // Registrar transacciones
-            await pool.query(
-              "INSERT INTO soles_transacciones (user_id, reserva_id, cantidad, motivo) VALUES ($1, $2, $3, 'hospedaje_gasto')",
-              [reserva.guest_id, reservationId, -totalSoles]
-            );
-            await pool.query(
-              "INSERT INTO soles_transacciones (user_id, reserva_id, cantidad, motivo) VALUES ($1, $2, $3, 'hospedaje_ganancia')",
-              [reserva.host_id, reservationId, totalSoles]
-            );
-            console.log(`[Soles Chat] Transferidos ${totalSoles} soles de ${reserva.guest_id} a ${reserva.host_id} por reserva ${reservationId}`);
-          } catch (solesErr) {
-            console.error('Error al transferir soles por chat command:', solesErr);
-          }
-        }
       }
 
       // Enviar correo de notificación

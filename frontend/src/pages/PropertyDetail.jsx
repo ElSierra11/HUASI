@@ -1,22 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { MapPin, Star, Users, Home, CheckCircle2, Calendar, MessageSquare, Award, GraduationCap, Bed, Sofa, Trees, Coins, Sparkles, HelpCircle, Sun } from 'lucide-react';
+import { MapPin, Star, Users, Home, CheckCircle2, Calendar, MessageSquare, Award, GraduationCap, Bed, Sofa, Trees, Coins, HelpCircle, ShieldAlert, Flag } from 'lucide-react';
 import api from '../api';
 import SistemaReputacion from '../components/SistemaReputacion';
+import Modal from '../components/Modal';
+import { useToast } from '../components/Toast';
 
-const TIPO_LABELS = {
+const TIPO_MAP = {
   cama: 'Cama',
   sofa: 'Sofá',
   hamaca: 'Hamaca',
   habitacion: 'Habitación',
   alquiler: 'Alquiler',
-  alojamiento_plus: 'Alojamiento +',
   otro: 'Otros',
   'Habitación Privada': 'Habitación Privada',
   'Sofá Cama': 'Sofá Cama',
   'Habitación Compartida': 'Habitación Compartida'
 };
+
+const TIPO_LABELS = TIPO_MAP;
 
 const getNormalizedTipo = (tipo) => {
   if (!tipo) return 'otro';
@@ -26,8 +29,16 @@ const getNormalizedTipo = (tipo) => {
   if (t.includes('hamaca')) return 'hamaca';
   if (t.includes('habitacion') || t.includes('habitación')) return 'habitacion';
   if (t.includes('alquiler')) return 'alquiler';
-  if (t.includes('+') || t.includes('plus') || t.includes('alojamiento_plus')) return 'alojamiento_plus';
   return 'otro';
+};
+
+const TIPO_ICON = {
+  cama: <Bed size={32} />,
+  sofa: <Sofa size={32} />,
+  hamaca: <Trees size={32} />,
+  habitacion: <Home size={32} />,
+  alquiler: <Coins size={32} />,
+  otro: <HelpCircle size={32} />
 };
 
 const TIPO_ICON_SMALL = {
@@ -36,7 +47,6 @@ const TIPO_ICON_SMALL = {
   hamaca: <Trees size={16} />,
   habitacion: <Home size={16} />,
   alquiler: <Coins size={16} />,
-  alojamiento_plus: <Sparkles size={16} />,
   otro: <HelpCircle size={16} />
 };
 
@@ -46,19 +56,10 @@ const TIPO_THEMES = {
   hamaca: { gradient: 'linear-gradient(135deg, #10b981, #047857)', shadow: '0 10px 30px rgba(16, 185, 129, 0.3)' },
   habitacion: { gradient: 'linear-gradient(135deg, #0d9488, #0f766e)', shadow: '0 10px 30px rgba(13, 148, 136, 0.3)' },
   alquiler: { gradient: 'linear-gradient(135deg, #f59e0b, #d97706)', shadow: '0 10px 30px rgba(245, 158, 11, 0.3)' },
-  alojamiento_plus: { gradient: 'linear-gradient(135deg, #ec4899, #be185d)', shadow: '0 10px 30px rgba(236, 72, 153, 0.3)' },
   otro: { gradient: 'linear-gradient(135deg, #64748b, #334155)', shadow: '0 10px 30px rgba(100, 116, 139, 0.3)' }
 };
 
-const TIPO_ICON = {
-  cama: <Bed />,
-  sofa: <Sofa />,
-  hamaca: <Trees />,
-  habitacion: <Home />,
-  alquiler: <Coins />,
-  alojamiento_plus: <Sparkles />,
-  otro: <HelpCircle />
-};
+
 
 function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], fechaInicio, fechaFin, onSelectDates }) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -260,6 +261,9 @@ export default function PropertyDetail() {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const toast = useToast();
+
+  const [reportModal, setReportModal] = useState({ open: false, motivo: 'Contenido engañoso o falso', comentario: '', processing: false });
 
   useEffect(() => {
     api.get(`/propiedades/${id}`)
@@ -313,8 +317,7 @@ export default function PropertyDetail() {
   const handleBooking = async (e) => {
     e.preventDefault();
     if (!user) { navigate('/login'); return; }
-    if (!prop.es_pago && !user.verificado) { setError('Debes completar la verificación de tu correo institucional primero'); return; }
-    if (!prop.es_pago && !hasEnoughSoles) { setError('Saldo insuficiente para completar la reserva'); return; }
+    if (!user.verificado) { setError('Debes completar la verificación de tu correo institucional primero'); return; }
     setBookingLoading(true);
     setError('');
     try {
@@ -379,19 +382,19 @@ export default function PropertyDetail() {
             </span>
           )}
           <span className="badge badge-aceptada">{tipoLabel}</span>
-          {prop.es_pago ? (
-            <span className="badge" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', fontWeight: 800 }}>
-              De Pago · ${Number(prop.precio_por_noche).toLocaleString('es-CO')}/noche
-            </span>
-          ) : (
-            <span className="badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(22, 163, 74, 0.1)', color: '#16a34a', borderColor: 'rgba(22, 163, 74, 0.2)', fontWeight: 805 }}>
-              <Sun size={14} className="text-amber-500 fill-amber-500" /> Hospedaje Solidario · {prop.soles_por_noche || 50} Soles/noche
-            </span>
-          )}
           {isOwner && (
             <span className="badge badge-success" style={{ background: 'linear-gradient(135deg, #10b981, #047857)', color: 'white', border: 'none' }}>
               Tu publicación
             </span>
+          )}
+          {!isOwner && (
+            <button
+              onClick={() => setReportModal({ open: true, motivo: 'Contenido inapropiado', comentario: '', processing: false })}
+              className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors inline-flex items-center gap-1 cursor-pointer ml-auto"
+              title="Reportar esta publicación al equipo de seguridad comunitaria"
+            >
+              <ShieldAlert size={14} /> Reportar anuncio
+            </button>
           )}
         </div>
       </div>
@@ -540,17 +543,8 @@ export default function PropertyDetail() {
         <div>
           <div className="booking-card">
             <h3>
-              {prop.es_pago ? (
-                <>
-                  <Coins size={20} style={{ marginRight: 8, verticalAlign: 'text-bottom' }} color="#d97706" />
-                  <span>Reserva por ${Number(prop.precio_por_noche).toLocaleString('es-CO')}/noche</span>
-                </>
-              ) : (
-                <>
-                  <Sun size={20} style={{ marginRight: 8, verticalAlign: 'text-bottom' }} className="text-amber-500 fill-amber-500" />
-                  <span>Hospedaje Solidario · {prop.soles_por_noche || 50} Soles</span>
-                </>
-              )}
+              <Home size={20} style={{ marginRight: 8, verticalAlign: 'text-bottom' }} className="text-ucc-green" />
+              <span>Solicitar Hospedaje UCC</span>
             </h3>
             
             {prop.ya_reservado ? (
@@ -645,37 +639,10 @@ export default function PropertyDetail() {
                     value={booking.mensaje} onChange={e => setBooking(b => ({ ...b, mensaje: e.target.value }))} />
                 </div>
                 
-                {!prop.es_pago && nights > 0 && (
-                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '12px 16px', marginBottom: 16, fontSize: '0.85rem', color: '#92400e' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span>Costo por noche:</span>
-                      <strong style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Sun size={14} className="text-amber-500 fill-amber-500" /> {solesPorNoche} Soles
-                      </strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span>Noches de estadía:</span>
-                      <strong>{nights} {nights === 1 ? 'noche' : 'noches'}</strong>
-                    </div>
-                    <hr style={{ border: 0, borderTop: '1px solid #fde68a', margin: '8px 0' }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '0.95rem' }}>
-                      <span>Total requerido:</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Sun size={16} className="text-amber-500 fill-amber-500" /> {totalSolesRequired} Soles
-                      </span>
-                    </div>
-                    {user && !hasEnoughSoles && (
-                      <div style={{ color: '#dc2626', fontSize: '0.75rem', fontWeight: 700, marginTop: 8 }}>
-                        Saldo insuficiente (Tienes {user.soles_balance} soles).
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 <button 
                   type="submit" 
                   className="btn btn-primary btn-block" 
-                  disabled={bookingLoading || (!prop.es_pago && user && !hasEnoughSoles)}
+                  disabled={bookingLoading}
                 >
                   {bookingLoading ? 'Enviando solicitud...' : 'Solicitar reserva'}
                 </button>
@@ -685,6 +652,53 @@ export default function PropertyDetail() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Reporte de Seguridad Comunitaria */}
+      <Modal
+        open={reportModal.open}
+        type="danger"
+        title="Reportar Anuncio al Equipo UCC"
+        message="Selecciona la razón de tu reporte. El equipo de seguridad comunitaria de StayU lo revisará inmediatamente para proteger a la comunidad universitaria."
+        confirmText="Enviar Reporte"
+        cancelText="Cancelar"
+        loading={reportModal.processing}
+        onConfirm={async () => {
+          setReportModal(m => ({ ...m, processing: true }));
+          try {
+            await api.post(`/propiedades/${id}/reportar`, { motivo: reportModal.motivo, comentario: reportModal.comentario });
+            toast.success('Reporte enviado a seguridad comunitaria StayU.');
+            setReportModal({ open: false, motivo: '', comentario: '', processing: false });
+          } catch (err) {
+            toast.error(err.response?.data?.error || 'Error enviando reporte');
+            setReportModal(m => ({ ...m, processing: false }));
+          }
+        }}
+        onCancel={() => setReportModal({ open: false, motivo: '', comentario: '', processing: false })}
+      >
+        <div style={{ display: 'grid', gap: 12, textAlign: 'left', marginTop: 12 }}>
+          <label style={{ fontWeight: 700, fontSize: '0.85rem' }}>Motivo del reporte *</label>
+          <select 
+            className="form-control"
+            value={reportModal.motivo}
+            onChange={e => setReportModal(m => ({ ...m, motivo: e.target.value }))}
+          >
+            <option value="Contenido engañoso o falso">Contenido engañoso o información falsa</option>
+            <option value="Comportamiento indebido del anfitrión">Comportamiento indebido o inapropiado del anfitrión</option>
+            <option value="Preocupación de seguridad o higiene">Preocupación de seguridad o higiene</option>
+            <option value="Spam o fraude">Spam, fraude o cobros indebidos</option>
+            <option value="Otro motivo">Otro motivo</option>
+          </select>
+
+          <label style={{ fontWeight: 700, fontSize: '0.85rem' }}>Detalles adicionales (opcional)</label>
+          <textarea
+            className="form-control"
+            rows={3}
+            placeholder="Describe brevemente lo ocurrido..."
+            value={reportModal.comentario}
+            onChange={e => setReportModal(m => ({ ...m, comentario: e.target.value }))}
+          />
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -150,7 +150,12 @@ export default function ChatWidget() {
     if (!user || !open) return;
 
     api.get('/chat/conversaciones')
-      .then(res => setConversaciones(res.data))
+      .then(res => {
+        setConversaciones(res.data);
+        if (res.data.length > 0 && !activeConvRef.current) {
+          setActiveConv(res.data[0]);
+        }
+      })
       .catch(err => console.error('Error loading chats:', err));
   }, [user, open]);
 
@@ -178,8 +183,14 @@ export default function ChatWidget() {
       return;
     }
 
-    api.get(`/chat/conversaciones/${activeConv.id}/mensajes`)
-      .then(res => setMessages(res.data));
+    const fetchMsgs = () => {
+      api.get(`/chat/conversaciones/${activeConv.id}/mensajes`)
+        .then(res => setMessages(res.data))
+        .catch(() => {});
+    };
+
+    fetchMsgs();
+    const pollInterval = setInterval(fetchMsgs, 2500);
 
     // Fetch associated reservation/property info
     api.get(`/chat/conversaciones/${activeConv.id}/reserva`)
@@ -206,6 +217,8 @@ export default function ChatWidget() {
     setConversaciones(prev =>
       prev.map(c => c.id === activeConv.id ? { ...c, no_leidos: 0 } : c)
     );
+
+    return () => clearInterval(pollInterval);
   }, [activeConv?.id]);
 
   // Scroll to bottom
@@ -213,20 +226,34 @@ export default function ChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (!newMsg.trim() || !activeConv || !socketRef.current) return;
-
-    socketRef.current.emit('send_message', {
-      conversacion_id: activeConv.id,
-      contenido: newMsg.trim()
-    });
+    const content = newMsg.trim();
+    if (!content || !activeConv) return;
     setNewMsg('');
 
-    socketRef.current.emit('stop_typing', {
-      conversacion_id: activeConv.id,
-      receiverId: getOtherUserId(activeConv)
-    });
+    if (socketRef.current && socketRef.current.connected) {
+      socketRef.current.emit('send_message', {
+        conversacion_id: activeConv.id,
+        contenido: content
+      });
+
+      socketRef.current.emit('stop_typing', {
+        conversacion_id: activeConv.id,
+        receiverId: getOtherUserId(activeConv)
+      });
+    } else {
+      // Fallback por REST API solo si no hay conexión de WebSocket
+      try {
+        const res = await api.post(`/chat/conversaciones/${activeConv.id}/mensajes`, { contenido: content });
+        setMessages(prev => {
+          if (prev.some(m => m.id === res.data.id)) return prev;
+          return [...prev, res.data];
+        });
+      } catch (err) {
+        console.error('Error enviando mensaje por API:', err);
+      }
+    }
   };
 
   const handleTyping = (e) => {
