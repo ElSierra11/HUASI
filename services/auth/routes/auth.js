@@ -7,6 +7,7 @@ const nodemailer = require('nodemailer');
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
+const isProd = process.env.NODE_ENV === 'production' || !!process.env.DATABASE_URL || !!process.env.RENDER;
 
 // Configurar transportador de correo (usando Ethereal para desarrollo local por defecto si no hay SMTP)
 const transporter = nodemailer.createTransport({
@@ -213,8 +214,6 @@ router.post('/verify-otp', async (req, res) => {
     );
 
     const cookieName = user.role === 'admin' ? 'stayu_admin_token' : 'stayu_token';
-
-    const isProd = process.env.NODE_ENV === 'production' || !!process.env.DATABASE_URL || !!process.env.RENDER;
 
     res.cookie(cookieName, token, {
       httpOnly: true,
