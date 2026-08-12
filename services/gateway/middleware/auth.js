@@ -8,8 +8,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
  * No bloquea si no hay token — las rutas individuales deciden.
  */
 function authMiddleware(req, res, next) {
-  const referer = req.headers.referer || '';
-  const isAdminPanel = referer.includes(':5176') || referer.includes(':5175') || referer.includes(':5174');
+  const origin = req.headers.origin || req.headers.referer || '';
+  const isAdminPanel = origin.includes('huasi-mdp5') || origin.includes('admin') || origin.includes(':5176') || origin.includes(':5175') || origin.includes(':5174');
   
   let token;
   if (isAdminPanel) {
