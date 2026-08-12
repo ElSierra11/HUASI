@@ -178,69 +178,92 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await pool.query(
-      `SELECT p.*, u.nombre AS host_nombre, u.apellido AS host_apellido,
-              u.foto_perfil AS host_foto, u.created_at AS host_desde, u.preferencias_convivencia AS host_preferencias,
-              COALESCE(AVG(r.calificacion), 0) AS calificacion_promedio,
-              COUNT(DISTINCT r.id) AS num_resenas
-       FROM propiedades p
-       JOIN users u ON p.host_id = u.id
-       LEFT JOIN resenas r ON r.propiedad_id = p.id
-       WHERE p.id = $1
-       GROUP BY p.id, u.nombre, u.apellido, u.foto_perfil, u.created_at, u.preferencias_convivencia`,
-      [id]
-    );
+    // Intentar query completa; fallback sin preferencias_convivencia si la columna no fue migrada
+    let result;
+    try {
+      result = await pool.query(
+        `SELECT p.*, u.nombre AS host_nombre, u.apellido AS host_apellido,
+                u.foto_perfil AS host_foto, u.created_at AS host_desde,
+                u.preferencias_convivencia AS host_preferencias,
+                COALESCE(AVG(r.calificacion), 0) AS calificacion_promedio,
+                COUNT(DISTINCT r.id) AS num_resenas
+         FROM propiedades p
+         JOIN users u ON p.host_id = u.id
+         LEFT JOIN resenas r ON r.propiedad_id = p.id
+         WHERE p.id = $1
+         GROUP BY p.id, u.nombre, u.apellido, u.foto_perfil, u.created_at, u.preferencias_convivencia`,
+        [id]
+      );
+    } catch (queryErr) {
+      console.warn('Fallback query (sin preferencias_convivencia):', queryErr.message);
+      result = await pool.query(
+        `SELECT p.*, u.nombre AS host_nombre, u.apellido AS host_apellido,
+                u.foto_perfil AS host_foto, u.created_at AS host_desde,
+                NULL AS host_preferencias,
+                COALESCE(AVG(r.calificacion), 0) AS calificacion_promedio,
+                COUNT(DISTINCT r.id) AS num_resenas
+         FROM propiedades p
+         JOIN users u ON p.host_id = u.id
+         LEFT JOIN resenas r ON r.propiedad_id = p.id
+         WHERE p.id = $1
+         GROUP BY p.id, u.nombre, u.apellido, u.foto_perfil, u.created_at`,
+        [id]
+      );
+    }
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Propiedad no encontrada' });
     }
 
-    // Obtener disponibilidad
-    const disponibilidad = await pool.query(
-      `SELECT * FROM disponibilidad WHERE propiedad_id = $1 AND fecha_fin >= CURRENT_DATE ORDER BY fecha_inicio`,
-      [id]
-    );
+    let disponibilidad = { rows: [] };
+    try {
+      disponibilidad = await pool.query(
+        `SELECT * FROM disponibilidad WHERE propiedad_id = $1 AND fecha_fin >= CURRENT_DATE ORDER BY fecha_inicio`,
+        [id]
+      );
+    } catch (e) { console.error('Error cargando disponibilidad:', e); }
 
-    // Obtener reseñas
-    const resenas = await pool.query(
-      `SELECT r.*, u.nombre AS autor_nombre, u.apellido AS autor_apellido, u.foto_perfil AS autor_foto
-       FROM resenas r
-       JOIN users u ON r.autor_id = u.id
-       WHERE r.propiedad_id = $1
-       ORDER BY r.created_at DESC`,
-      [id]
-    );
+    let resenas = { rows: [] };
+    try {
+      resenas = await pool.query(
+        `SELECT r.*, u.nombre AS autor_nombre, u.apellido AS autor_apellido, u.foto_perfil AS autor_foto
+         FROM resenas r
+         LEFT JOIN users u ON r.autor_id = u.id
+         WHERE r.propiedad_id = $1
+         ORDER BY r.created_at DESC`,
+        [id]
+      );
+    } catch (e) { console.error('Error cargando reseñas:', e); }
 
-    // Obtener si el usuario actual ya tiene una reserva para esta propiedad
     let ya_reservado = null;
     if (req.user) {
-      const resPrevia = await pool.query(
-        `SELECT id, estado, fecha_inicio, fecha_fin FROM reservas 
-         WHERE propiedad_id = $1 AND guest_id = $2 AND estado IN ('pendiente', 'aceptada')
-         ORDER BY created_at DESC LIMIT 1`,
-        [id, req.user.id]
-      );
-      if (resPrevia.rows.length > 0) {
-        ya_reservado = resPrevia.rows[0];
-      }
+      try {
+        const resPrevia = await pool.query(
+          `SELECT id, estado, fecha_inicio, fecha_fin FROM reservas 
+           WHERE propiedad_id = $1 AND guest_id = $2 AND estado IN ('pendiente', 'aceptada')
+           ORDER BY created_at DESC LIMIT 1`,
+          [id, req.user.id]
+        );
+        if (resPrevia.rows.length > 0) ya_reservado = resPrevia.rows[0];
+      } catch (e) { console.error('Error verificando reserva:', e); }
     }
 
-    // Obtener reservas aceptadas (bloqueadas)
-    const reservasAceptadas = await pool.query(
-      `SELECT fecha_inicio, fecha_fin FROM reservas 
-       WHERE propiedad_id = $1 AND estado = 'aceptada' AND fecha_fin >= CURRENT_DATE`,
-      [id]
-    );
+    let reservasAceptadas = { rows: [] };
+    try {
+      reservasAceptadas = await pool.query(
+        `SELECT fecha_inicio, fecha_fin FROM reservas 
+         WHERE propiedad_id = $1 AND estado = 'aceptada' AND fecha_fin >= CURRENT_DATE`,
+        [id]
+      );
+    } catch (e) { console.error('Error cargando reservas aceptadas:', e); }
 
     const propiedadData = result.rows[0];
     const isOwner = req.user && Number(req.user.id) === Number(propiedadData.host_id);
     const isAcceptedGuest = ya_reservado && ya_reservado.estado === 'aceptada';
 
     if (isOwner || isAcceptedGuest) {
-      // Dueño o huésped aceptado: recibe la dirección exacta tal cual
       propiedadData.direccion_exacta = propiedadData.direccion;
     } else {
-      // Usuario normal o no autenticado: ocultar dirección y coordenadas
       propiedadData.direccion_exacta = null;
       propiedadData.direccion = 'Dirección exacta oculta hasta confirmación';
       propiedadData.latitud = null;
@@ -256,7 +279,10 @@ router.get('/:id', async (req, res) => {
     });
   } catch (err) {
     console.error('Error obteniendo propiedad:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    res.status(500).json({ 
+        error: 'Error interno del servidor', 
+        details: process.env.NODE_ENV !== 'production' ? err.message : undefined 
+    });
   }
 });
 
