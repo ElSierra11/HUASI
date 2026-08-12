@@ -33,7 +33,8 @@ const transporter = getTransporter();
 
 const sendOtpEmail = async (email, nombre, otp) => {
   await transporter.sendMail({
-    from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER || 'huasiquejas@outlook.com'}>`,
+    from: `"HUASI — Hospedaje Solidario UCC" <huasiquejas@outlook.com>`,
+    replyTo: 'huasiquejas@outlook.com',
     to: email,
     subject: '🔑 Código de Verificación OTP - HUASI',
     text: `Hola ${nombre},\n\nTu código de verificación OTP para HUASI es: ${otp}\n\nEste código expira en 5 minutos.\n\nAtentamente,\nEl equipo de HUASI`,

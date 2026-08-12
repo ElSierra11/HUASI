@@ -141,7 +141,8 @@ router.post('/', async (req, res) => {
       const guest = guestQuery.rows[0];
 
       const info = await transporter.sendMail({
-        from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER}>`,
+        from: `"HUASI — Hospedaje Solidario UCC" <huasiquejas@outlook.com>`,
+        replyTo: 'huasiquejas@outlook.com',
         to: host.email,
         subject: 'Nueva solicitud de alojamiento - HUASI',
         text: `Hola ${host.nombre},\n\nHas recibido una nueva solicitud de alojamiento para tu propiedad "${prop.rows[0].titulo}" por parte de ${guest.nombre} ${guest.apellido}.\n\nFechas: del ${fecha_inicio} al ${fecha_fin}.\nMensaje: "${mensaje || 'Sin mensaje'}"\n\nInicia sesión en la plataforma para responder a esta solicitud.\n\nAtentamente,\nEl equipo de HUASI`,
