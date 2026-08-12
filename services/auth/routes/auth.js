@@ -17,17 +17,41 @@ const RESEND_COOLDOWN_SECONDS = 30;
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// Configurar transportador de correo (Nodemailer Gmail)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.SMTP_USER || 'arnoldcraft84@gmail.com',
-    pass: process.env.SMTP_PASS || 'stkvunvlozfcobuz'
-  },
-  tls: {
-    rejectUnauthorized: false
+// Configurar transportador de correo (soporta Outlook/Office365, Gmail y SMTP personalizado)
+const getTransporter = () => {
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const user = process.env.SMTP_USER || 'arnoldcraft84@gmail.com';
+  const pass = process.env.SMTP_PASS || 'stkvunvlozfcobuz';
+  const port = parseInt(process.env.SMTP_PORT) || 587;
+
+  if (host.includes('outlook') || host.includes('office365')) {
+    return nodemailer.createTransport({
+      host: 'smtp.office365.com',
+      port: 587,
+      secure: false, // STARTTLS
+      auth: { user, pass },
+      tls: { ciphers: 'SSLv3', rejectUnauthorized: false }
+    });
   }
-});
+
+  if (host.includes('gmail')) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false }
+    });
+  }
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: String(port) === '465',
+    auth: { user, pass },
+    tls: { rejectUnauthorized: false }
+  });
+};
+
+const transporter = getTransporter();
 
 const sendOtpEmail = async (email, nombre, otp) => {
   await transporter.sendMail({
