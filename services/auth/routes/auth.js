@@ -19,12 +19,12 @@ const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
 
 // Configurar transportador de correo (soporta Outlook/Office365, Gmail y SMTP personalizado)
 const getTransporter = () => {
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const user = process.env.SMTP_USER || 'arnoldcraft84@gmail.com';
-  const pass = process.env.SMTP_PASS || 'stkvunvlozfcobuz';
+  const host = process.env.SMTP_HOST || 'smtp.office365.com';
+  const user = process.env.SMTP_USER || 'huasiquejas@outlook.com';
+  const pass = process.env.SMTP_PASS || 'Alejandro10@';
   const port = parseInt(process.env.SMTP_PORT) || 587;
 
-  if (host.includes('outlook') || host.includes('office365')) {
+  if (host.includes('outlook') || host.includes('office365') || user.includes('outlook') || user.includes('hotmail')) {
     return nodemailer.createTransport({
       host: 'smtp.office365.com',
       port: 587,
@@ -55,7 +55,7 @@ const transporter = getTransporter();
 
 const sendOtpEmail = async (email, nombre, otp) => {
   await transporter.sendMail({
-    from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER || 'arnoldcraft84@gmail.com'}>`,
+    from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER || 'huasiquejas@outlook.com'}>`,
     to: email,
     subject: '🔑 Código de Verificación OTP - HUASI',
     text: `Hola ${nombre},\n\nTu código de verificación OTP para HUASI es: ${otp}\n\nEste código expira en 5 minutos.\n\nAtentamente,\nEl equipo de HUASI`,

@@ -4,18 +4,40 @@ const nodemailer = require('nodemailer');
 
 const router = express.Router();
 
-const transporter = nodemailer.createTransport({
-  pool: true,
-  maxConnections: 5,
-  maxMessages: 100,
-  host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: (process.env.SMTP_PORT === '465'),
-  auth: {
-    user: process.env.SMTP_USER || 'test@ethereal.email',
-    pass: process.env.SMTP_PASS || 'pass123'
+const getTransporter = () => {
+  const host = process.env.SMTP_HOST || 'smtp.office365.com';
+  const user = process.env.SMTP_USER || 'huasiquejas@outlook.com';
+  const pass = process.env.SMTP_PASS || 'Alejandro10@';
+  const port = parseInt(process.env.SMTP_PORT) || 587;
+
+  if (host.includes('outlook') || host.includes('office365') || user.includes('outlook') || user.includes('hotmail')) {
+    return nodemailer.createTransport({
+      host: 'smtp.office365.com',
+      port: 587,
+      secure: false,
+      auth: { user, pass },
+      tls: { ciphers: 'SSLv3', rejectUnauthorized: false }
+    });
   }
-});
+
+  if (host.includes('gmail')) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false }
+    });
+  }
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: String(port) === '465',
+    auth: { user, pass },
+    tls: { rejectUnauthorized: false }
+  });
+};
+
+const transporter = getTransporter();
 
 // Normalizar estado de reserva
 const normalizeEstadoReserva = (estado = '') => {
