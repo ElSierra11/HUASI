@@ -288,13 +288,13 @@ router.post('/login', async (req, res) => {
     res.cookie(cookieName, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
     });
 
-    // No enviar password_hash al frontend
+    // No enviar password_hash al frontend, enviar token
     const { password_hash, ...safeUser } = user;
-    res.json({ user: safeUser });
+    res.json({ user: safeUser, token });
   } catch (err) {
     console.error('Error en login:', err);
     res.status(500).json({ error: 'Error interno del servidor' });

@@ -33,6 +33,9 @@ export function AuthProvider({ children }) {
     }
     setUser(res.data.user);
     localStorage.setItem('stayu_admin_user', JSON.stringify(res.data.user));
+    if (res.data.token) {
+      localStorage.setItem('stayu_admin_token', res.data.token);
+    }
     return res.data;
   };
 
@@ -44,6 +47,7 @@ export function AuthProvider({ children }) {
     } finally {
       setUser(null);
       localStorage.removeItem('stayu_admin_user');
+      localStorage.removeItem('stayu_admin_token');
     }
   };
 

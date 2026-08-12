@@ -28,12 +28,14 @@ export function AuthProvider({ children }) {
     const res = await api.post('/auth/login', { email, password });
     setUser(res.data.user);
     localStorage.setItem('stayu_user', JSON.stringify(res.data.user));
+    if (res.data.token) {
+      localStorage.setItem('stayu_token', res.data.token);
+    }
     return res.data;
   };
 
   const register = async (data) => {
     const res = await api.post('/auth/register', data);
-    // Ya no hacemos setUser aquí porque devuelve un mensaje y un email para el paso de OTP
     return res.data;
   };
 
@@ -41,6 +43,9 @@ export function AuthProvider({ children }) {
     const res = await api.post('/auth/verify-otp', { email, otp });
     setUser(res.data.user);
     localStorage.setItem('stayu_user', JSON.stringify(res.data.user));
+    if (res.data.token) {
+      localStorage.setItem('stayu_token', res.data.token);
+    }
     return res.data;
   };
 
@@ -52,6 +57,7 @@ export function AuthProvider({ children }) {
     } finally {
       setUser(null);
       localStorage.removeItem('stayu_user');
+      localStorage.removeItem('stayu_token');
     }
   };
 

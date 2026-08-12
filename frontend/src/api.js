@@ -6,6 +6,15 @@ const api = axios.create({
   withCredentials: true // Permite enviar cookies HttpOnly
 });
 
+// Interceptor para adjuntar token Authorization Bearer si existe
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('stayu_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // Interceptor para manejar errores de auth
 api.interceptors.response.use(
   (response) => response,
