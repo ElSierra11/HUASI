@@ -91,12 +91,20 @@ router.post('/', async (req, res) => {
     );
 
     if (disponibilidad.rows.length > 0) {
-      const fechaInicio = new Date(fecha_inicio);
-      const fechaFin = new Date(fecha_fin);
+      // Normalizar todas las fechas a medianoche local para evitar desfases de zona horaria
+      const normDate = (d) => {
+        const s = String(d).split('T')[0];
+        const [y, m, day] = s.split('-');
+        const dt = new Date(Number(y), Number(m) - 1, Number(day));
+        dt.setHours(0, 0, 0, 0);
+        return dt;
+      };
+      const fechaInicioNorm = normDate(fecha_inicio);
+      const fechaFinNorm = normDate(fecha_fin);
       const cubreRango = disponibilidad.rows.some((r) => {
-        const inicio = new Date(r.fecha_inicio);
-        const fin = new Date(r.fecha_fin);
-        return inicio <= fechaInicio && fin >= fechaFin;
+        const rInicio = normDate(r.fecha_inicio);
+        const rFin = normDate(r.fecha_fin);
+        return rInicio <= fechaInicioNorm && rFin >= fechaFinNorm;
       });
 
       if (!cubreRango) {
@@ -150,12 +158,10 @@ router.post('/', async (req, res) => {
     }
 
     // --- INTEGRACIÓN CON CHAT ---
-    // Crear conversación y enviar tarjeta de reserva al chat automáticamente siempre
     try {
       const hostId = prop.rows[0].host_id;
       const textoDetalle = (mensaje && mensaje.trim()) ? mensaje.trim() : 'Hola, me gustaría hospedarme en tu alojamiento.';
       
-      // 1. Obtener o crear conversación
       let convResult = await pool.query(`
         SELECT id FROM conversaciones 
         WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1)
@@ -172,24 +178,21 @@ router.post('/', async (req, res) => {
         conversacionId = convResult.rows[0].id;
       }
 
-      // 2. Insertar el mensaje de la reserva en el chat
       await pool.query(
         `INSERT INTO mensajes (conversacion_id, sender_id, contenido)
          VALUES ($1, $2, $3)`,
         [conversacionId, req.user.id, `SOLICITUD DE RESERVA (${fecha_inicio} a ${fecha_fin}): ${textoDetalle}`]
       );
 
-      // Actualizar timestamp de la conversación
       await pool.query('UPDATE conversaciones SET updated_at = NOW() WHERE id = $1', [conversacionId]);
     } catch (chatErr) {
       console.error('Error al crear chat automático tras reserva:', chatErr);
-      // No bloqueamos la respuesta de la reserva si el chat falla
     }
 
     res.status(201).json({ ...reserva, host_id: prop.rows[0].host_id });
   } catch (err) {
     console.error('Error creando reserva:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    res.status(500).json({ error: err.message || 'Error interno del servidor' });
   }
 });
 
