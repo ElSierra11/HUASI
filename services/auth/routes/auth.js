@@ -17,35 +17,13 @@ const RESEND_COOLDOWN_SECONDS = 30;
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// Configurar transportador de correo (soporta Outlook/Office365, Gmail y SMTP personalizado)
+// Configurar transportador de correo (Gmail SMTP con App Password)
 const getTransporter = () => {
-  const host = process.env.SMTP_HOST || 'smtp.office365.com';
-  const user = process.env.SMTP_USER || 'huasiquejas@outlook.com';
-  const pass = process.env.SMTP_PASS || 'Alejandro10@';
-  const port = parseInt(process.env.SMTP_PORT) || 587;
-
-  if (host.includes('outlook') || host.includes('office365') || user.includes('outlook') || user.includes('hotmail')) {
-    return nodemailer.createTransport({
-      host: 'smtp.office365.com',
-      port: 587,
-      secure: false, // STARTTLS
-      auth: { user, pass },
-      tls: { ciphers: 'SSLv3', rejectUnauthorized: false }
-    });
-  }
-
-  if (host.includes('gmail')) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass },
-      tls: { rejectUnauthorized: false }
-    });
-  }
+  const user = process.env.SMTP_USER && process.env.SMTP_USER.includes('gmail') ? process.env.SMTP_USER : 'arnoldcraft84@gmail.com';
+  const pass = process.env.SMTP_PASS && process.env.SMTP_USER.includes('gmail') ? process.env.SMTP_PASS : 'stkvunvlozfcobuz';
 
   return nodemailer.createTransport({
-    host,
-    port,
-    secure: String(port) === '465',
+    service: 'gmail',
     auth: { user, pass },
     tls: { rejectUnauthorized: false }
   });
