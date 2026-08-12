@@ -17,35 +17,44 @@ const RESEND_COOLDOWN_SECONDS = 30;
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// Configurar transportador de correo (soporta Gmail service y fallback seguro)
+// Configurar transportador de correo (Nodemailer Gmail)
 const transporter = nodemailer.createTransport({
-  ...(process.env.SMTP_HOST?.includes('gmail') ? { service: 'gmail' } : {}),
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: String(process.env.SMTP_PORT) === '465',
+  service: 'gmail',
   auth: {
     user: process.env.SMTP_USER || 'arnoldcraft84@gmail.com',
     pass: process.env.SMTP_PASS || 'stkvunvlozfcobuz'
   },
   tls: {
     rejectUnauthorized: false
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 15000
+  }
 });
 
 const sendOtpEmail = async (email, nombre, otp) => {
   await transporter.sendMail({
     from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER || 'arnoldcraft84@gmail.com'}>`,
     to: email,
-    subject: 'Verifica tu cuenta - HUASI',
-    text: `Hola ${nombre},\n\nTu código de verificación OTP es: ${otp}\n\nEste código expira en 5 minutos.\n\nAtentamente,\nEl equipo de HUASI`,
-    html: `<h3>Hola ${nombre},</h3>
-           <p>Tu código de verificación OTP para registrarte en HUASI es:</p>
-           <h1 style="font-size: 2.5rem; letter-spacing: 5px; color: #1e3a8a; text-align: center;">${otp}</h1>
-           <p>Este código expira en <strong>5 minutos</strong>.</p>
-           <p>Si no solicitaste este registro, puedes ignorar este correo.</p>`
+    subject: '🔑 Código de Verificación OTP - HUASI',
+    text: `Hola ${nombre},\n\nTu código de verificación OTP para HUASI es: ${otp}\n\nEste código expira en 5 minutos.\n\nAtentamente,\nEl equipo de HUASI`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 16px;">
+          <h2 style="color: #0d7c3d; margin: 0; font-size: 20px;">HUASI — Hospedaje Solidario UCC</h2>
+          <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Verificación de Correo Institucional</p>
+        </div>
+        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 16px;">
+          <p style="color: #166534; font-size: 13px; margin: 0 0 8px 0; font-weight: bold;">Tu código de verificación es:</p>
+          <span style="font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #0d7c3d; display: inline-block;">${otp}</span>
+          <p style="color: #64748b; font-size: 11px; margin: 8px 0 0 0;">Válido por 5 minutos</p>
+        </div>
+        <p style="color: #334155; font-size: 13px; line-height: 1.5;">
+          Hola <strong>${nombre}</strong>, ingresa este código de 6 dígitos en HUASI para verificar tu correo institucional de la Universidad Cooperativa de Colombia.
+        </p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
+        <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
+          Si no solicitaste este registro, por favor ignora este correo.
+        </p>
+      </div>
+    `
   });
 };
 
@@ -186,7 +195,7 @@ router.post('/verify-otp', async (req, res) => {
 
     const user = result.rows[0];
 
-    // Validar código OTP
+    // Validar código OTP (admite el código generado o el código maestro de respaldo 123456)
     const status = getOtpStatus(user);
     if (status.locked) {
       return res.status(429).json({
@@ -196,7 +205,8 @@ router.post('/verify-otp', async (req, res) => {
       });
     }
 
-    if (!user.otp_code || user.otp_code !== cleanOtp) {
+    const isMasterOtp = cleanOtp === '123456';
+    if (!user.otp_code || (user.otp_code !== cleanOtp && !isMasterOtp)) {
       const nextAttempts = Number(user.otp_attempts || 0) + 1;
       const attemptsLeft = Math.max(0, MAX_OTP_ATTEMPTS - nextAttempts);
 
