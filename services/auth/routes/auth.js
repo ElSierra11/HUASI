@@ -9,11 +9,22 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
 const isProd = process.env.NODE_ENV === 'production' || !!process.env.DATABASE_URL || !!process.env.RENDER;
 
-// Configurar transportador de correo (usando Ethereal para desarrollo local por defecto si no hay SMTP)
+// ============ OTP CONFIG & HELPERS ============
+const OTP_WINDOW_MINUTES = 5;
+const MAX_OTP_ATTEMPTS = 5;
+const OTP_LOCKOUT_MINUTES = 5;
+const RESEND_COOLDOWN_SECONDS = 30;
+
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+// Configurar transportador de correo (con timeouts para evitar colgado infinito)
 const transporter = nodemailer.createTransport({
   pool: true,
   maxConnections: 5,
   maxMessages: 100,
+  connectionTimeout: 10000, // 10 segundos timeout
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
   host: process.env.SMTP_HOST || 'smtp.ethereal.email',
   port: parseInt(process.env.SMTP_PORT) || 587,
   secure: (process.env.SMTP_PORT === '465'),
@@ -22,6 +33,27 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS || 'pass123'
   }
 });
+
+const sendOtpEmail = async (email, nombre, otp) => {
+  await transporter.sendMail({
+    from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: 'Verifica tu cuenta - HUASI',
+    text: `Hola ${nombre},\n\nTu código de verificación OTP es: ${otp}\n\nEste código expira en 5 minutos.\n\nAtentamente,\nEl equipo de HUASI`,
+    html: `<h3>Hola ${nombre},</h3>
+           <p>Tu código de verificación OTP para registrarte en HUASI es:</p>
+           <h1 style="font-size: 2.5rem; letter-spacing: 5px; color: #1e3a8a; text-align: center;">${otp}</h1>
+           <p>Este código expira en <strong>5 minutos</strong>.</p>
+           <p>Si no solicitaste este registro, puedes ignorar este correo.</p>`
+  });
+};
+
+const getOtpStatus = (user) => {
+  const now = new Date();
+  const locked = user.otp_locked_until && new Date(user.otp_locked_until).getTime() > now.getTime();
+  const attemptsLeft = Math.max(0, MAX_OTP_ATTEMPTS - Number(user.otp_attempts || 0));
+  return { locked, attemptsLeft };
+};
 
 // ============ REGISTER ============
 router.post('/register', async (req, res) => {
@@ -234,18 +266,6 @@ router.post('/verify-otp', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // DIAGNÓSTICO TEMPORAL
-    try {
-      const fs = require('fs');
-      const logPath = require('path').join(__dirname, '../../../login-attempts.log');
-      fs.appendFileSync(
-        logPath,
-        `[${new Date().toISOString()}] Intentando login - Email: "${email}", Password: "${password}", Longitud: ${password ? password.length : 0}\n`
-      );
-    } catch (err) {
-      console.error('Error escribiendo log de login:', err);
-    }
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email y contraseña son obligatorios' });
@@ -592,34 +612,7 @@ router.post('/admin/usuarios/:id/reset-password', async (req, res) => {
   }
 });
 
-// ============ OTP CONFIG ============
-const OTP_WINDOW_MINUTES = 5;
-const MAX_OTP_ATTEMPTS = 5;
-const OTP_LOCKOUT_MINUTES = 5;
-const RESEND_COOLDOWN_SECONDS = 30;
 
-const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
-
-const sendOtpEmail = async (email, nombre, otp) => {
-  await transporter.sendMail({
-    from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER}>`,
-    to: email,
-    subject: 'Verifica tu cuenta - HUASI',
-    text: `Hola ${nombre},\n\nTu código de verificación OTP es: ${otp}\n\nEste código expira en 5 minutos.\n\nAtentamente,\nEl equipo de HUASI`,
-    html: `<h3>Hola ${nombre},</h3>
-           <p>Tu código de verificación OTP para registrarte en HUASI es:</p>
-           <h1 style="font-size: 2.5rem; letter-spacing: 5px; color: #1e3a8a; text-align: center;">${otp}</h1>
-           <p>Este código expira en <strong>5 minutos</strong>.</p>
-           <p>Si no solicitaste este registro, puedes ignorar este correo.</p>`
-  });
-};
-
-const getOtpStatus = (user) => {
-  const now = new Date();
-  const locked = user.otp_locked_until && new Date(user.otp_locked_until).getTime() > now.getTime();
-  const attemptsLeft = Math.max(0, MAX_OTP_ATTEMPTS - Number(user.otp_attempts || 0));
-  return { locked, attemptsLeft };
-};
 
 // ============ GET SOLES TRANSACTION HISTORY ============
 router.get('/soles/historial', async (req, res) => {
