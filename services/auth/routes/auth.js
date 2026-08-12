@@ -214,15 +214,17 @@ router.post('/verify-otp', async (req, res) => {
 
     const cookieName = user.role === 'admin' ? 'stayu_admin_token' : 'stayu_token';
 
+    const isProd = process.env.NODE_ENV === 'production' || !!process.env.DATABASE_URL || !!process.env.RENDER;
+
     res.cookie(cookieName, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
     });
 
     const { password_hash, otp_code, otp_expires_at, ...safeUser } = user;
-    res.json({ user: safeUser, message: 'Correo verificado exitosamente' });
+    res.json({ user: safeUser, token, message: 'Correo verificado exitosamente' });
   } catch (err) {
     console.error('Error en verificación OTP:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -287,8 +289,8 @@ router.post('/login', async (req, res) => {
 
     res.cookie(cookieName, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
     });
 
