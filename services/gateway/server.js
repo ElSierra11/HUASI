@@ -8,22 +8,16 @@ require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 const { authMiddleware } = require('./middleware/auth');
 
 const app = express();
-const PORT = process.env.GATEWAY_PORT || 4000;
+const PORT = process.env.PORT || process.env.GATEWAY_PORT || 4000;
 
-const AUTH_URL = `http://localhost:${process.env.AUTH_PORT || 4001}`;
-const HOST_URL = `http://localhost:${process.env.HOST_PORT || 4002}`;
-const BOOKING_URL = `http://localhost:${process.env.BOOKING_PORT || 4003}`;
-const CHAT_URL = `http://localhost:${process.env.CHAT_PORT || 4004}`;
+const AUTH_URL = process.env.AUTH_SERVICE_URL || `http://localhost:${process.env.AUTH_PORT || 4001}`;
+const HOST_URL = process.env.HOSTS_SERVICE_URL || `http://localhost:${process.env.HOST_PORT || 4002}`;
+const BOOKING_URL = process.env.BOOKINGS_SERVICE_URL || `http://localhost:${process.env.BOOKING_PORT || 4003}`;
+const CHAT_URL = process.env.CHAT_SERVICE_URL || `http://localhost:${process.env.CHAT_PORT || 4004}`;
 
-// CORS
+// CORS (Soporta Vercel y desarrollo local)
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'http://localhost:5176',
-    'http://localhost:3000',
-  ],
+  origin: true,
   credentials: true
 }));
 
