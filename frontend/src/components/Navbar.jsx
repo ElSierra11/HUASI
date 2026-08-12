@@ -245,10 +245,10 @@ export default function Navbar() {
 
       {/* Mobile Navigation Menu */}
       <div className={`mobile-nav-menu ${menuOpen ? 'open' : ''}`}>
-        <Link to="/" className={isActive('/') ? 'mobile-nav-active' : ''}>
+        <Link to="/" onClick={() => setMenuOpen(false)} className={isActive('/') ? 'mobile-nav-active' : ''}>
           Explorar
         </Link>
-        <Link to="/quienes-somos" className={isActive('/quienes-somos') ? 'mobile-nav-active' : ''}>
+        <Link to="/quienes-somos" onClick={() => setMenuOpen(false)} className={isActive('/quienes-somos') ? 'mobile-nav-active' : ''}>
           ¿Quiénes Somos?
         </Link>
 
@@ -265,20 +265,20 @@ export default function Navbar() {
             )}
 
             {user.role === 'admin' && (
-              <Link to="/admin" className={isActive('/admin') ? 'mobile-nav-active' : ''}>
+              <Link to="/admin" onClick={() => setMenuOpen(false)} className={isActive('/admin') ? 'mobile-nav-active' : ''}>
                 <ShieldCheck size={16} /> Panel Admin
               </Link>
             )}
 
-            <Link to="/mis-reservas" className={isActive('/mis-reservas') ? 'mobile-nav-active' : ''}>
+            <Link to="/mis-reservas" onClick={() => setMenuOpen(false)} className={isActive('/mis-reservas') ? 'mobile-nav-active' : ''}>
               Mis reservas
             </Link>
 
-            <Link to="/host" className={isActive('/host') ? 'mobile-nav-active' : ''}>
+            <Link to="/host" onClick={() => setMenuOpen(false)} className={isActive('/host') ? 'mobile-nav-active' : ''}>
               <Building size={16} /> Anfitrión
             </Link>
 
-            <Link to="/perfil" className={isActive('/perfil') ? 'mobile-nav-active' : ''}>
+            <Link to="/perfil" onClick={() => setMenuOpen(false)} className={isActive('/perfil') ? 'mobile-nav-active' : ''}>
               <User size={16} /> {user.nombre.split(' ')[0]} — Mi Perfil
             </Link>
 
@@ -291,10 +291,10 @@ export default function Navbar() {
         ) : (
           <>
             <div className="mobile-nav-divider" />
-            <Link to="/login">
+            <Link to="/login" onClick={() => setMenuOpen(false)}>
               Ingresar
             </Link>
-            <Link to="/registro" className="mobile-nav-primary">
+            <Link to="/registro" onClick={() => setMenuOpen(false)} className="mobile-nav-primary">
               Registrarse
             </Link>
           </>
