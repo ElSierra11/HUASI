@@ -3,6 +3,16 @@ import api from '../api';
 
 const AuthContext = createContext(null);
 
+// Decodifica el payload de un JWT sin verificar firma (solo para lectura local)
+function decodeJwt(token) {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(base64));
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('stayu_user');
@@ -10,16 +20,33 @@ export function AuthProvider({ children }) {
   });
   const [loading, setLoading] = useState(true);
 
-  // Al cargar, siempre intenta validar si hay sesión activa consultando /me
+  // Al cargar, intenta validar con /me. Si falla pero hay token válido, mantiene la sesión local.
   useEffect(() => {
+    const token = localStorage.getItem('stayu_token');
+    const savedUser = localStorage.getItem('stayu_user');
+
     api.get('/auth/me')
       .then(res => {
         setUser(res.data);
         localStorage.setItem('stayu_user', JSON.stringify(res.data));
       })
       .catch(() => {
-        setUser(null);
-        localStorage.removeItem('stayu_user');
+        // Si /me falla, verificar si hay token válido (no expirado) en localStorage
+        if (token && savedUser) {
+          const decoded = decodeJwt(token);
+          if (decoded && decoded.exp * 1000 > Date.now()) {
+            // El token todavía es válido — mantener la sesión local
+            setUser(JSON.parse(savedUser));
+          } else {
+            // Token expirado o inválido — cerrar sesión
+            setUser(null);
+            localStorage.removeItem('stayu_user');
+            localStorage.removeItem('stayu_token');
+          }
+        } else {
+          setUser(null);
+          localStorage.removeItem('stayu_user');
+        }
       })
       .finally(() => setLoading(false));
   }, []);
