@@ -257,6 +257,7 @@ export default function PropertyDetail() {
   const navigate = useNavigate();
   const [prop, setProp] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
   const [booking, setBooking] = useState({ fecha_inicio: '', fecha_fin: '', mensaje: '', evento: '', num_huespedes: 1 });
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState('');
@@ -266,9 +267,13 @@ export default function PropertyDetail() {
   const [reportModal, setReportModal] = useState({ open: false, motivo: 'Contenido engañoso o falso', comentario: '', processing: false });
 
   useEffect(() => {
+    setFetchError('');
     api.get(`/propiedades/${id}`)
       .then(res => setProp(res.data))
-      .catch(() => navigate('/'))
+      .catch(err => {
+        const msg = err.response?.data?.error || 'No se pudo cargar el hospedaje. Inténtalo de nuevo.';
+        setFetchError(msg);
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -336,6 +341,12 @@ export default function PropertyDetail() {
   };
 
   if (loading) return <div className="loading"><div className="spinner"></div></div>;
+  if (fetchError) return (
+    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+      <div className="alert alert-error" style={{ maxWidth: 480, margin: '0 auto 24px' }}>{fetchError}</div>
+      <button className="btn btn-primary" onClick={() => navigate('/')}>Volver al inicio</button>
+    </div>
+  );
   if (!prop) return null;
 
   const rating = parseFloat(prop.calificacion_promedio) || 0;
@@ -522,7 +533,11 @@ export default function PropertyDetail() {
           )}
 
           <section style={{ borderBottom: 'none', padding: 0 }}>
-            <SistemaReputacion targetUser={prop.anfitrion_nombre} initialRating={prop.promedio_calificacion || 4.8} initialReviews={prop.resenas || []} />
+            <SistemaReputacion
+              targetUser={`${prop.host_nombre || ''} ${prop.host_apellido || ''}`.trim()}
+              initialRating={parseFloat(prop.calificacion_promedio) || 0}
+              initialReviews={prop.resenas || []}
+            />
           </section>
 
           {prop.disponibilidad?.length > 0 && (
@@ -531,7 +546,9 @@ export default function PropertyDetail() {
               <div style={{ display: 'grid', gap: 10 }}>
                 {prop.disponibilidad.map((d) => (
                   <div key={d.id} className="card" style={{ padding: 14 }}>
-                    <strong style={{ color: 'var(--primary)' }}>{new Date(d.fecha_inicio).toLocaleDateString('es-CO')} — {new Date(d.fecha_fin).toLocaleDateString('es-CO')}</strong>
+                    <strong style={{ color: 'var(--primary)' }}>
+                      {new Date(d.fecha_inicio + 'T00:00:00').toLocaleDateString('es-CO')} — {new Date(d.fecha_fin + 'T00:00:00').toLocaleDateString('es-CO')}
+                    </strong>
                     <p style={{ fontSize: '0.92rem', marginTop: 4 }}>Rango habilitado por el anfitrión para reservas.</p>
                   </div>
                 ))}

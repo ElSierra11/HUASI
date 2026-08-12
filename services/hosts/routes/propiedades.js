@@ -233,11 +233,15 @@ router.get('/:id', async (req, res) => {
     );
 
     const propiedadData = result.rows[0];
-    const isOwner = req.user && req.user.id === propiedadData.host_id;
+    const isOwner = req.user && Number(req.user.id) === Number(propiedadData.host_id);
     const isAcceptedGuest = ya_reservado && ya_reservado.estado === 'aceptada';
 
-    if (!isOwner && !isAcceptedGuest) {
+    if (isOwner || isAcceptedGuest) {
+      // Dueño o huésped aceptado: recibe la dirección exacta tal cual
       propiedadData.direccion_exacta = propiedadData.direccion;
+    } else {
+      // Usuario normal o no autenticado: ocultar dirección y coordenadas
+      propiedadData.direccion_exacta = null;
       propiedadData.direccion = 'Dirección exacta oculta hasta confirmación';
       propiedadData.latitud = null;
       propiedadData.longitud = null;
