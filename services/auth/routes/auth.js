@@ -82,6 +82,16 @@ const sendOtpEmail = async (email, nombre, otp) => {
   });
 };
 
+const sendOtpEmailBackground = (email, nombre, otp) => {
+  console.log(`=======================================================`);
+  console.log(`🔑 [OTP LOG] Código OTP para ${email}: ${otp}`);
+  console.log(`=======================================================`);
+  
+  sendOtpEmail(email, nombre, otp)
+    .then(() => console.log(`✅ [OTP EMAIL] Código ${otp} enviado exitosamente por correo a ${email}`))
+    .catch((err) => console.error('⚠️ [OTP EMAIL WARN] No se pudo enviar por SMTP:', err.message || err));
+};
+
 const getOtpStatus = (user) => {
   const now = new Date();
   const locked = user.otp_locked_until && new Date(user.otp_locked_until).getTime() > now.getTime();
@@ -146,18 +156,10 @@ router.post('/register', async (req, res) => {
         [password_hash, nombre, apellido, telefono || null, role === 'admin' ? 'admin' : 'user', campus, otp, otp_expires_at, cleanEmail]
       );
 
-      // Enviar OTP por correo (con log de respaldo si SMTP falla)
-      try {
-        await sendOtpEmail(cleanEmail, nombre, otp);
-        console.log(`🔑 [OTP] Código ${otp} enviado por correo a ${cleanEmail}`);
-      } catch (mailErr) {
-        console.error('⚠️ Error enviando correo OTP por SMTP:', mailErr.message || mailErr);
-        console.log(`=======================================================`);
-        console.log(`🔑 [OTP FALLBACK LOG] Código OTP para ${cleanEmail}: ${otp}`);
-        console.log(`=======================================================`);
-      }
+      // Enviar OTP en segundo plano sin congelar la solicitud HTTP
+      sendOtpEmailBackground(cleanEmail, nombre, otp);
 
-      return res.status(200).json({ message: 'Código OTP enviado a tu correo (o revisa la consola de administración).' });
+      return res.status(200).json({ message: 'Código OTP enviado a tu correo.' });
     }
 
     // Hash password
@@ -178,16 +180,8 @@ router.post('/register', async (req, res) => {
       [cleanEmail, password_hash, nombre, apellido, telefono || null, userRole, campus, otp, otp_expires_at]
     );
 
-    // Enviar OTP por correo (con log de respaldo si SMTP falla)
-    try {
-      await sendOtpEmail(cleanEmail, nombre, otp);
-      console.log(`🔑 [OTP] Código ${otp} enviado por correo a ${cleanEmail}`);
-    } catch (mailErr) {
-      console.error('⚠️ Error enviando correo OTP por SMTP:', mailErr.message || mailErr);
-      console.log(`=======================================================`);
-      console.log(`🔑 [OTP FALLBACK LOG] Código OTP para ${cleanEmail}: ${otp}`);
-      console.log(`=======================================================`);
-    }
+    // Enviar OTP en segundo plano sin congelar la solicitud HTTP
+    sendOtpEmailBackground(cleanEmail, nombre, otp);
 
     res.status(201).json({ message: 'Código OTP enviado a tu correo. Por favor, revísalo.' });
   } catch (err) {
