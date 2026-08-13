@@ -1,24 +1,36 @@
 const express = require('express');
 const pool = require('../db');
-const { Resend } = require('resend');
 
 const router = express.Router();
 
-// ============ EMAIL con Resend (API HTTP - funciona en Render) ============
+// ============ EMAIL con Brevo API (HTTP - funciona en Render) ============
 const sendEmail = async ({ to, subject, html }) => {
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM || 'HUASI <onboarding@resend.dev>';
+  const apiKey = process.env.BREVO_API_KEY;
+  const fromEmail = process.env.BREVO_FROM_EMAIL || 'huasicorrespondencia@gmail.com';
 
   if (!apiKey) {
-    console.warn('[RESEND] RESEND_API_KEY no configurada - email no enviado');
+    console.warn('[BREVO] BREVO_API_KEY no configurada - email no enviado');
     return;
   }
 
-  const resend = new Resend(apiKey);
-  const { data, error } = await resend.emails.send({ from: fromEmail, to: [to], subject, html });
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': apiKey,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      sender: { name: 'HUASI — Universidad Cooperativa', email: fromEmail },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html
+    })
+  });
 
-  if (error) throw new Error(`Resend API error: ${JSON.stringify(error)}`);
-  return data;
+  const result = await response.json();
+  if (!response.ok) throw new Error(`Brevo error ${response.status}: ${JSON.stringify(result)}`);
+  return result;
 };
 
 // Normalizar estado de reserva

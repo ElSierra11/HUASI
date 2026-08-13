@@ -2,7 +2,6 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
-const { Resend } = require('resend');
 
 const router = express.Router();
 
@@ -17,62 +16,64 @@ const RESEND_COOLDOWN_SECONDS = 30;
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// ============ EMAIL con Resend (API HTTP - funciona en Render) ============
+// ============ EMAIL con Brevo API (HTTP - funciona en Render) ============
 const sendOtpEmail = async (email, nombre, otp) => {
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM || 'HUASI <onboarding@resend.dev>';
+  const apiKey = process.env.BREVO_API_KEY;
+  const fromEmail = process.env.BREVO_FROM_EMAIL || 'huasicorrespondencia@gmail.com';
+  const fromName = 'HUASI — Hospedaje Solidario UCC';
 
-  console.log(`[RESEND CONFIG] API Key cargada: ${apiKey ? 'SÍ (' + apiKey.substring(0, 8) + '...)' : 'NO - falta RESEND_API_KEY'}`);
-  console.log(`[RESEND CONFIG] Enviando desde: ${fromEmail}`);
+  console.log(`[BREVO CONFIG] API Key: ${apiKey ? 'SÍ (' + apiKey.substring(0, 12) + '...)' : 'NO - falta BREVO_API_KEY'}`);
 
-  if (!apiKey) {
-    throw new Error('RESEND_API_KEY no configurada en variables de entorno');
-  }
+  if (!apiKey) throw new Error('BREVO_API_KEY no configurada');
 
-  const resend = new Resend(apiKey);
-
-  const { data, error } = await resend.emails.send({
-    from: fromEmail,
-    to: [email],
-    subject: '🔑 Código de Verificación OTP - HUASI',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-        <div style="text-align: center; margin-bottom: 16px;">
-          <h2 style="color: #0d7c3d; margin: 0; font-size: 20px;">HUASI — Hospedaje Solidario UCC</h2>
-          <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Verificación de Correo Institucional</p>
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': apiKey,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      sender: { name: fromName, email: fromEmail },
+      to: [{ email }],
+      subject: '🔑 Código de Verificación OTP - HUASI',
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+          <div style="text-align: center; margin-bottom: 16px;">
+            <h2 style="color: #0d7c3d; margin: 0; font-size: 20px;">HUASI — Hospedaje Solidario UCC</h2>
+            <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Verificación de Correo Institucional</p>
+          </div>
+          <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 16px;">
+            <p style="color: #166534; font-size: 13px; margin: 0 0 8px 0; font-weight: bold;">Tu código de verificación es:</p>
+            <span style="font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #0d7c3d; display: inline-block;">${otp}</span>
+            <p style="color: #64748b; font-size: 11px; margin: 8px 0 0 0;">Válido por 5 minutos</p>
+          </div>
+          <p style="color: #334155; font-size: 13px; line-height: 1.5;">
+            Hola <strong>${nombre}</strong>, ingresa este código de 6 dígitos en HUASI para verificar tu correo institucional de la Universidad Cooperativa de Colombia.
+          </p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
+          <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
+            Si no solicitaste este registro, por favor ignora este correo.
+          </p>
         </div>
-        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 16px;">
-          <p style="color: #166534; font-size: 13px; margin: 0 0 8px 0; font-weight: bold;">Tu código de verificación es:</p>
-          <span style="font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #0d7c3d; display: inline-block;">${otp}</span>
-          <p style="color: #64748b; font-size: 11px; margin: 8px 0 0 0;">Válido por 5 minutos</p>
-        </div>
-        <p style="color: #334155; font-size: 13px; line-height: 1.5;">
-          Hola <strong>${nombre}</strong>, ingresa este código de 6 dígitos en HUASI para verificar tu correo institucional de la Universidad Cooperativa de Colombia.
-        </p>
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
-        <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
-          Si no solicitaste este registro, por favor ignora este correo.
-        </p>
-      </div>
-    `
+      `
+    })
   });
 
-  if (error) {
-    throw new Error(`Resend API error: ${JSON.stringify(error)}`);
-  }
-
-  return data;
+  const result = await response.json();
+  if (!response.ok) throw new Error(`Brevo error ${response.status}: ${JSON.stringify(result)}`);
+  return result;
 };
 
 const sendOtpEmailBackground = (email, nombre, otp) => {
   console.log(`=======================================================`);
   console.log(`🔑 [OTP LOG] Código OTP para ${email}: ${otp}`);
   console.log(`=======================================================`);
-  
+
   sendOtpEmail(email, nombre, otp)
-    .then((data) => console.log(`✅ [OTP EMAIL] Código ${otp} enviado exitosamente a ${email}. ID: ${data?.id}`))
+    .then((data) => console.log(`✅ [OTP EMAIL] Código ${otp} enviado a ${email}. MessageId: ${data?.messageId}`))
     .catch((err) => {
-      console.error('❌ [OTP EMAIL ERROR] No se pudo enviar con Resend:');
+      console.error('❌ [OTP EMAIL ERROR] No se pudo enviar con Brevo:');
       console.error('  - message:', err.message);
     });
 };
