@@ -447,15 +447,14 @@ export default function Register() {
 
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <img
-            src="/huasi_logo.jpg"
+            src="/logo_vertical.png"
             alt="HUASI Logo"
             style={{
-              height: '76px',
+              height: '85px',
               objectFit: 'contain',
               marginBottom: 12,
               marginLeft: 'auto',
-              marginRight: 'auto',
-              borderRadius: '12px'
+              marginRight: 'auto'
             }}
           />
         </div>

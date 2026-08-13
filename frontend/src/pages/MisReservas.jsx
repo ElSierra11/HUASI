@@ -283,7 +283,7 @@ export default function MisReservas() {
                               <table class="header-table">
                                 <tr>
                                   <td>
-                                    <img src="${origin}/huasi_logo.jpg" alt="HUASI UCC" class="logo-img" style="max-height: 44px; max-width: 150px; width: auto; height: auto; object-fit: contain; margin-right: 12px;" onerror="this.style.display='none'" />
+                                    <img src="${origin}/logo_horizontal.png" alt="HUASI UCC" class="logo-img" style="max-height: 44px; max-width: 150px; width: auto; height: auto; object-fit: contain; margin-right: 12px;" onerror="this.style.display='none'" />
                                     <img src="${origin}/indesco.png" alt="INDESCO" class="logo-img" style="max-height: 36px; max-width: 120px; width: auto; height: auto; object-fit: contain;" onerror="this.style.display='none'" />
                                   </td>
                                   <td style="text-align: right;">

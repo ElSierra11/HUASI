@@ -167,9 +167,9 @@ export default function Home() {
               {/* Logo Area */}
               <div className="p-4 rounded-2xl w-full flex items-center justify-center h-48 logo-container">
                 <img 
-                  src="/huasi_logo.jpg" 
+                  src="/logo_vertical.png" 
                   alt="HUASI Logo" 
-                  className="h-full object-contain logo-img-light-file" 
+                  className="h-full object-contain" 
                 />
               </div>
 

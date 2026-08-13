@@ -34,15 +34,14 @@ export default function Login() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <img 
-            src="/huasi_logo.jpg" 
+            src="/logo_vertical.png" 
             alt="HUASI Logo" 
             style={{ 
-              height: '80px', 
+              height: '90px', 
               objectFit: 'contain',
               marginBottom: 16,
               marginLeft: 'auto',
-              marginRight: 'auto',
-              borderRadius: '12px'
+              marginRight: 'auto'
             }} 
           />
           <h1 style={{ fontSize: '1.9rem', marginBottom: 6 }}>¡Bienvenido de nuevo!</h1>
