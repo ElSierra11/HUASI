@@ -16,53 +16,54 @@ const RESEND_COOLDOWN_SECONDS = 30;
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// ============ EMAIL con Brevo API (HTTP - funciona en Render) ============
+// ============ EMAIL con Nodemailer (Gmail SMTP) ============
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: false, // TLS en puerto 587
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
 const sendOtpEmail = async (email, nombre, otp) => {
-  const apiKey = process.env.BREVO_API_KEY;
-  const fromEmail = process.env.BREVO_FROM_EMAIL || 'huasicorrespondencia@gmail.com';
-  const fromName = 'HUASI — Hospedaje Solidario UCC';
+  console.log(`[SMTP CONFIG] User: ${process.env.SMTP_USER ? process.env.SMTP_USER : 'NO - falta SMTP_USER'}`);
 
-  console.log(`[BREVO CONFIG] API Key: ${apiKey ? 'SÍ (' + apiKey.substring(0, 12) + '...)' : 'NO - falta BREVO_API_KEY'}`);
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    throw new Error('SMTP_USER o SMTP_PASS no configurados en .env');
+  }
 
-  if (!apiKey) throw new Error('BREVO_API_KEY no configurada');
-
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      'accept': 'application/json',
-      'api-key': apiKey,
-      'content-type': 'application/json'
-    },
-    body: JSON.stringify({
-      sender: { name: fromName, email: fromEmail },
-      to: [{ email }],
-      subject: '🔑 Código de Verificación OTP - HUASI',
-      htmlContent: `
-        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-          <div style="text-align: center; margin-bottom: 16px;">
-            <h2 style="color: #0d7c3d; margin: 0; font-size: 20px;">HUASI — Hospedaje Solidario UCC</h2>
-            <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Verificación de Correo Institucional</p>
-          </div>
-          <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 16px;">
-            <p style="color: #166534; font-size: 13px; margin: 0 0 8px 0; font-weight: bold;">Tu código de verificación es:</p>
-            <span style="font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #0d7c3d; display: inline-block;">${otp}</span>
-            <p style="color: #64748b; font-size: 11px; margin: 8px 0 0 0;">Válido por 5 minutos</p>
-          </div>
-          <p style="color: #334155; font-size: 13px; line-height: 1.5;">
-            Hola <strong>${nombre}</strong>, ingresa este código de 6 dígitos en HUASI para verificar tu correo institucional de la Universidad Cooperativa de Colombia.
-          </p>
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
-          <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
-            Si no solicitaste este registro, por favor ignora este correo.
-          </p>
+  const info = await transporter.sendMail({
+    from: `"HUASI — Hospedaje Solidario UCC" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: '🔑 Código de Verificación OTP - HUASI',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 16px;">
+          <h2 style="color: #0d7c3d; margin: 0; font-size: 20px;">HUASI — Hospedaje Solidario UCC</h2>
+          <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Verificación de Correo Institucional</p>
         </div>
-      `
-    })
+        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 16px;">
+          <p style="color: #166534; font-size: 13px; margin: 0 0 8px 0; font-weight: bold;">Tu código de verificación es:</p>
+          <span style="font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #0d7c3d; display: inline-block;">${otp}</span>
+          <p style="color: #64748b; font-size: 11px; margin: 8px 0 0 0;">Válido por 5 minutos</p>
+        </div>
+        <p style="color: #334155; font-size: 13px; line-height: 1.5;">
+          Hola <strong>${nombre}</strong>, ingresa este código de 6 dígitos en HUASI para verificar tu correo institucional de la Universidad Cooperativa de Colombia.
+        </p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
+        <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
+          Si no solicitaste este registro, por favor ignora este correo.
+        </p>
+      </div>
+    `
   });
 
-  const result = await response.json();
-  if (!response.ok) throw new Error(`Brevo error ${response.status}: ${JSON.stringify(result)}`);
-  return result;
+  console.log(`✅ [SMTP] Email enviado. MessageId: ${info.messageId}`);
+  return info;
 };
 
 const sendOtpEmailBackground = (email, nombre, otp) => {
@@ -71,9 +72,9 @@ const sendOtpEmailBackground = (email, nombre, otp) => {
   console.log(`=======================================================`);
 
   sendOtpEmail(email, nombre, otp)
-    .then((data) => console.log(`✅ [OTP EMAIL] Código ${otp} enviado a ${email}. MessageId: ${data?.messageId}`))
+    .then((info) => console.log(`✅ [OTP EMAIL] Código ${otp} enviado a ${email}. MessageId: ${info?.messageId}`))
     .catch((err) => {
-      console.error('❌ [OTP EMAIL ERROR] No se pudo enviar con Brevo:');
+      console.error('❌ [OTP EMAIL ERROR] No se pudo enviar por SMTP:');
       console.error('  - message:', err.message);
     });
 };
