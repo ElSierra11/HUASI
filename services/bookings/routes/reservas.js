@@ -3,34 +3,67 @@ const pool = require('../db');
 
 const router = express.Router();
 
-// ============ EMAIL con Brevo API (HTTP - funciona en Render) ============
-const sendEmail = async ({ to, subject, html }) => {
-  const apiKey = process.env.BREVO_API_KEY;
-  const fromEmail = process.env.BREVO_FROM_EMAIL || 'huasicorrespondencia@gmail.com';
-
-  if (!apiKey) {
-    console.warn('[BREVO] BREVO_API_KEY no configurada - email no enviado');
-    return;
-  }
-
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+// ============ EMAIL con Gmail REST API (HTTP - funciona en Render) ============
+const getGmailAccessToken = async () => {
+  const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
-    headers: {
-      'accept': 'application/json',
-      'api-key': apiKey,
-      'content-type': 'application/json'
-    },
-    body: JSON.stringify({
-      sender: { name: 'HUASI — Universidad Cooperativa', email: fromEmail },
-      to: [{ email: to }],
-      subject,
-      htmlContent: html
-    })
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: process.env.GMAIL_CLIENT_ID,
+      client_secret: process.env.GMAIL_CLIENT_SECRET,
+      refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+      grant_type: 'refresh_token',
+    }),
   });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error_description || data.error || 'Error obteniendo access token de Gmail');
+  }
+  return data.access_token;
+};
 
-  const result = await response.json();
-  if (!response.ok) throw new Error(`Brevo error ${response.status}: ${JSON.stringify(result)}`);
-  return result;
+const sendEmail = async ({ to, subject, html }) => {
+  try {
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_CLIENT_ID || !process.env.GMAIL_CLIENT_SECRET || !process.env.GMAIL_REFRESH_TOKEN) {
+      console.warn('[Gmail API] Variables de Gmail OAuth2 no configuradas en Bookings Service');
+      return;
+    }
+
+    const accessToken = await getGmailAccessToken();
+    const encodeHeader = (str) => `=?UTF-8?B?${Buffer.from(str, 'utf-8').toString('base64')}?=`;
+
+    const rawMessage = [
+      `From: ${encodeHeader('HUASI — Hospedaje Solidario UCC')} <${process.env.GMAIL_USER}>`,
+      `To: ${to}`,
+      `Subject: ${encodeHeader(subject)}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: text/html; charset=utf-8`,
+      `Content-Transfer-Encoding: base64`,
+      ``,
+      Buffer.from(html, 'utf-8').toString('base64'),
+    ].join('\r\n');
+
+    const encodedMessage = Buffer.from(rawMessage, 'utf-8').toString('base64url');
+
+    const gmailRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ raw: encodedMessage }),
+    });
+
+    const result = await gmailRes.json();
+    if (!gmailRes.ok) {
+      console.error('[Gmail Send ERROR]', JSON.stringify(result));
+      throw new Error(result.error?.message || 'Error enviando email via Gmail API');
+    }
+    console.log(`✅ [Bookings Email] Notificación enviada a ${to}. Id: ${result.id}`);
+    return result;
+  } catch (err) {
+    console.error('❌ [Bookings Email ERROR]:', err.message);
+  }
 };
 
 // Normalizar estado de reserva

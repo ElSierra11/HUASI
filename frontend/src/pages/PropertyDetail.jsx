@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { MapPin, Star, Users, Home, CheckCircle2, Calendar, MessageSquare, Award, GraduationCap, Bed, Sofa, Trees, Coins, HelpCircle, ShieldAlert, Flag } from 'lucide-react';
 import api from '../api';
 import SistemaReputacion from '../components/SistemaReputacion';
+import MapaAlojamientos from '../components/MapaAlojamientos';
 import Modal from '../components/Modal';
 import { useToast } from '../components/Toast';
 
@@ -531,6 +532,15 @@ export default function PropertyDetail() {
               <p style={{ color: 'var(--text-muted)', whiteSpace: 'pre-line' }}>{prop.reglas}</p>
             </section>
           )}
+
+          <section>
+            <h2>Ubicación y Cercanía UCC</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: 14, fontSize: '0.92rem' }}>
+              <MapPin size={16} style={{ display: 'inline', marginRight: 6, color: 'var(--ucc-green)' }} />
+              <strong>{prop.direccion}</strong> {prop.barrio ? `— Barrio ${prop.barrio}` : ''} ({prop.ciudad || 'Campus UCC'})
+            </p>
+            <MapaAlojamientos propiedades={[prop]} />
+          </section>
 
           <section style={{ borderBottom: 'none', padding: 0 }}>
             <SistemaReputacion
