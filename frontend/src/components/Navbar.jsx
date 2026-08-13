@@ -183,7 +183,7 @@ export default function Navbar() {
               to="/perfil"
               className="inline-flex items-center gap-1.5 bg-ucc-bg border border-ucc-border px-4 py-2 rounded-full font-body text-sm font-bold text-ucc-navy hover:bg-ucc-green-light hover:border-ucc-green/20 transition-all duration-200"
             >
-              <User size={14} /> {user.nombre.split(' ')[0]}
+              <User size={14} /> {user?.nombre ? user.nombre.split(' ')[0] : 'Perfil'}
             </Link>
 
             <button 
@@ -279,7 +279,7 @@ export default function Navbar() {
             </Link>
 
             <Link to="/perfil" onClick={() => setMenuOpen(false)} className={isActive('/perfil') ? 'mobile-nav-active' : ''}>
-              <User size={16} /> {user.nombre.split(' ')[0]} — Mi Perfil
+              <User size={16} /> {user?.nombre ? user.nombre.split(' ')[0] : 'Mi Perfil'} — Mi Perfil
             </Link>
 
             <div className="mobile-nav-divider" />
