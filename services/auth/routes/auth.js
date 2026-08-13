@@ -68,18 +68,20 @@ const sendOtpEmail = async (email, nombre, otp) => {
     </div>
   `;
 
+  const encodeHeader = (str) => `=?UTF-8?B?${Buffer.from(str, 'utf-8').toString('base64')}?=`;
+
   const rawMessage = [
-    `From: "HUASI — Hospedaje Solidario UCC" <${process.env.GMAIL_USER}>`,
+    `From: ${encodeHeader('HUASI — Hospedaje Solidario UCC')} <${process.env.GMAIL_USER}>`,
     `To: ${email}`,
-    `Subject: 🔑 Código de Verificación OTP - HUASI`,
+    `Subject: ${encodeHeader('🔑 Código de Verificación OTP - HUASI')}`,
     `MIME-Version: 1.0`,
     `Content-Type: text/html; charset=utf-8`,
     `Content-Transfer-Encoding: base64`,
     ``,
-    Buffer.from(htmlBody).toString('base64'),
+    Buffer.from(htmlBody, 'utf-8').toString('base64'),
   ].join('\r\n');
 
-  const encodedMessage = Buffer.from(rawMessage).toString('base64url');
+  const encodedMessage = Buffer.from(rawMessage, 'utf-8').toString('base64url');
 
   const gmailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, {
     method: 'POST',
