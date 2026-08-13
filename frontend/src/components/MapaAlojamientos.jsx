@@ -15,6 +15,55 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return (R * c).toFixed(1);
 }
 
+// Coordenadas reales de sedes UCC en Colombia
+const UCC_CAMPUS_COORDS = {
+  'Santa Marta': { lat: 11.2263, lng: -74.1868 },
+  'Montería': { lat: 8.7570, lng: -75.8814 },
+  'Medellín': { lat: 6.2442, lng: -75.5812 },
+  'Bogotá': { lat: 4.6280, lng: -74.0650 },
+  'Bucaramanga': { lat: 7.1193, lng: -73.1227 },
+  'Pasto': { lat: 1.2136, lng: -77.2811 },
+  'Popayán': { lat: 2.4419, lng: -76.6063 },
+  'Ibagué': { lat: 4.4389, lng: -75.2322 },
+  'Villavicencio': { lat: 4.1420, lng: -73.6266 },
+  'Neiva': { lat: 2.9273, lng: -75.2819 },
+  'Cúcuta': { lat: 7.8939, lng: -72.5078 },
+  'Espinal': { lat: 4.1492, lng: -74.8841 },
+  'Apartadó': { lat: 7.8836, lng: -76.6253 },
+  'Cartago': { lat: 4.7464, lng: -75.9117 },
+  'Quibdó': { lat: 5.6947, lng: -76.6611 },
+  'Arauca': { lat: 7.0847, lng: -70.7591 }
+};
+
+function getPropertyCoordinates(prop, idx) {
+  if (prop && prop.latitud && prop.longitud && !isNaN(parseFloat(prop.latitud)) && !isNaN(parseFloat(prop.longitud))) {
+    return { lat: parseFloat(prop.latitud), lng: parseFloat(prop.longitud) };
+  }
+
+  const locationSearch = `${prop?.campus_cercano || ''} ${prop?.ciudad || ''} ${prop?.direccion || ''}`.toLowerCase();
+  let baseCoords = null;
+
+  for (const [key, coords] of Object.entries(UCC_CAMPUS_COORDS)) {
+    if (locationSearch.includes(key.toLowerCase())) {
+      baseCoords = coords;
+      break;
+    }
+  }
+
+  if (!baseCoords) {
+    baseCoords = UCC_CAMPUS_COORDS['Santa Marta'];
+  }
+
+  const seed = (prop?.id || idx || 1);
+  const latOffset = ((seed * 17) % 50 - 25) * 0.0003;
+  const lngOffset = ((seed * 31) % 50 - 25) * 0.0003;
+
+  return {
+    lat: baseCoords.lat + latOffset,
+    lng: baseCoords.lng + lngOffset
+  };
+}
+
 export default function MapaAlojamientos({ propiedades = [] }) {
   const navigate = useNavigate();
   const mapContainerRef = useRef(null);
@@ -23,7 +72,7 @@ export default function MapaAlojamientos({ propiedades = [] }) {
   const [userLocation, setUserLocation] = useState(null); // { lat, lng }
   const [geoError, setGeoError] = useState(null);
   const [locating, setLocating] = useState(false);
-  const [maxDistance, setMaxDistance] = useState(50); // km
+  const [maxDistance, setMaxDistance] = useState(99999); // km
   const [selectedProperty, setSelectedProperty] = useState(null);
 
   // Default fallback coords (Santa Marta / UCC Campus: 11.226, -74.186)
@@ -48,16 +97,14 @@ export default function MapaAlojamientos({ propiedades = [] }) {
         setUserLocation(coords);
         setLocating(false);
 
-        // Center Leaflet map if available
         if (mapInstanceRef.current && window.L) {
           mapInstanceRef.current.setView([coords.lat, coords.lng], 13);
         }
       },
       (err) => {
         console.warn('Geolocation error:', err);
-        setGeoError('No pudimos obtener tu ubicación actual. Usando ubicación del Campus UCC.');
+        setGeoError('No pudimos obtener tu ubicación GPS actual. Mostrando ubicaciones en mapa.');
         setLocating(false);
-        setUserLocation(defaultCoords);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
@@ -71,40 +118,45 @@ export default function MapaAlojamientos({ propiedades = [] }) {
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    // Load Leaflet CSS & JS dynamically if not already loaded
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link');
-      link.id = 'leaflet-css';
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
+    const loadLeafletAndInit = () => {
+      if (mapInstanceRef.current) return;
 
-    const initMap = () => {
-      if (!window.L || mapInstanceRef.current) return;
+      if (!document.getElementById('leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'leaflet-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
 
-      const center = userLocation || defaultCoords;
-      const map = window.L.map(mapContainerRef.current).setView([center.lat, center.lng], 12);
+      const initMap = () => {
+        if (!window.L || mapInstanceRef.current || !mapContainerRef.current) return;
+        const center = userLocation || defaultCoords;
+        const map = window.L.map(mapContainerRef.current).setView([center.lat, center.lng], 12);
 
-      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
 
-      mapInstanceRef.current = map;
+        mapInstanceRef.current = map;
+        renderMarkers();
+      };
+
+      if (window.L) {
+        initMap();
+      } else {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = initMap;
+        document.body.appendChild(script);
+      }
     };
 
-    if (window.L) {
-      initMap();
-    } else {
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = initMap;
-      document.body.appendChild(script);
-    }
+    loadLeafletAndInit();
   }, []);
 
   // Update Markers on Map
-  useEffect(() => {
+  const renderMarkers = () => {
     const map = mapInstanceRef.current;
     if (!map || !window.L) return;
 
@@ -114,8 +166,6 @@ export default function MapaAlojamientos({ propiedades = [] }) {
         map.removeLayer(layer);
       }
     });
-
-    const currentCoords = userLocation || defaultCoords;
 
     // User Location Marker (Pulse Blue Circle)
     if (userLocation) {
@@ -129,7 +179,6 @@ export default function MapaAlojamientos({ propiedades = [] }) {
             border: 3px solid #ffffff;
             border-radius: 50%;
             box-shadow: 0 0 15px rgba(37, 99, 235, 0.6);
-            animation: pulse-ring 1.8s infinite;
           "></div>
         `,
         iconSize: [20, 20],
@@ -141,56 +190,6 @@ export default function MapaAlojamientos({ propiedades = [] }) {
         .bindPopup('<b>Tu Ubicación Actual</b><br>Geolocalización GPS activa.');
     }
 
-// Coordenadas reales de sedes UCC en Colombia
-const UCC_CAMPUS_COORDS = {
-  'Santa Marta': { lat: 11.2263, lng: -74.1868 },
-  'Montería': { lat: 8.7570, lng: -75.8814 },
-  'Medellín': { lat: 6.2442, lng: -75.5812 },
-  'Bogotá': { lat: 4.6280, lng: -74.0650 },
-  'Bucaramanga': { lat: 7.1193, lng: -73.1227 },
-  'Pasto': { lat: 1.2136, lng: -77.2811 },
-  'Popayán': { lat: 2.4419, lng: -76.6063 },
-  'Ibagué': { lat: 4.4389, lng: -75.2322 },
-  'Villavicencio': { lat: 4.1420, lng: -73.6266 },
-  'Neiva': { lat: 2.9273, lng: -75.2819 },
-  'Cúcuta': { lat: 7.8939, lng: -72.5078 },
-  'Espinal': { lat: 4.1492, lng: -74.8841 },
-  'Apartadó': { lat: 7.8836, lng: -76.6253 },
-  'Cartago': { lat: 4.7464, lng: -75.9117 },
-  'Quibdó': { lat: 5.6947, lng: -76.6611 },
-  'Arauca': { lat: 7.0847, lng: -70.7591 }
-};
-
-function getPropertyCoordinates(prop, idx) {
-  if (prop.latitud && prop.longitud && !isNaN(parseFloat(prop.latitud)) && !isNaN(parseFloat(prop.longitud))) {
-    return { lat: parseFloat(prop.latitud), lng: parseFloat(prop.longitud) };
-  }
-
-  const locationSearch = `${prop.campus_cercano || ''} ${prop.ciudad || ''} ${prop.direccion || ''}`.toLowerCase();
-  let baseCoords = null;
-
-  for (const [key, coords] of Object.entries(UCC_CAMPUS_COORDS)) {
-    if (locationSearch.includes(key.toLowerCase())) {
-      baseCoords = coords;
-      break;
-    }
-  }
-
-  if (!baseCoords) {
-    baseCoords = UCC_CAMPUS_COORDS['Santa Marta'];
-  }
-
-  const seed = (prop.id || idx || 1);
-  const latOffset = ((seed * 17) % 50 - 25) * 0.0003;
-  const lngOffset = ((seed * 31) % 50 - 25) * 0.0003;
-
-  return {
-    lat: baseCoords.lat + latOffset,
-    lng: baseCoords.lng + lngOffset
-  };
-}
-
-    // Add Property Markers with real geographic coordinates
     const bounds = window.L.latLngBounds();
 
     if (userLocation) {
@@ -262,6 +261,12 @@ function getPropertyCoordinates(prop, idx) {
     if (bounds.isValid() && propiedades.length > 0) {
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
     }
+  };
+
+  useEffect(() => {
+    if (mapInstanceRef.current) {
+      renderMarkers();
+    }
   }, [userLocation, propiedades, maxDistance]);
 
   return (
@@ -330,40 +335,18 @@ function getPropertyCoordinates(prop, idx) {
         </div>
       )}
 
-      {/* Map Container */}
-      <div
-        ref={mapContainerRef}
-        style={{
-          width: '100%',
-          height: 380,
-          borderRadius: 12,
+      {/* Map Display Container */}
+      <div 
+        ref={mapContainerRef} 
+        style={{ 
+          width: '100%', 
+          height: '420px', 
+          borderRadius: 12, 
+          overflow: 'hidden', 
           border: '1px solid var(--border)',
           zIndex: 1
-        }}
+        }} 
       />
-
-      {/* Selected Property Banner if clicked */}
-      {selectedProperty && (
-        <div style={{ background: 'var(--bg-main)', border: '1px solid var(--primary)', borderRadius: 10, padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Home size={22} />
-            </div>
-            <div>
-              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--text)' }}>{selectedProperty.titulo}</h4>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                {selectedProperty.ciudad || 'Santa Marta'} • <strong>A {selectedProperty.dist} km de tu ubicación</strong>
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => navigate(`/propiedad/${selectedProperty.id}`)}
-            style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <ExternalLink size={14} /> Ver Ficha
-          </button>
-        </div>
-      )}
     </div>
   );
 }
