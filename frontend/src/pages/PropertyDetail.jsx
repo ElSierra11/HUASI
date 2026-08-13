@@ -642,18 +642,20 @@ export default function PropertyDetail() {
                   <div className="form-group">
                     <label>Llegada</label>
                     <input type="date" className="form-control" required
+                      min={new Date().toISOString().split('T')[0]}
                       value={booking.fecha_inicio} onChange={e => setBooking(b => ({ ...b, fecha_inicio: e.target.value }))} />
                   </div>
                   <div className="form-group">
                     <label>Salida</label>
                     <input type="date" className="form-control" required
+                      min={booking.fecha_inicio || new Date().toISOString().split('T')[0]}
                       value={booking.fecha_fin} onChange={e => setBooking(b => ({ ...b, fecha_fin: e.target.value }))} />
                   </div>
                 </div>
                 <div className="form-group">
-                  <label>Huéspedes</label>
-                  <input type="number" className="form-control" min="1" max={prop.capacidad}
-                    value={booking.num_huespedes} onChange={e => setBooking(b => ({ ...b, num_huespedes: parseInt(e.target.value) }))} />
+                  <label>Huéspedes (Máx. {prop.capacidad || 1})</label>
+                  <input type="number" className="form-control" min="1" max={prop.capacidad || 1} required
+                    value={booking.num_huespedes} onChange={e => setBooking(b => ({ ...b, num_huespedes: parseInt(e.target.value) || 1 }))} />
                 </div>
                 <div className="form-group">
                   <label>Evento académico</label>

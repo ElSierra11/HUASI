@@ -98,7 +98,7 @@ router.post('/', async (req, res) => {
     fin.setHours(0, 0, 0, 0);
 
     if (inicio >= fin) {
-      return res.status(400).json({ error: 'La fecha de inicio debe ser anterior a la fecha de fin' });
+      return res.status(400).json({ error: 'La fecha de salida debe ser posterior a la fecha de llegada' });
     }
 
     if (inicio < hoy) {
@@ -126,9 +126,13 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'No puedes reservar tu propia propiedad' });
     }
 
-    // Verificar capacidad
-    if (num_huespedes && num_huespedes > prop.rows[0].capacidad) {
-      return res.status(400).json({ error: `La propiedad tiene capacidad para ${prop.rows[0].capacidad} huéspedes` });
+    // Verificar capacidad estricta de huéspedes
+    const huespedesNum = parseInt(num_huespedes) || 1;
+    if (huespedesNum < 1) {
+      return res.status(400).json({ error: 'El número de huéspedes debe ser al menos 1' });
+    }
+    if (huespedesNum > prop.rows[0].capacidad) {
+      return res.status(400).json({ error: `La capacidad máxima de este alojamiento es de ${prop.rows[0].capacidad} huésped(es)` });
     }
 
     // Verificar que la fecha solicitada cae dentro de al menos un rango de disponibilidad definido

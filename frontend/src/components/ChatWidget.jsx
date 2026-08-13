@@ -559,6 +559,7 @@ export default function ChatWidget() {
                         <input 
                           type="date" 
                           className="form-control" 
+                          min={new Date().toISOString().split('T')[0]}
                           style={{ padding: '8px 12px', fontSize: '0.82rem' }}
                           value={bookingForm.fecha_inicio}
                           onChange={e => setBookingForm(prev => ({ ...prev, fecha_inicio: e.target.value }))}
@@ -570,6 +571,7 @@ export default function ChatWidget() {
                         <input 
                           type="date" 
                           className="form-control" 
+                          min={bookingForm.fecha_inicio || new Date().toISOString().split('T')[0]}
                           style={{ padding: '8px 12px', fontSize: '0.82rem' }}
                           value={bookingForm.fecha_fin}
                           onChange={e => setBookingForm(prev => ({ ...prev, fecha_fin: e.target.value }))}
@@ -587,7 +589,7 @@ export default function ChatWidget() {
                         max={otherUserProperties.find(p => p.id === parseInt(bookingForm.propiedad_id))?.capacidad || 4}
                         style={{ padding: '8px 12px', fontSize: '0.82rem' }}
                         value={bookingForm.num_huespedes}
-                        onChange={e => setBookingForm(prev => ({ ...prev, num_huespedes: e.target.value }))}
+                        onChange={e => setBookingForm(prev => ({ ...prev, num_huespedes: parseInt(e.target.value) || 1 }))}
                         required
                       />
                     </div>
