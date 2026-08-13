@@ -70,9 +70,9 @@ export default function Navbar() {
         {/* HUASI Logo */}
         <Link to="/" className="navbar-brand flex items-center no-underline group select-none mr-2 logo-container">
           <img 
-            src="/huasi_logo.jpg" 
+            src="/logo_horizontal.png" 
             alt="HUASI" 
-            className="h-[44px] w-auto object-contain group-hover:scale-105 transition-transform duration-300 max-[480px]:h-[36px] logo-img-light-file"
+            className="h-[42px] w-auto object-contain group-hover:scale-105 transition-transform duration-300 max-[480px]:h-[34px]"
           />
         </Link>
 
