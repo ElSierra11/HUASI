@@ -186,11 +186,11 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 py-4 sm:py-8">
       {/* ===== HERO (Premium UCC Redesign) ===== */}
-      <section className="relative overflow-hidden hero-section-card rounded-xl-custom py-14 px-6 md:py-20 md:px-12 shadow-custom-sm mb-12">
+      <section className="relative overflow-hidden hero-section-card rounded-xl-custom py-8 px-4 sm:py-14 sm:px-6 md:py-20 md:px-12 shadow-custom-sm mb-8 sm:mb-12">
         {/* Decorative faint background HUASI text */}
-        <div className="absolute text-[9rem] md:text-[14rem] font-black text-ucc-navy/[0.02] dark:text-white/[0.02] font-heading tracking-widest pointer-events-none select-none -top-12 -left-6 z-0 leading-none">
+        <div className="absolute text-[6rem] sm:text-[9rem] md:text-[14rem] font-black text-ucc-navy/[0.02] dark:text-white/[0.02] font-heading tracking-widest pointer-events-none select-none -top-6 -left-4 sm:-top-12 sm:-left-6 z-0 leading-none">
           HUASI
         </div>
 
@@ -198,18 +198,18 @@ export default function Home() {
         <div className="absolute top-[-10%] left-[-5%] w-[300px] h-[300px] bg-gradient-to-r from-ucc-cyan/10 to-transparent rounded-full filter blur-[80px] pointer-events-none z-0"></div>
         <div className="absolute bottom-[-15%] right-[-5%] w-[350px] h-[350px] bg-gradient-to-r from-ucc-green/10 to-transparent rounded-full filter blur-[80px] pointer-events-none z-0"></div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center relative z-10">
           
           {/* Left Column: Brand, Slogan, and Actions */}
-          <div className="lg:col-span-7 flex flex-col items-start text-left space-y-6">
+          <div className="lg:col-span-7 flex flex-col items-start text-left space-y-4 sm:space-y-6">
             
             {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 bg-ucc-green/10 dark:bg-ucc-green/20 px-4 py-1.5 rounded-full text-xs md:text-sm font-extrabold text-ucc-green dark:text-emerald-400 border border-ucc-green/20 dark:border-ucc-green/30 shadow-custom-sm">
+            <div className="inline-flex items-center gap-2 bg-ucc-green/10 dark:bg-ucc-green/20 px-3.5 py-1.5 rounded-full text-xs md:text-sm font-extrabold text-ucc-green dark:text-emerald-400 border border-ucc-green/20 dark:border-ucc-green/30 shadow-custom-sm">
               <Shield size={14} className="text-ucc-green dark:text-emerald-400" /> Red solidaria UCC · 100% solidario
             </div>
 
             {/* Slogan Title */}
-            <h1 className="font-heading font-black text-4xl md:text-5xl lg:text-6xl text-ucc-navy dark:text-white leading-tight tracking-tight">
+            <h1 className="font-heading font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-ucc-navy dark:text-white leading-tight tracking-tight">
               La casa de mi <span className="bg-gradient-to-r from-ucc-green to-ucc-cyan bg-clip-text text-transparent">amig@</span>
             </h1>
 

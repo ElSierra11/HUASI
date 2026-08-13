@@ -3204,7 +3204,8 @@ body.dark .navbar {
 /* Reglas para Teléfonos Pequeños (<= 480px) */
 @media (max-width: 480px) {
   .navbar {
-    padding: 10px 16px !important;
+    padding: 10px 14px !important;
+    margin: 6px 8px 0 !important;
   }
 
   .property-card-inner {
@@ -3215,5 +3216,76 @@ body.dark .navbar {
     width: 95% !important;
     padding: 16px !important;
     margin: 10px !important;
+  }
+}
+
+/* ==========================================================================
+   PREVENCIÓN DE SCROLL HORIZONTAL Y BOTONES FLOTANTES (FABS)
+   ========================================================================== */
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+/* Botones Flotantes en Esquina Inferior Derecha (Chat & PQRs) sin Superposición */
+.chat-fab {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #0d7c3d, #059669) !important;
+  color: #ffffff !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 8px 24px rgba(13, 124, 61, 0.45) !important;
+  z-index: 9998 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.chat-fab:hover {
+  transform: scale(1.08) !important;
+}
+
+.pqr-fab {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 92px !important; /* Posicionado al lado del chat para evitar superposición */
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #0d9488, #0f766e) !important;
+  color: #ffffff !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.35) !important;
+  z-index: 9998 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.pqr-fab:hover {
+  transform: scale(1.08) !important;
+}
+
+@media (max-width: 640px) {
+  .chat-fab {
+    bottom: 16px !important;
+    right: 16px !important;
+    width: 52px !important;
+    height: 52px !important;
+  }
+
+  .pqr-fab {
+    bottom: 16px !important;
+    right: 76px !important;
+    width: 44px !important;
+    height: 44px !important;
   }
 }
