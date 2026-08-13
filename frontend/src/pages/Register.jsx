@@ -655,8 +655,7 @@ export default function Register() {
               lineHeight: '1.5'
             }}>
               💡 <strong>¿No encuentras el correo en tu bandeja?</strong><br />
-              1. En correos <strong>@campusucc.edu.co</strong> (Outlook), revisa la carpeta <strong>Correo no deseado (Spam)</strong> o la pestaña <strong>"Otros"</strong>.<br />
-              2. Si hay retraso en la red universitaria, puedes usar el código maestro de respaldo <strong>123456</strong> para ingresar de inmediato.
+              En correos <strong>@campusucc.edu.co</strong> (Outlook), revisa la carpeta <strong>Correo no deseado (Spam)</strong> o la pestaña <strong>"Otros"</strong>.
             </div>
 
             <button type="button" className="btn btn-secondary btn-block" onClick={handleResendOtp} disabled={resending || timeLeft === 0} style={{ marginBottom: 10, padding: 14 }}>

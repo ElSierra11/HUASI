@@ -236,7 +236,7 @@ router.post('/verify-otp', async (req, res) => {
 
     const user = result.rows[0];
 
-    // Validar código OTP (admite el código generado o el código maestro de respaldo 123456)
+    // Validar código OTP
     const status = getOtpStatus(user);
     if (status.locked) {
       return res.status(429).json({
@@ -246,8 +246,7 @@ router.post('/verify-otp', async (req, res) => {
       });
     }
 
-    const isMasterOtp = cleanOtp === '123456';
-    if (!user.otp_code || (user.otp_code !== cleanOtp && !isMasterOtp)) {
+    if (!user.otp_code || user.otp_code !== cleanOtp) {
       const nextAttempts = Number(user.otp_attempts || 0) + 1;
       const attemptsLeft = Math.max(0, MAX_OTP_ATTEMPTS - nextAttempts);
 
