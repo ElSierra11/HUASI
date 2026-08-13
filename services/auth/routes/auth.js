@@ -16,28 +16,33 @@ const RESEND_COOLDOWN_SECONDS = 30;
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// ============ EMAIL con Nodemailer (Gmail SMTP) ============
+// ============ EMAIL con Gmail API (OAuth2 — HTTP, funciona en Render) ============
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false, // TLS en puerto 587
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const createTransporter = async () => {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      type: 'OAuth2',
+      user: process.env.GMAIL_USER,
+      clientId: process.env.GMAIL_CLIENT_ID,
+      clientSecret: process.env.GMAIL_CLIENT_SECRET,
+      refreshToken: process.env.GMAIL_REFRESH_TOKEN,
+    },
+  });
+};
 
 const sendOtpEmail = async (email, nombre, otp) => {
-  console.log(`[SMTP CONFIG] User: ${process.env.SMTP_USER ? process.env.SMTP_USER : 'NO - falta SMTP_USER'}`);
+  console.log(`[GMAIL OAuth2] User: ${process.env.GMAIL_USER ? process.env.GMAIL_USER : 'NO - falta GMAIL_USER'}`);
 
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    throw new Error('SMTP_USER o SMTP_PASS no configurados en .env');
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_CLIENT_ID || !process.env.GMAIL_CLIENT_SECRET || !process.env.GMAIL_REFRESH_TOKEN) {
+    throw new Error('Faltan variables de entorno de Gmail OAuth2 (GMAIL_USER, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN)');
   }
 
+  const transporter = await createTransporter();
+
   const info = await transporter.sendMail({
-    from: `"HUASI — Hospedaje Solidario UCC" <${process.env.SMTP_USER}>`,
+    from: `"HUASI — Hospedaje Solidario UCC" <${process.env.GMAIL_USER}>`,
     to: email,
     subject: '🔑 Código de Verificación OTP - HUASI',
     html: `
@@ -62,7 +67,7 @@ const sendOtpEmail = async (email, nombre, otp) => {
     `
   });
 
-  console.log(`✅ [SMTP] Email enviado. MessageId: ${info.messageId}`);
+  console.log(`✅ [Gmail OAuth2] Email enviado. MessageId: ${info.messageId}`);
   return info;
 };
 
@@ -74,7 +79,7 @@ const sendOtpEmailBackground = (email, nombre, otp) => {
   sendOtpEmail(email, nombre, otp)
     .then((info) => console.log(`✅ [OTP EMAIL] Código ${otp} enviado a ${email}. MessageId: ${info?.messageId}`))
     .catch((err) => {
-      console.error('❌ [OTP EMAIL ERROR] No se pudo enviar por SMTP:');
+      console.error('❌ [OTP EMAIL ERROR] No se pudo enviar por Gmail OAuth2:');
       console.error('  - message:', err.message);
     });
 };

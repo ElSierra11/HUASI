@@ -47,5 +47,5 @@ app.get('/health', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🔐 Auth Service corriendo en puerto ${PORT} (Gmail SMTP & OTP activos)`);
+  console.log(`🔐 Auth Service corriendo en puerto ${PORT} (Gmail OAuth2 & OTP activos)`);
 });
