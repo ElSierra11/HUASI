@@ -1,21 +1,24 @@
 const express = require('express');
 const pool = require('../db');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const router = express.Router();
 
-// IMPORTANTE: getTransporter() se llama por envío para leer env vars DESPUÉS de dotenv
-const getTransporter = () => {
-  const user = process.env.SMTP_USER || 'huasicorrespondencia@gmail.com';
-  const pass = process.env.SMTP_PASS || 'yoykcsknradxakjw';
+// ============ EMAIL con Resend (API HTTP - funciona en Render) ============
+const sendEmail = async ({ to, subject, html }) => {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM || 'HUASI <onboarding@resend.dev>';
 
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: { user, pass },
-    tls: { rejectUnauthorized: false }
-  });
+  if (!apiKey) {
+    console.warn('[RESEND] RESEND_API_KEY no configurada - email no enviado');
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  const { data, error } = await resend.emails.send({ from: fromEmail, to: [to], subject, html });
+
+  if (error) throw new Error(`Resend API error: ${JSON.stringify(error)}`);
+  return data;
 };
 
 // Normalizar estado de reserva
@@ -141,12 +144,9 @@ router.post('/', async (req, res) => {
       const host = hostQuery.rows[0];
       const guest = guestQuery.rows[0];
 
-      const info = await getTransporter().sendMail({
-        from: `"HUASI — Hospedaje Solidario UCC" <huasiquejas@outlook.com>`,
-        replyTo: 'huasiquejas@outlook.com',
+      await sendEmail({
         to: host.email,
         subject: 'Nueva solicitud de alojamiento - HUASI',
-        text: `Hola ${host.nombre},\n\nHas recibido una nueva solicitud de alojamiento para tu propiedad "${prop.rows[0].titulo}" por parte de ${guest.nombre} ${guest.apellido}.\n\nFechas: del ${fecha_inicio} al ${fecha_fin}.\nMensaje: "${mensaje || 'Sin mensaje'}"\n\nInicia sesión en la plataforma para responder a esta solicitud.\n\nAtentamente,\nEl equipo de HUASI`,
         html: `<h3>Hola ${host.nombre},</h3>
                <p>Has recibido una nueva solicitud de alojamiento para tu propiedad <strong>"${prop.rows[0].titulo}"</strong> por parte de <strong>${guest.nombre} ${guest.apellido}</strong>.</p>
                <p><strong>Fechas:</strong> del ${fecha_inicio} al ${fecha_fin}</p>
@@ -154,7 +154,6 @@ router.post('/', async (req, res) => {
                <p>Por favor, ingresa al panel de HUASI para aprobar o rechazar esta solicitud.</p>`
       });
       console.log(`Notificación de nueva reserva enviada al host (${host.email}) exitosamente.`);
-      console.log('Ethereal URL (si aplica):', nodemailer.getTestMessageUrl(info));
     } catch (mailErr) {
       console.error('Error enviando correo de notificación de reserva:', mailErr);
     }
@@ -314,17 +313,15 @@ router.patch('/:id', async (req, res) => {
 
       if (['aceptada', 'rechazada'].includes(estadoNormalizado)) {
         if (guest && guest.email) {
-          const info = await getTransporter().sendMail({
-            from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER || 'huasicorrespondencia@gmail.com'}>`,
+          await sendEmail({
             to: guest.email,
             subject: `Tu solicitud de alojamiento fue ${estadoNormalizado === 'aceptada' ? 'aceptada' : 'rechazada'} - HUASI`,
-            text: `Hola ${guest.nombre},\n\nTu solicitud para hospedarte en "${res_data.propiedad_titulo || 'alojamiento'}" del ${res_data.fecha_inicio.toISOString().split('T')[0]} al ${res_data.fecha_fin.toISOString().split('T')[0]} ha sido ${estadoNormalizado === 'aceptada' ? 'ACEPTADA' : 'RECHAZADA'} por el anfitrión ${host.nombre} ${host.apellido}.\n\n${estadoNormalizado === 'aceptada' ? '¡Disfruta tu estadía!' : 'Te invitamos a buscar otros alojamientos disponibles.'}\n\nAtentamente,\nEl equipo de HUASI`,
             html: `<h3>Hola ${guest.nombre},</h3>
                    <p>Tu solicitud para hospedarte en <strong>"${res_data.propiedad_titulo || 'alojamiento'}"</strong> ha sido <strong>${estadoNormalizado === 'aceptada' ? 'ACEPTADA' : 'RECHAZADA'}</strong> por el anfitrión <strong>${host.nombre} ${host.apellido}</strong>.</p>
                    <p><strong>Fechas:</strong> del ${res_data.fecha_inicio.toISOString().split('T')[0]} al ${res_data.fecha_fin.toISOString().split('T')[0]}</p>
                    <p>${estadoNormalizado === 'aceptada' ? '<strong>¡Disfruta tu estadía!</strong>' : 'Te invitamos a buscar otros alojamientos disponibles.'}</p>`
           });
-          console.log('Notificación de cambio de estado enviada al guest. Ethereal URL:', nodemailer.getTestMessageUrl(info));
+          console.log('Notificación de cambio de estado enviada al guest.');
         }
       } else if (estadoNormalizado === 'cancelada') {
         const esGuest = req.user.id === updatedRes.guest_id;
@@ -333,15 +330,13 @@ router.patch('/:id', async (req, res) => {
         const rolCancelador = esGuest ? 'el huésped' : 'el anfitrión';
         
         if (destinatarioEmail) {
-          const info = await getTransporter().sendMail({
-            from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER || 'huasicorrespondencia@gmail.com'}>`,
+          await sendEmail({
             to: destinatarioEmail,
             subject: 'Reserva cancelada - HUASI',
-            text: `Hola ${destinatarioNombre},\n\nTe informamos que la reserva para la propiedad "${res_data.propiedad_titulo || 'alojamiento'}" (fechas del ${res_data.fecha_inicio.toISOString().split('T')[0]} al ${res_data.fecha_fin.toISOString().split('T')[0]}) ha sido cancelada por ${rolCancelador}.\n\nAtentamente,\nEl equipo de HUASI`,
             html: `<h3>Hola ${destinatarioNombre},</h3>
                    <p>Te informamos que la reserva para la propiedad <strong>"${res_data.propiedad_titulo || 'alojamiento'}"</strong> (fechas: del ${res_data.fecha_inicio.toISOString().split('T')[0]} al ${res_data.fecha_fin.toISOString().split('T')[0]}) ha sido <strong>cancelada</strong> por <strong>${rolCancelador}</strong>.</p>`
           });
-          console.log('Notificación de cancelación de reserva enviada. Ethereal URL:', nodemailer.getTestMessageUrl(info));
+          console.log('Notificación de cancelación enviada.');
         }
       }
     } catch (mailErr) {
@@ -406,16 +401,14 @@ router.post('/chat/command', async (req, res) => {
         const host = hostQuery.rows[0];
 
         if (guest && guest.email) {
-          const info = await getTransporter().sendMail({
-            from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER || 'huasicorrespondencia@gmail.com'}>`,
+          await sendEmail({
             to: guest.email,
             subject: `Tu solicitud de alojamiento fue ${nuevoEstado === 'aceptada' ? 'aceptada' : 'rechazada'} - HUASI`,
-            text: `Hola ${guest.nombre},\n\nTu solicitud para hospedarte en "${reserva.propiedad_titulo || 'alojamiento'}" ha sido ${nuevoEstado === 'aceptada' ? 'ACEPTADA' : 'RECHAZADA'} por el anfitrión ${host.nombre} ${host.apellido}.\n\n${nuevoEstado === 'aceptada' ? '¡Disfruta tu estadía!' : 'Te invitamos a buscar otros alojamientos disponibles.'}\n\nAtentamente,\nEl equipo de HUASI`,
             html: `<h3>Hola ${guest.nombre},</h3>
                    <p>Tu solicitud para hospedarte en <strong>"${reserva.propiedad_titulo || 'alojamiento'}"</strong> ha sido <strong>${nuevoEstado === 'aceptada' ? 'ACEPTADA' : 'RECHAZADA'}</strong> por el anfitrión <strong>${host.nombre} ${host.apellido}</strong>.</p>
                    <p>${nuevoEstado === 'aceptada' ? '<strong>¡Disfruta tu estadía!</strong>' : 'Te invitamos a buscar otros alojamientos disponibles.'}</p>`
           });
-          console.log(`Notificación de cambio de estado enviada exitosamente al guest (${guest.email}).`);
+          console.log(`Notificación de cambio de estado enviada al guest (${guest.email}).`);
         }
       } catch (mailErr) {
         console.error('Error enviando correo de cambio de estado de reserva desde chat:', mailErr);

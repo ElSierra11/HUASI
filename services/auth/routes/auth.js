@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const router = express.Router();
 
@@ -17,35 +17,24 @@ const RESEND_COOLDOWN_SECONDS = 30;
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// Configurar transportador de correo (Gmail SMTP con App Password)
-// IMPORTANTE: Se crea en cada envío para leer env vars DESPUÉS de que dotenv las cargue
-const getTransporter = () => {
-  const user = process.env.SMTP_USER || 'huasicorrespondencia@gmail.com';
-  const pass = process.env.SMTP_PASS || 'yoykcsknradxakjw';
-
-  console.log(`[SMTP CONFIG] Usuario SMTP: ${user}`);
-  console.log(`[SMTP CONFIG] Pass SMTP cargada: ${pass ? 'SÍ (' + pass.substring(0, 4) + '...)' : 'NO'}`);
-
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: { user, pass },
-    tls: { rejectUnauthorized: false }
-  });
-};
-
+// ============ EMAIL con Resend (API HTTP - funciona en Render) ============
 const sendOtpEmail = async (email, nombre, otp) => {
-  // Crear transporter aquí (lazy) para que lea las env vars correctamente
-  const transporter = getTransporter();
-  const smtpUser = process.env.SMTP_USER || 'huasicorrespondencia@gmail.com';
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM || 'HUASI <onboarding@resend.dev>';
 
-  const info = await transporter.sendMail({
-    from: `"HUASI — Hospedaje Solidario UCC" <${smtpUser}>`,
-    replyTo: smtpUser,
-    to: email,
+  console.log(`[RESEND CONFIG] API Key cargada: ${apiKey ? 'SÍ (' + apiKey.substring(0, 8) + '...)' : 'NO - falta RESEND_API_KEY'}`);
+  console.log(`[RESEND CONFIG] Enviando desde: ${fromEmail}`);
+
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY no configurada en variables de entorno');
+  }
+
+  const resend = new Resend(apiKey);
+
+  const { data, error } = await resend.emails.send({
+    from: fromEmail,
+    to: [email],
     subject: '🔑 Código de Verificación OTP - HUASI',
-    text: `Hola ${nombre},\n\nTu código de verificación OTP para HUASI es: ${otp}\n\nEste código expira en 5 minutos.\n\nAtentamente,\nEl equipo de HUASI`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
         <div style="text-align: center; margin-bottom: 16px;">
@@ -67,7 +56,12 @@ const sendOtpEmail = async (email, nombre, otp) => {
       </div>
     `
   });
-  return info;
+
+  if (error) {
+    throw new Error(`Resend API error: ${JSON.stringify(error)}`);
+  }
+
+  return data;
 };
 
 const sendOtpEmailBackground = (email, nombre, otp) => {
@@ -76,13 +70,10 @@ const sendOtpEmailBackground = (email, nombre, otp) => {
   console.log(`=======================================================`);
   
   sendOtpEmail(email, nombre, otp)
-    .then((info) => console.log(`✅ [OTP EMAIL] Código ${otp} enviado exitosamente a ${email}. MessageId: ${info?.messageId}`))
+    .then((data) => console.log(`✅ [OTP EMAIL] Código ${otp} enviado exitosamente a ${email}. ID: ${data?.id}`))
     .catch((err) => {
-      console.error('❌ [OTP EMAIL ERROR] No se pudo enviar por SMTP:');
+      console.error('❌ [OTP EMAIL ERROR] No se pudo enviar con Resend:');
       console.error('  - message:', err.message);
-      console.error('  - code:', err.code);
-      console.error('  - responseCode:', err.responseCode);
-      console.error('  - response:', err.response);
     });
 };
 
