@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { Link, useNavigate } from 'react-router-dom';
-import { Clock, CheckCircle, ArrowRight, Loader2, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Clock, CheckCircle, ArrowRight, Loader2, ShieldCheck, RefreshCw, HelpCircle } from 'lucide-react';
 
 export default function Register() {
   const { register, verifyOtp } = useAuth();
@@ -654,7 +654,7 @@ export default function Register() {
               marginBottom: 16,
               lineHeight: '1.5'
             }}>
-              💡 <strong>¿No encuentras el correo en tu bandeja?</strong><br />
+              <strong className="inline-flex items-center gap-1 text-ucc-navy dark:text-white"><HelpCircle size={15} className="text-ucc-green" /> ¿No encuentras el correo en tu bandeja?</strong><br />
               En correos <strong>@campusucc.edu.co</strong> (Outlook), revisa la carpeta <strong>Correo no deseado (Spam)</strong> o la pestaña <strong>"Otros"</strong>.
             </div>
 

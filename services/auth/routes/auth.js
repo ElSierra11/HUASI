@@ -73,7 +73,7 @@ const sendOtpEmail = async (email, nombre, otp) => {
   const rawMessage = [
     `From: ${encodeHeader('HUASI — Hospedaje Solidario UCC')} <${process.env.GMAIL_USER}>`,
     `To: ${email}`,
-    `Subject: ${encodeHeader('🔑 Código de Verificación OTP - HUASI')}`,
+    `Subject: ${encodeHeader('Código de Verificación OTP - HUASI')}`,
     `MIME-Version: 1.0`,
     `Content-Type: text/html; charset=utf-8`,
     `Content-Transfer-Encoding: base64`,
