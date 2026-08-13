@@ -7,12 +7,16 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 import './styles/index.css'
 
 // Initial theme check before mount
-if (
-  localStorage.getItem('theme') === 'dark' ||
-  (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
-) {
-  document.documentElement.classList.add('dark');
-  document.body.classList.add('dark');
+try {
+  if (
+    localStorage.getItem('theme') === 'dark' ||
+    (!localStorage.getItem('theme') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  ) {
+    document.documentElement.classList.add('dark');
+    document.body.classList.add('dark');
+  }
+} catch (e) {
+  console.warn('Theme init warning:', e);
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -33,7 +37,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then((reg) => console.log('📱 HUASI PWA Service Worker registrado con éxito:', reg.scope))
+      .then((reg) => {
+        reg.update();
+        console.log('📱 HUASI PWA Service Worker actualizado con éxito:', reg.scope);
+      })
       .catch((err) => console.error('Error al registrar PWA Service Worker:', err));
   });
 }
