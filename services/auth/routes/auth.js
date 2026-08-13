@@ -16,59 +16,68 @@ const RESEND_COOLDOWN_SECONDS = 30;
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// ============ EMAIL con Gmail API (OAuth2 — HTTP, funciona en Render) ============
-const nodemailer = require('nodemailer');
+// ============ EMAIL con Gmail REST API (HTTP puro — funciona en Render) ============
+const { google } = require('googleapis');
 
-const createTransporter = async () => {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      type: 'OAuth2',
-      user: process.env.GMAIL_USER,
-      clientId: process.env.GMAIL_CLIENT_ID,
-      clientSecret: process.env.GMAIL_CLIENT_SECRET,
-      refreshToken: process.env.GMAIL_REFRESH_TOKEN,
-    },
-  });
+const getGmailClient = () => {
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GMAIL_CLIENT_ID,
+    process.env.GMAIL_CLIENT_SECRET,
+    'https://developers.google.com/oauthplayground'
+  );
+  oauth2Client.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
+  return google.gmail({ version: 'v1', auth: oauth2Client });
 };
 
 const sendOtpEmail = async (email, nombre, otp) => {
-  console.log(`[GMAIL OAuth2] User: ${process.env.GMAIL_USER ? process.env.GMAIL_USER : 'NO - falta GMAIL_USER'}`);
+  console.log(`[Gmail API] User: ${process.env.GMAIL_USER ? process.env.GMAIL_USER : 'NO - falta GMAIL_USER'}`);
 
   if (!process.env.GMAIL_USER || !process.env.GMAIL_CLIENT_ID || !process.env.GMAIL_CLIENT_SECRET || !process.env.GMAIL_REFRESH_TOKEN) {
-    throw new Error('Faltan variables de entorno de Gmail OAuth2 (GMAIL_USER, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN)');
+    throw new Error('Faltan variables de entorno de Gmail OAuth2');
   }
 
-  const transporter = await createTransporter();
-
-  const info = await transporter.sendMail({
-    from: `"HUASI — Hospedaje Solidario UCC" <${process.env.GMAIL_USER}>`,
-    to: email,
-    subject: '🔑 Código de Verificación OTP - HUASI',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-        <div style="text-align: center; margin-bottom: 16px;">
-          <h2 style="color: #0d7c3d; margin: 0; font-size: 20px;">HUASI — Hospedaje Solidario UCC</h2>
-          <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Verificación de Correo Institucional</p>
-        </div>
-        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 16px;">
-          <p style="color: #166534; font-size: 13px; margin: 0 0 8px 0; font-weight: bold;">Tu código de verificación es:</p>
-          <span style="font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #0d7c3d; display: inline-block;">${otp}</span>
-          <p style="color: #64748b; font-size: 11px; margin: 8px 0 0 0;">Válido por 5 minutos</p>
-        </div>
-        <p style="color: #334155; font-size: 13px; line-height: 1.5;">
-          Hola <strong>${nombre}</strong>, ingresa este código de 6 dígitos en HUASI para verificar tu correo institucional de la Universidad Cooperativa de Colombia.
-        </p>
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
-        <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
-          Si no solicitaste este registro, por favor ignora este correo.
-        </p>
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+      <div style="text-align: center; margin-bottom: 16px;">
+        <h2 style="color: #0d7c3d; margin: 0; font-size: 20px;">HUASI — Hospedaje Solidario UCC</h2>
+        <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Verificación de Correo Institucional</p>
       </div>
-    `
+      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 16px;">
+        <p style="color: #166534; font-size: 13px; margin: 0 0 8px 0; font-weight: bold;">Tu código de verificación es:</p>
+        <span style="font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #0d7c3d; display: inline-block;">${otp}</span>
+        <p style="color: #64748b; font-size: 11px; margin: 8px 0 0 0;">Válido por 5 minutos</p>
+      </div>
+      <p style="color: #334155; font-size: 13px; line-height: 1.5;">
+        Hola <strong>${nombre}</strong>, ingresa este código de 6 dígitos en HUASI para verificar tu correo institucional de la Universidad Cooperativa de Colombia.
+      </p>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
+      <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
+        Si no solicitaste este registro, por favor ignora este correo.
+      </p>
+    </div>
+  `;
+
+  const rawMessage = [
+    `From: "HUASI — Hospedaje Solidario UCC" <${process.env.GMAIL_USER}>`,
+    `To: ${email}`,
+    `Subject: =?UTF-8?B?${Buffer.from('🔑 Código de Verificación OTP - HUASI').toString('base64')}?=`,
+    `MIME-Version: 1.0`,
+    `Content-Type: text/html; charset=utf-8`,
+    `Content-Transfer-Encoding: base64`,
+    ``,
+    Buffer.from(htmlBody).toString('base64'),
+  ].join('\r\n');
+
+  const encodedMessage = Buffer.from(rawMessage).toString('base64url');
+
+  const gmail = getGmailClient();
+  const res = await gmail.users.messages.send({
+    userId: 'me',
+    requestBody: { raw: encodedMessage },
   });
 
-  console.log(`✅ [Gmail OAuth2] Email enviado. MessageId: ${info.messageId}`);
-  return info;
+  console.log(`✅ [Gmail API] Email enviado. Id: ${res.data.id}`);
+  return res.data;
 };
 
 const sendOtpEmailBackground = (email, nombre, otp) => {
@@ -79,7 +88,7 @@ const sendOtpEmailBackground = (email, nombre, otp) => {
   sendOtpEmail(email, nombre, otp)
     .then((info) => console.log(`✅ [OTP EMAIL] Código ${otp} enviado a ${email}. MessageId: ${info?.messageId}`))
     .catch((err) => {
-      console.error('❌ [OTP EMAIL ERROR] No se pudo enviar por Gmail OAuth2:');
+      console.error('❌ [OTP EMAIL ERROR] No se pudo enviar por Gmail REST API:');
       console.error('  - message:', err.message);
     });
 };
