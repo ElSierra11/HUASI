@@ -3205,14 +3205,68 @@ body.dark .navbar {
     width: 100% !important;
   }
 
-  /* Chat Widget en móviles */
+  /* Chat Widget adaptado 100% al tamaño del móvil (Pantalla completa estilo Messenger/WhatsApp) */
+  .chat-widget,
   .chat-widget-window {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    bottom: 0 !important;
-    right: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
     border-radius: 0 !important;
-    max-height: 100vh !important;
+    z-index: 10000 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .chat-w-header {
+    border-radius: 0 !important;
+    padding: max(12px, env(safe-area-inset-top)) 16px 12px 16px !important;
+  }
+
+  /* Barra superior de propiedad/reserva en el chat */
+  .chat-marketplace-bar {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+    background: var(--bg-card, #ffffff) !important;
+    border-bottom: 1px solid var(--border, #e2e8f0) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .chat-mp-info {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .chat-mp-title {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 0.78rem !important;
+  }
+
+  .chat-mp-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .chat-mp-actions button {
+    padding: 5px 8px !important;
+    font-size: 0.75rem !important;
+    border-radius: 6px !important;
   }
 }
 
