@@ -16,25 +16,36 @@ const RESEND_COOLDOWN_SECONDS = 30;
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// ============ EMAIL con Gmail REST API (HTTP puro — funciona en Render) ============
-const { google } = require('googleapis');
+// ============ EMAIL con Gmail REST API via fetch (HTTP puro — funciona en Render) ============
 
-const getGmailClient = () => {
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GMAIL_CLIENT_ID,
-    process.env.GMAIL_CLIENT_SECRET,
-    'https://developers.google.com/oauthplayground'
-  );
-  oauth2Client.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
-  return google.gmail({ version: 'v1', auth: oauth2Client });
+const getGmailAccessToken = async () => {
+  console.log(`[Gmail Token] client_id: ${process.env.GMAIL_CLIENT_ID ? process.env.GMAIL_CLIENT_ID.substring(0, 20) + '...' : 'FALTA'}`);
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: process.env.GMAIL_CLIENT_ID,
+      client_secret: process.env.GMAIL_CLIENT_SECRET,
+      refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+      grant_type: 'refresh_token',
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    console.error('[Gmail Token ERROR]', JSON.stringify(data));
+    throw new Error(data.error_description || data.error || 'Error obteniendo access token');
+  }
+  return data.access_token;
 };
 
 const sendOtpEmail = async (email, nombre, otp) => {
-  console.log(`[Gmail API] User: ${process.env.GMAIL_USER ? process.env.GMAIL_USER : 'NO - falta GMAIL_USER'}`);
+  console.log(`[Gmail API] Enviando a: ${email}`);
 
   if (!process.env.GMAIL_USER || !process.env.GMAIL_CLIENT_ID || !process.env.GMAIL_CLIENT_SECRET || !process.env.GMAIL_REFRESH_TOKEN) {
     throw new Error('Faltan variables de entorno de Gmail OAuth2');
   }
+
+  const accessToken = await getGmailAccessToken();
 
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
@@ -48,11 +59,11 @@ const sendOtpEmail = async (email, nombre, otp) => {
         <p style="color: #64748b; font-size: 11px; margin: 8px 0 0 0;">Válido por 5 minutos</p>
       </div>
       <p style="color: #334155; font-size: 13px; line-height: 1.5;">
-        Hola <strong>${nombre}</strong>, ingresa este código de 6 dígitos en HUASI para verificar tu correo institucional de la Universidad Cooperativa de Colombia.
+        Hola <strong>${nombre}</strong>, ingresa este código en HUASI para verificar tu correo institucional de la Universidad Cooperativa de Colombia.
       </p>
       <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
       <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
-        Si no solicitaste este registro, por favor ignora este correo.
+        Si no solicitaste este registro, ignora este correo.
       </p>
     </div>
   `;
@@ -70,14 +81,23 @@ const sendOtpEmail = async (email, nombre, otp) => {
 
   const encodedMessage = Buffer.from(rawMessage).toString('base64url');
 
-  const gmail = getGmailClient();
-  const res = await gmail.users.messages.send({
-    userId: 'me',
-    requestBody: { raw: encodedMessage },
+  const gmailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ raw: encodedMessage }),
   });
 
-  console.log(`✅ [Gmail API] Email enviado. Id: ${res.data.id}`);
-  return res.data;
+  const result = await gmailRes.json();
+  if (!gmailRes.ok) {
+    console.error('[Gmail Send ERROR]', JSON.stringify(result));
+    throw new Error(result.error?.message || 'Error enviando email via Gmail API');
+  }
+
+  console.log(`✅ [Gmail API] Email enviado. Id: ${result.id}`);
+  return result;
 };
 
 const sendOtpEmailBackground = (email, nombre, otp) => {
