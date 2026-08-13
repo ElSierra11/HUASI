@@ -4,18 +4,19 @@ const nodemailer = require('nodemailer');
 
 const router = express.Router();
 
+// IMPORTANTE: getTransporter() se llama por envío para leer env vars DESPUÉS de dotenv
 const getTransporter = () => {
-  const user = process.env.SMTP_USER && process.env.SMTP_USER.includes('gmail') ? process.env.SMTP_USER : 'arnoldcraft84@gmail.com';
-  const pass = process.env.SMTP_PASS && process.env.SMTP_USER.includes('gmail') ? process.env.SMTP_PASS : 'stkvunvlozfcobuz';
+  const user = process.env.SMTP_USER || 'huasicorrespondencia@gmail.com';
+  const pass = process.env.SMTP_PASS || 'yoykcsknradxakjw';
 
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: { user, pass },
     tls: { rejectUnauthorized: false }
   });
 };
-
-const transporter = getTransporter();
 
 // Normalizar estado de reserva
 const normalizeEstadoReserva = (estado = '') => {
@@ -140,7 +141,7 @@ router.post('/', async (req, res) => {
       const host = hostQuery.rows[0];
       const guest = guestQuery.rows[0];
 
-      const info = await transporter.sendMail({
+      const info = await getTransporter().sendMail({
         from: `"HUASI — Hospedaje Solidario UCC" <huasiquejas@outlook.com>`,
         replyTo: 'huasiquejas@outlook.com',
         to: host.email,
@@ -313,8 +314,8 @@ router.patch('/:id', async (req, res) => {
 
       if (['aceptada', 'rechazada'].includes(estadoNormalizado)) {
         if (guest && guest.email) {
-          const info = await transporter.sendMail({
-            from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER}>`,
+          const info = await getTransporter().sendMail({
+            from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER || 'huasicorrespondencia@gmail.com'}>`,
             to: guest.email,
             subject: `Tu solicitud de alojamiento fue ${estadoNormalizado === 'aceptada' ? 'aceptada' : 'rechazada'} - HUASI`,
             text: `Hola ${guest.nombre},\n\nTu solicitud para hospedarte en "${res_data.propiedad_titulo || 'alojamiento'}" del ${res_data.fecha_inicio.toISOString().split('T')[0]} al ${res_data.fecha_fin.toISOString().split('T')[0]} ha sido ${estadoNormalizado === 'aceptada' ? 'ACEPTADA' : 'RECHAZADA'} por el anfitrión ${host.nombre} ${host.apellido}.\n\n${estadoNormalizado === 'aceptada' ? '¡Disfruta tu estadía!' : 'Te invitamos a buscar otros alojamientos disponibles.'}\n\nAtentamente,\nEl equipo de HUASI`,
@@ -332,8 +333,8 @@ router.patch('/:id', async (req, res) => {
         const rolCancelador = esGuest ? 'el huésped' : 'el anfitrión';
         
         if (destinatarioEmail) {
-          const info = await transporter.sendMail({
-            from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER}>`,
+          const info = await getTransporter().sendMail({
+            from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER || 'huasicorrespondencia@gmail.com'}>`,
             to: destinatarioEmail,
             subject: 'Reserva cancelada - HUASI',
             text: `Hola ${destinatarioNombre},\n\nTe informamos que la reserva para la propiedad "${res_data.propiedad_titulo || 'alojamiento'}" (fechas del ${res_data.fecha_inicio.toISOString().split('T')[0]} al ${res_data.fecha_fin.toISOString().split('T')[0]}) ha sido cancelada por ${rolCancelador}.\n\nAtentamente,\nEl equipo de HUASI`,
@@ -405,8 +406,8 @@ router.post('/chat/command', async (req, res) => {
         const host = hostQuery.rows[0];
 
         if (guest && guest.email) {
-          const info = await transporter.sendMail({
-            from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER}>`,
+          const info = await getTransporter().sendMail({
+            from: `"HUASI - Universidad Cooperativa" <${process.env.SMTP_USER || 'huasicorrespondencia@gmail.com'}>`,
             to: guest.email,
             subject: `Tu solicitud de alojamiento fue ${nuevoEstado === 'aceptada' ? 'aceptada' : 'rechazada'} - HUASI`,
             text: `Hola ${guest.nombre},\n\nTu solicitud para hospedarte en "${reserva.propiedad_titulo || 'alojamiento'}" ha sido ${nuevoEstado === 'aceptada' ? 'ACEPTADA' : 'RECHAZADA'} por el anfitrión ${host.nombre} ${host.apellido}.\n\n${nuevoEstado === 'aceptada' ? '¡Disfruta tu estadía!' : 'Te invitamos a buscar otros alojamientos disponibles.'}\n\nAtentamente,\nEl equipo de HUASI`,

@@ -18,23 +18,31 @@ const RESEND_COOLDOWN_SECONDS = 30;
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // Configurar transportador de correo (Gmail SMTP con App Password)
+// IMPORTANTE: Se crea en cada envío para leer env vars DESPUÉS de que dotenv las cargue
 const getTransporter = () => {
-  const user = process.env.SMTP_USER && process.env.SMTP_USER.includes('gmail') ? process.env.SMTP_USER : 'arnoldcraft84@gmail.com';
-  const pass = process.env.SMTP_PASS && process.env.SMTP_USER.includes('gmail') ? process.env.SMTP_PASS : 'stkvunvlozfcobuz';
+  const user = process.env.SMTP_USER || 'huasicorrespondencia@gmail.com';
+  const pass = process.env.SMTP_PASS || 'yoykcsknradxakjw';
+
+  console.log(`[SMTP CONFIG] Usuario SMTP: ${user}`);
+  console.log(`[SMTP CONFIG] Pass SMTP cargada: ${pass ? 'SÍ (' + pass.substring(0, 4) + '...)' : 'NO'}`);
 
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: { user, pass },
     tls: { rejectUnauthorized: false }
   });
 };
 
-const transporter = getTransporter();
-
 const sendOtpEmail = async (email, nombre, otp) => {
-  await transporter.sendMail({
-    from: `"HUASI — Hospedaje Solidario UCC" <huasiquejas@outlook.com>`,
-    replyTo: 'huasiquejas@outlook.com',
+  // Crear transporter aquí (lazy) para que lea las env vars correctamente
+  const transporter = getTransporter();
+  const smtpUser = process.env.SMTP_USER || 'huasicorrespondencia@gmail.com';
+
+  const info = await transporter.sendMail({
+    from: `"HUASI — Hospedaje Solidario UCC" <${smtpUser}>`,
+    replyTo: smtpUser,
     to: email,
     subject: '🔑 Código de Verificación OTP - HUASI',
     text: `Hola ${nombre},\n\nTu código de verificación OTP para HUASI es: ${otp}\n\nEste código expira en 5 minutos.\n\nAtentamente,\nEl equipo de HUASI`,
@@ -59,6 +67,7 @@ const sendOtpEmail = async (email, nombre, otp) => {
       </div>
     `
   });
+  return info;
 };
 
 const sendOtpEmailBackground = (email, nombre, otp) => {
@@ -67,8 +76,14 @@ const sendOtpEmailBackground = (email, nombre, otp) => {
   console.log(`=======================================================`);
   
   sendOtpEmail(email, nombre, otp)
-    .then(() => console.log(`✅ [OTP EMAIL] Código ${otp} enviado exitosamente por correo a ${email}`))
-    .catch((err) => console.error('⚠️ [OTP EMAIL WARN] No se pudo enviar por SMTP:', err.message || err));
+    .then((info) => console.log(`✅ [OTP EMAIL] Código ${otp} enviado exitosamente a ${email}. MessageId: ${info?.messageId}`))
+    .catch((err) => {
+      console.error('❌ [OTP EMAIL ERROR] No se pudo enviar por SMTP:');
+      console.error('  - message:', err.message);
+      console.error('  - code:', err.code);
+      console.error('  - responseCode:', err.responseCode);
+      console.error('  - response:', err.response);
+    });
 };
 
 const getOtpStatus = (user) => {
