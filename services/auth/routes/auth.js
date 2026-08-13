@@ -380,8 +380,13 @@ router.post('/login', async (req, res) => {
 
 // ============ LOGOUT ============
 router.post('/logout', (req, res) => {
-  res.clearCookie('stayu_token');
-  res.clearCookie('stayu_admin_token');
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax'
+  };
+  res.clearCookie('stayu_token', cookieOptions);
+  res.clearCookie('stayu_admin_token', cookieOptions);
   res.json({ message: 'Sesión cerrada exitosamente' });
 });
 

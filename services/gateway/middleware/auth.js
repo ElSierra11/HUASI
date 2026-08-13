@@ -12,14 +12,12 @@ function authMiddleware(req, res, next) {
   const isAdminPanel = origin.includes('huasi-mdp5') || origin.includes('admin') || origin.includes(':5176') || origin.includes(':5175') || origin.includes(':5174');
   
   let token;
-  if (isAdminPanel) {
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.split(' ')[1];
+  } else if (isAdminPanel) {
     token = req.cookies?.stayu_admin_token || req.cookies?.stayu_token;
   } else {
     token = req.cookies?.stayu_token || req.cookies?.stayu_admin_token;
-  }
-  
-  if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-    token = req.headers.authorization.split(' ')[1];
   }
 
   if (token) {

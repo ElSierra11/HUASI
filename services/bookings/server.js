@@ -20,6 +20,15 @@ app.use(express.json());
 
 // JWT middleware
 app.use((req, res, next) => {
+  if (req.headers['x-user-id']) {
+    req.user = {
+      id: parseInt(req.headers['x-user-id']),
+      email: req.headers['x-user-email'],
+      role: req.headers['x-user-role']
+    };
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
@@ -42,5 +51,5 @@ app.get('/health', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`📅 Booking Service corriendo en puerto ${PORT} (Gmail SMTP activo)`);
+  console.log(`📅 Booking Service corriendo en puerto ${PORT} (Gmail REST API activo)`);
 });
