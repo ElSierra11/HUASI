@@ -33,14 +33,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>,
 )
 
-// Register PWA Service Worker
+// Clean up any legacy Service Worker registrations to purge invalid caches
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((reg) => {
-        reg.update();
-        console.log('📱 HUASI PWA Service Worker actualizado con éxito:', reg.scope);
-      })
-      .catch((err) => console.error('Error al registrar PWA Service Worker:', err));
-  });
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (let reg of registrations) {
+      reg.unregister();
+    }
+  }).catch(() => {});
 }
