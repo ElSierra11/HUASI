@@ -1,18 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Navigation, MapPin, Compass, Home, ExternalLink, ShieldCheck, Award } from 'lucide-react';
+import { Navigation, Compass } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Haversine formula to compute distance in km
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
-  const R = 6371; // Earth radius in km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return (R * c).toFixed(1);
+  try {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+    const nLat1 = parseFloat(lat1);
+    const nLon1 = parseFloat(lon1);
+    const nLat2 = parseFloat(lat2);
+    const nLon2 = parseFloat(lon2);
+    if (isNaN(nLat1) || isNaN(nLon1) || isNaN(nLat2) || isNaN(nLon2)) return null;
+
+    const R = 6371; // Earth radius in km
+    const dLat = (nLat2 - nLat1) * Math.PI / 180;
+    const dLon = (nLon2 - nLon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(nLat1 * Math.PI / 180) * Math.cos(nLat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return (R * c).toFixed(1);
+  } catch (e) {
+    return null;
+  }
 }
 
 // Coordenadas reales de sedes UCC en Colombia
@@ -36,7 +46,7 @@ const UCC_CAMPUS_COORDS = {
 };
 
 function normalizeString(str = '') {
-  return String(str)
+  return String(str || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -44,41 +54,49 @@ function normalizeString(str = '') {
 }
 
 function getPropertyCoordinates(prop, idx) {
-  if (prop && prop.latitud && prop.longitud && !isNaN(parseFloat(prop.latitud)) && !isNaN(parseFloat(prop.longitud))) {
-    return { lat: parseFloat(prop.latitud), lng: parseFloat(prop.longitud) };
-  }
-
-  const campusTarget = normalizeString(prop?.campus_cercano);
-  const ciudadTarget = normalizeString(prop?.ciudad);
-
-  // 1. Prioridad 1: Coincidencia por campus_cercano
-  if (campusTarget) {
-    for (const [key, coords] of Object.entries(UCC_CAMPUS_COORDS)) {
-      const keyNorm = normalizeString(key);
-      if (campusTarget.includes(keyNorm) || keyNorm.includes(campusTarget)) {
-        const seed = (prop?.id || idx || 1);
-        const latOffset = ((seed * 17) % 50 - 25) * 0.0003;
-        const lngOffset = ((seed * 31) % 50 - 25) * 0.0003;
-        return { lat: coords.lat + latOffset, lng: coords.lng + lngOffset };
+  try {
+    if (prop && prop.latitud && prop.longitud) {
+      const lat = parseFloat(prop.latitud);
+      const lng = parseFloat(prop.longitud);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng };
       }
     }
-  }
 
-  // 2. Prioridad 2: Coincidencia por ciudad
-  if (ciudadTarget) {
-    for (const [key, coords] of Object.entries(UCC_CAMPUS_COORDS)) {
-      const keyNorm = normalizeString(key);
-      if (ciudadTarget.includes(keyNorm) || keyNorm.includes(ciudadTarget)) {
-        const seed = (prop?.id || idx || 1);
-        const latOffset = ((seed * 17) % 50 - 25) * 0.0003;
-        const lngOffset = ((seed * 31) % 50 - 25) * 0.0003;
-        return { lat: coords.lat + latOffset, lng: coords.lng + lngOffset };
+    const campusTarget = normalizeString(prop?.campus_cercano);
+    const ciudadTarget = normalizeString(prop?.ciudad);
+
+    // 1. Coincidencia por campus_cercano
+    if (campusTarget) {
+      for (const [key, coords] of Object.entries(UCC_CAMPUS_COORDS)) {
+        const keyNorm = normalizeString(key);
+        if (campusTarget.includes(keyNorm) || keyNorm.includes(campusTarget)) {
+          const seed = Number(prop?.id) || idx || 1;
+          const latOffset = ((seed * 17) % 50 - 25) * 0.0003;
+          const lngOffset = ((seed * 31) % 50 - 25) * 0.0003;
+          return { lat: coords.lat + latOffset, lng: coords.lng + lngOffset };
+        }
       }
     }
+
+    // 2. Coincidencia por ciudad
+    if (ciudadTarget) {
+      for (const [key, coords] of Object.entries(UCC_CAMPUS_COORDS)) {
+        const keyNorm = normalizeString(key);
+        if (ciudadTarget.includes(keyNorm) || keyNorm.includes(ciudadTarget)) {
+          const seed = Number(prop?.id) || idx || 1;
+          const latOffset = ((seed * 17) % 50 - 25) * 0.0003;
+          const lngOffset = ((seed * 31) % 50 - 25) * 0.0003;
+          return { lat: coords.lat + latOffset, lng: coords.lng + lngOffset };
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Error resolviendo coordenadas:', e);
   }
 
   const baseCoords = UCC_CAMPUS_COORDS['Santa Marta'];
-  const seed = (prop?.id || idx || 1);
+  const seed = Number(prop?.id) || idx || 1;
   return {
     lat: baseCoords.lat + (((seed * 17) % 50 - 25) * 0.0003),
     lng: baseCoords.lng + (((seed * 31) % 50 - 25) * 0.0003)
@@ -86,7 +104,6 @@ function getPropertyCoordinates(prop, idx) {
 }
 
 export default function MapaAlojamientos({ propiedades = [] }) {
-  const navigate = useNavigate();
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   
@@ -96,7 +113,6 @@ export default function MapaAlojamientos({ propiedades = [] }) {
   const [maxDistance, setMaxDistance] = useState(99999); // km
   const [selectedProperty, setSelectedProperty] = useState(null);
 
-  // Default fallback coords (Santa Marta / UCC Campus: 11.226, -74.186)
   const defaultCoords = { lat: 11.2263, lng: -74.1868 };
 
   // Detect User GPS Location
@@ -111,15 +127,19 @@ export default function MapaAlojamientos({ propiedades = [] }) {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const coords = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude
-        };
-        setUserLocation(coords);
-        setLocating(false);
+        try {
+          const coords = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+          };
+          setUserLocation(coords);
+          setLocating(false);
 
-        if (mapInstanceRef.current && window.L) {
-          try { mapInstanceRef.current.setView([coords.lat, coords.lng], 13); } catch (e) {}
+          if (mapInstanceRef.current && window.L && !isNaN(coords.lat) && !isNaN(coords.lng)) {
+            mapInstanceRef.current.setView([coords.lat, coords.lng], 13);
+          }
+        } catch (e) {
+          setLocating(false);
         }
       },
       (err) => {
@@ -143,6 +163,134 @@ export default function MapaAlojamientos({ propiedades = [] }) {
       }
     };
   }, []);
+
+  // Safe Render Markers
+  const renderMarkers = () => {
+    try {
+      const map = mapInstanceRef.current;
+      if (!map || !window.L) return;
+
+      // Clear existing markers safely
+      map.eachLayer((layer) => {
+        try {
+          if (layer instanceof window.L.Marker || layer instanceof window.L.Circle) {
+            map.removeLayer(layer);
+          }
+        } catch (e) {}
+      });
+
+      // User Location Marker
+      if (userLocation && !isNaN(userLocation.lat) && !isNaN(userLocation.lng)) {
+        try {
+          const userIcon = window.L.divIcon({
+            className: 'custom-user-marker',
+            html: `
+              <div style="
+                width: 20px;
+                height: 20px;
+                background: #2563eb;
+                border: 3px solid #ffffff;
+                border-radius: 50%;
+                box-shadow: 0 0 15px rgba(37, 99, 235, 0.6);
+              "></div>
+            `,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+          });
+
+          window.L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
+            .addTo(map)
+            .bindPopup('<b>Tu Ubicación Actual</b><br>Geolocalización GPS activa.');
+        } catch (e) {}
+      }
+
+      const bounds = window.L.latLngBounds();
+
+      if (userLocation && !isNaN(userLocation.lat) && !isNaN(userLocation.lng)) {
+        bounds.extend([userLocation.lat, userLocation.lng]);
+      }
+
+      const safeProps = Array.isArray(propiedades) ? propiedades : [];
+
+      safeProps.forEach((prop, idx) => {
+        try {
+          const coords = getPropertyCoordinates(prop, idx);
+          if (!coords || isNaN(coords.lat) || isNaN(coords.lng)) return;
+
+          const dist = (userLocation && !isNaN(userLocation.lat) && !isNaN(userLocation.lng))
+            ? calculateDistance(userLocation.lat, userLocation.lng, coords.lat, coords.lng)
+            : null;
+
+          if (dist && maxDistance < 9999 && parseFloat(dist) > maxDistance) return;
+
+          bounds.extend([coords.lat, coords.lng]);
+
+          const propIcon = window.L.divIcon({
+            className: 'custom-prop-marker',
+            html: `
+              <div style="
+                background: #0d7c3d;
+                color: white;
+                font-size: 11px;
+                font-weight: 800;
+                padding: 4px 8px;
+                border-radius: 12px;
+                border: 2px solid white;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                white-space: nowrap;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+              ">
+                <span>${prop.titulo ? (prop.titulo.length > 16 ? prop.titulo.substring(0, 16) + '...' : prop.titulo) : 'Alojamiento UCC'}</span>
+              </div>
+            `,
+            iconSize: [110, 26],
+            iconAnchor: [55, 13]
+          });
+
+          const popupContent = `
+            <div style="font-family: sans-serif; padding: 4px; max-width: 200px;">
+              <h4 style="margin: 0 0 6px 0; color: #0d7c3d; font-size: 0.95rem; font-weight: 800;">${prop.titulo || 'Hospedaje UCC'}</h4>
+              <p style="margin: 0 0 4px 0; font-size: 0.8rem; color: #475569;">
+                ${prop.barrio ? `${prop.barrio}, ` : ''}${prop.ciudad || prop.campus_cercano || 'Campus UCC'}
+                ${dist ? `<br>📍 <strong>${dist} km</strong> de ti` : ''}
+              </p>
+              <a href="/propiedad/${prop.id}" style="
+                display: inline-block;
+                margin-top: 6px;
+                background: #0d7c3d;
+                color: white;
+                padding: 6px 12px;
+                border-radius: 6px;
+                text-decoration: none;
+                font-size: 0.78rem;
+                font-weight: bold;
+              ">Ver Alojamiento →</a>
+            </div>
+          `;
+
+          const marker = window.L.marker([coords.lat, coords.lng], { icon: propIcon })
+            .addTo(map)
+            .bindPopup(popupContent);
+
+          marker.on('click', () => {
+            setSelectedProperty({ ...prop, dist, lat: coords.lat, lng: coords.lng });
+          });
+        } catch (e) {
+          console.warn('Error añadiendo marcador de propiedad:', e);
+        }
+      });
+
+      if (bounds.isValid() && safeProps.length > 0) {
+        try {
+          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+        } catch (e) {}
+      }
+    } catch (err) {
+      console.error('Error en renderMarkers:', err);
+    }
+  };
 
   // Initialize Leaflet Map dynamically
   useEffect(() => {
@@ -190,114 +338,6 @@ export default function MapaAlojamientos({ propiedades = [] }) {
 
     loadLeafletAndInit();
   }, []);
-
-  // Update Markers on Map
-  const renderMarkers = () => {
-    const map = mapInstanceRef.current;
-    if (!map || !window.L) return;
-
-    // Clear existing markers
-    map.eachLayer((layer) => {
-      if (layer instanceof window.L.Marker || layer instanceof window.L.Circle) {
-        map.removeLayer(layer);
-      }
-    });
-
-    // User Location Marker (Pulse Blue Circle)
-    if (userLocation) {
-      const userIcon = window.L.divIcon({
-        className: 'custom-user-marker',
-        html: `
-          <div style="
-            width: 20px;
-            height: 20px;
-            background: #2563eb;
-            border: 3px solid #ffffff;
-            border-radius: 50%;
-            box-shadow: 0 0 15px rgba(37, 99, 235, 0.6);
-          "></div>
-        `,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
-      });
-
-      window.L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
-        .addTo(map)
-        .bindPopup('<b>Tu Ubicación Actual</b><br>Geolocalización GPS activa.');
-    }
-
-    const bounds = window.L.latLngBounds();
-
-    if (userLocation) {
-      bounds.extend([userLocation.lat, userLocation.lng]);
-    }
-
-    propiedades.forEach((prop, idx) => {
-      const coords = getPropertyCoordinates(prop, idx);
-      const dist = userLocation ? calculateDistance(userLocation.lat, userLocation.lng, coords.lat, coords.lng) : null;
-
-      if (dist && maxDistance < 9999 && parseFloat(dist) > maxDistance) return;
-
-      bounds.extend([coords.lat, coords.lng]);
-
-      const propIcon = window.L.divIcon({
-        className: 'custom-prop-marker',
-        html: `
-          <div style="
-            background: #0d7c3d;
-            color: white;
-            font-size: 11px;
-            font-weight: 800;
-            padding: 4px 8px;
-            border-radius: 12px;
-            border: 2px solid white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-          ">
-            <span>${prop.titulo ? (prop.titulo.length > 16 ? prop.titulo.substring(0, 16) + '...' : prop.titulo) : 'Alojamiento UCC'}</span>
-          </div>
-        `,
-        iconSize: [110, 26],
-        iconAnchor: [55, 13]
-      });
-
-      const popupContent = `
-        <div style="font-family: sans-serif; padding: 4px; max-width: 200px;">
-          <h4 style="margin: 0 0 6px 0; color: #0d7c3d; font-size: 0.95rem; font-weight: 800;">${prop.titulo}</h4>
-          <p style="margin: 0 0 4px 0; font-size: 0.8rem; color: #475569;">
-            ${prop.barrio ? `${prop.barrio}, ` : ''}${prop.ciudad || 'Campus UCC'}
-            ${dist ? `<br>📍 <strong>${dist} km</strong> de ti` : ''}
-          </p>
-          <a href="/propiedad/${prop.id}" style="
-            display: inline-block;
-            margin-top: 6px;
-            background: #0d7c3d;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 0.78rem;
-            font-weight: bold;
-          ">Ver Alojamiento →</a>
-        </div>
-      `;
-
-      const marker = window.L.marker([coords.lat, coords.lng], { icon: propIcon })
-        .addTo(map)
-        .bindPopup(popupContent);
-
-      marker.on('click', () => {
-        setSelectedProperty({ ...prop, dist, lat: coords.lat, lng: coords.lng });
-      });
-    });
-
-    if (bounds.isValid() && propiedades.length > 0) {
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
-    }
-  };
 
   useEffect(() => {
     if (mapInstanceRef.current) {

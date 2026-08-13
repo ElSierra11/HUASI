@@ -11,6 +11,21 @@ export default class ErrorBoundary extends React.Component {
     return { hasError: true, error };
   }
 
+  componentDidMount() {
+    this.handleGlobalError = (event) => {
+      console.warn('Global error intercepted:', event);
+    };
+    window.addEventListener('error', this.handleGlobalError);
+    window.addEventListener('unhandledrejection', this.handleGlobalError);
+  }
+
+  componentWillUnmount() {
+    if (this.handleGlobalError) {
+      window.removeEventListener('error', this.handleGlobalError);
+      window.removeEventListener('unhandledrejection', this.handleGlobalError);
+    }
+  }
+
   componentDidCatch(error, errorInfo) {
     console.error('⚠️ [ErrorBoundary Capturado]:', error, errorInfo);
   }
