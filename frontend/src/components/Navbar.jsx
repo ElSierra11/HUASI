@@ -72,7 +72,7 @@ export default function Navbar() {
           <img 
             src="/logo_horizontal.png" 
             alt="HUASI" 
-            className="h-[42px] w-auto object-contain group-hover:scale-105 transition-transform duration-300 max-[480px]:h-[34px]"
+            className="h-[46px] w-auto object-contain group-hover:scale-105 transition-transform duration-300 max-[480px]:h-[38px]"
           />
         </Link>
 

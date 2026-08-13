@@ -450,7 +450,8 @@ export default function Register() {
             src="/logo_vertical.png"
             alt="HUASI Logo"
             style={{
-              height: '85px',
+              height: '105px',
+              width: 'auto',
               objectFit: 'contain',
               marginBottom: 12,
               marginLeft: 'auto',

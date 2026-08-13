@@ -37,7 +37,8 @@ export default function Login() {
             src="/logo_vertical.png" 
             alt="HUASI Logo" 
             style={{ 
-              height: '90px', 
+              height: '110px', 
+              width: 'auto',
               objectFit: 'contain',
               marginBottom: 16,
               marginLeft: 'auto',
