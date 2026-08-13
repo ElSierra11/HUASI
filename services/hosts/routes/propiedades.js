@@ -316,11 +316,13 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: err.message });
     }
 
+    const ciudadFinal = campus_cercano ? String(campus_cercano).trim() : 'Santa Marta';
+
     const result = await pool.query(
-      `INSERT INTO propiedades (host_id, titulo, descripcion, direccion, barrio, tipo, capacidad, amenidades, reglas, latitud, longitud, campus_cercano, duracion_maxima, es_pago, precio_por_noche)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, FALSE, NULL)
+      `INSERT INTO propiedades (host_id, titulo, descripcion, direccion, barrio, ciudad, tipo, capacidad, amenidades, reglas, latitud, longitud, campus_cercano, duracion_maxima, es_pago, precio_por_noche)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, FALSE, NULL)
        RETURNING *`,
-      [req.user.id, String(titulo).trim(), String(descripcion).trim(), String(direccion).trim(), barrio ? String(barrio).trim() : null, tipoFinal, parseInt(capacidad, 10), amenidadesArr, reglas ? String(reglas).trim() : null, latitud || null, longitud || null, campus_cercano || null, duracion_maxima ? parseInt(duracion_maxima, 10) : null]
+      [req.user.id, String(titulo).trim(), String(descripcion).trim(), String(direccion).trim(), barrio ? String(barrio).trim() : null, ciudadFinal, tipoFinal, parseInt(capacidad, 10), amenidadesArr, reglas ? String(reglas).trim() : null, latitud || null, longitud || null, campus_cercano ? String(campus_cercano).trim() : null, duracion_maxima ? parseInt(duracion_maxima, 10) : null]
     );
 
     res.status(201).json(result.rows[0]);
@@ -371,20 +373,24 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: errores[0] });
     }
 
+    const campusFinal = campus_cercano ? String(campus_cercano).trim() : prop.rows[0].campus_cercano;
+    const ciudadFinal = campusFinal || prop.rows[0].ciudad || 'Santa Marta';
+
     const result = await pool.query(
       `UPDATE propiedades SET
        titulo = COALESCE($1, titulo), descripcion = COALESCE($2, descripcion),
        direccion = COALESCE($3, direccion), barrio = COALESCE($4, barrio),
-       tipo = COALESCE($5, tipo), capacidad = COALESCE($6, capacidad),
-       amenidades = $7, reglas = COALESCE($8, reglas),
-       campus_cercano = COALESCE($9, campus_cercano),
-       duracion_maxima = COALESCE($10, duracion_maxima),
+       ciudad = $5,
+       tipo = COALESCE($6, tipo), capacidad = COALESCE($7, capacidad),
+       amenidades = $8, reglas = COALESCE($9, reglas),
+       campus_cercano = COALESCE($10, campus_cercano),
+       duracion_maxima = COALESCE($11, duracion_maxima),
        es_pago = FALSE, precio_por_noche = NULL,
        updated_at = NOW()
-       WHERE id = $11 RETURNING *`,
-      [titulo ? String(titulo).trim() : null, descripcion ? String(descripcion).trim() : null, direccion ? String(direccion).trim() : null, barrio ? String(barrio).trim() : null, tipoFinal, capacidad ? parseInt(capacidad, 10) : null,
+       WHERE id = $12 RETURNING *`,
+      [titulo ? String(titulo).trim() : null, descripcion ? String(descripcion).trim() : null, direccion ? String(direccion).trim() : null, barrio ? String(barrio).trim() : null, ciudadFinal, tipoFinal, capacidad ? parseInt(capacidad, 10) : null,
        amenidadesArr, reglas ? String(reglas).trim() : null,
-       campus_cercano || null, duracion_maxima ? parseInt(duracion_maxima, 10) : null,
+       campusFinal, duracion_maxima ? parseInt(duracion_maxima, 10) : null,
        id]
     );
 

@@ -35,32 +35,53 @@ const UCC_CAMPUS_COORDS = {
   'Arauca': { lat: 7.0847, lng: -70.7591 }
 };
 
+function normalizeString(str = '') {
+  return String(str)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
 function getPropertyCoordinates(prop, idx) {
   if (prop && prop.latitud && prop.longitud && !isNaN(parseFloat(prop.latitud)) && !isNaN(parseFloat(prop.longitud))) {
     return { lat: parseFloat(prop.latitud), lng: parseFloat(prop.longitud) };
   }
 
-  const locationSearch = `${prop?.campus_cercano || ''} ${prop?.ciudad || ''} ${prop?.direccion || ''}`.toLowerCase();
-  let baseCoords = null;
+  const campusTarget = normalizeString(prop?.campus_cercano);
+  const ciudadTarget = normalizeString(prop?.ciudad);
 
-  for (const [key, coords] of Object.entries(UCC_CAMPUS_COORDS)) {
-    if (locationSearch.includes(key.toLowerCase())) {
-      baseCoords = coords;
-      break;
+  // 1. Prioridad 1: Coincidencia por campus_cercano
+  if (campusTarget) {
+    for (const [key, coords] of Object.entries(UCC_CAMPUS_COORDS)) {
+      const keyNorm = normalizeString(key);
+      if (campusTarget.includes(keyNorm) || keyNorm.includes(campusTarget)) {
+        const seed = (prop?.id || idx || 1);
+        const latOffset = ((seed * 17) % 50 - 25) * 0.0003;
+        const lngOffset = ((seed * 31) % 50 - 25) * 0.0003;
+        return { lat: coords.lat + latOffset, lng: coords.lng + lngOffset };
+      }
     }
   }
 
-  if (!baseCoords) {
-    baseCoords = UCC_CAMPUS_COORDS['Santa Marta'];
+  // 2. Prioridad 2: Coincidencia por ciudad
+  if (ciudadTarget) {
+    for (const [key, coords] of Object.entries(UCC_CAMPUS_COORDS)) {
+      const keyNorm = normalizeString(key);
+      if (ciudadTarget.includes(keyNorm) || keyNorm.includes(ciudadTarget)) {
+        const seed = (prop?.id || idx || 1);
+        const latOffset = ((seed * 17) % 50 - 25) * 0.0003;
+        const lngOffset = ((seed * 31) % 50 - 25) * 0.0003;
+        return { lat: coords.lat + latOffset, lng: coords.lng + lngOffset };
+      }
+    }
   }
 
+  const baseCoords = UCC_CAMPUS_COORDS['Santa Marta'];
   const seed = (prop?.id || idx || 1);
-  const latOffset = ((seed * 17) % 50 - 25) * 0.0003;
-  const lngOffset = ((seed * 31) % 50 - 25) * 0.0003;
-
   return {
-    lat: baseCoords.lat + latOffset,
-    lng: baseCoords.lng + lngOffset
+    lat: baseCoords.lat + (((seed * 17) % 50 - 25) * 0.0003),
+    lng: baseCoords.lng + (((seed * 31) % 50 - 25) * 0.0003)
   };
 }
 
@@ -98,7 +119,7 @@ export default function MapaAlojamientos({ propiedades = [] }) {
         setLocating(false);
 
         if (mapInstanceRef.current && window.L) {
-          mapInstanceRef.current.setView([coords.lat, coords.lng], 13);
+          try { mapInstanceRef.current.setView([coords.lat, coords.lng], 13); } catch (e) {}
         }
       },
       (err) => {
@@ -112,6 +133,15 @@ export default function MapaAlojamientos({ propiedades = [] }) {
 
   useEffect(() => {
     getUserLocation();
+
+    return () => {
+      if (mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+        } catch (e) {}
+      }
+    };
   }, []);
 
   // Initialize Leaflet Map dynamically
@@ -131,15 +161,21 @@ export default function MapaAlojamientos({ propiedades = [] }) {
 
       const initMap = () => {
         if (!window.L || mapInstanceRef.current || !mapContainerRef.current) return;
-        const center = userLocation || defaultCoords;
-        const map = window.L.map(mapContainerRef.current).setView([center.lat, center.lng], 12);
+        if (mapContainerRef.current._leaflet_id) return;
 
-        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+        try {
+          const center = userLocation || defaultCoords;
+          const map = window.L.map(mapContainerRef.current).setView([center.lat, center.lng], 12);
 
-        mapInstanceRef.current = map;
-        renderMarkers();
+          window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+          }).addTo(map);
+
+          mapInstanceRef.current = map;
+          renderMarkers();
+        } catch (e) {
+          console.error('Error inicializando mapa:', e);
+        }
       };
 
       if (window.L) {
