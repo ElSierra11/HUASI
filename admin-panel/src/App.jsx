@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import { CheckSquare, Users, ShieldAlert, LogOut, Shield, Home, Menu, X } from 'lucide-react';
+import { CheckSquare, Users, ShieldAlert, LogOut, Shield, Home, Menu, X, BarChart3 } from 'lucide-react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Usuarios from './pages/Usuarios';
 import Reportes from './pages/Reportes';
 import Alojamientos from './pages/Alojamientos';
+import EstadisticasMensuales from './pages/EstadisticasMensuales';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -45,6 +46,7 @@ function App() {
     { to: '/usuarios', icon: <Users size={18} />, label: 'Usuarios' },
     { to: '/alojamientos', icon: <Home size={18} />, label: 'Alojamientos' },
     { to: '/reportes', icon: <ShieldAlert size={18} />, label: 'PQRs' },
+    { to: '/estadisticas', icon: <BarChart3 size={18} />, label: 'Estadísticas' },
   ];
 
   return (
@@ -147,6 +149,9 @@ function App() {
             } />
             <Route path="/reportes" element={
               <ProtectedRoute><Reportes /></ProtectedRoute>
+            } />
+            <Route path="/estadisticas" element={
+              <ProtectedRoute><EstadisticasMensuales /></ProtectedRoute>
             } />
           </Routes>
         </main>

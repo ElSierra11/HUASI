@@ -563,6 +563,71 @@ router.get('/admin/dashboard-stats', async (req, res) => {
   }
 });
 
+// ============ ADMIN: REPORTES Y ESTADISTICAS MENSUALES GRANULARES ============
+router.get('/admin/estadisticas-mensuales', async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    // 1. Estadísticas por Campus UCC
+    const campusStats = await pool.query(`
+      SELECT 
+        COALESCE(campus_cercano, 'Santa Marta') as campus,
+        COUNT(*) as total_alojamientos,
+        COUNT(CASE WHEN activo = TRUE THEN 1 END) as activos
+      FROM propiedades
+      GROUP BY COALESCE(campus_cercano, 'Santa Marta')
+      ORDER BY total_alojamientos DESC
+    `);
+
+    // 2. Histórico mensual de actividad (últimos 12 meses)
+    const historicoMensual = await pool.query(`
+      SELECT 
+        TO_CHAR(r.created_at, 'YYYY-MM') as mes,
+        COUNT(r.id) as total_reservas,
+        COUNT(CASE WHEN r.estado IN ('aceptada', 'aprobada') THEN 1 END) as reservas_aceptadas,
+        COUNT(CASE WHEN r.estado = 'rechazada' THEN 1 END) as reservas_rechazadas
+      FROM reservas r
+      GROUP BY TO_CHAR(r.created_at, 'YYYY-MM')
+      ORDER BY mes DESC
+      LIMIT 12
+    `);
+
+    // 3. Alojamientos nuevos por mes
+    const propiedadesMensuales = await pool.query(`
+      SELECT 
+        TO_CHAR(created_at, 'YYYY-MM') as mes,
+        COUNT(*) as nuevos_alojamientos
+      FROM propiedades
+      GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+      ORDER BY mes DESC
+      LIMIT 12
+    `);
+
+    res.json({
+      campus: campusStats.rows.map(c => ({
+        campus: c.campus,
+        total_alojamientos: parseInt(c.total_alojamientos || 0),
+        activos: parseInt(c.activos || 0)
+      })),
+      historico_reservas: historicoMensual.rows.map(h => ({
+        mes: h.mes,
+        total_reservas: parseInt(h.total_reservas || 0),
+        reservas_aceptadas: parseInt(h.reservas_aceptadas || 0),
+        reservas_rechazadas: parseInt(h.reservas_rechazadas || 0)
+      })),
+      propiedades_mensuales: propiedadesMensuales.rows.map(p => ({
+        mes: p.mes,
+        nuevos_alojamientos: parseInt(p.nuevos_alojamientos || 0)
+      }))
+    });
+  } catch (err) {
+    console.error('Error obteniendo reporte mensual admin:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 
 // ============ ADMIN: BLOQUEAR / DESBLOQUEAR USUARIO ============
 router.patch('/admin/usuarios/:id/bloquear', async (req, res) => {
