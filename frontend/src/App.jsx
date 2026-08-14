@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import MobileBottomNav from './components/MobileBottomNav';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatWidget from './components/ChatWidget';
 import PqrButton from './components/PqrButton';
@@ -19,7 +20,7 @@ import QuienesSomos from './pages/QuienesSomos';
 
 function App() {
   return (
-    <div className="app">
+    <div className="app pb-16 md:pb-0">
       <Navbar />
       <main className="main-content">
         <Routes>
@@ -41,6 +42,7 @@ function App() {
       </main>
       <ChatWidget />
       <PqrButton />
+      <MobileBottomNav />
     </div>
   );
 }

@@ -206,9 +206,9 @@ export default function Home() {
             { label: 'Calificación promedio', value: '4.8 ★', icon: <Star size={16} /> },
             { label: 'Comunidad Solidaria', value: '100%', icon: <Heart size={16} fill="currentColor" /> },
           ].map(s => (
-            <div key={s.label} className="flex flex-col items-center hover:scale-105 transition-transform duration-200 cursor-default">
-              <span className="text-3xl font-black font-heading text-ucc-navy leading-none">{s.value}</span>
-              <span className="text-[0.75rem] text-ucc-muted font-bold tracking-wide mt-2 flex items-center gap-1.5">
+            <div key={s.label} className="flex flex-col items-center hover:scale-105 transition-transform duration-200 cursor-default group">
+              <span className="text-3xl md:text-4xl font-black font-heading text-ucc-navy dark:text-white leading-none tracking-tight group-hover:text-ucc-green transition-colors">{s.value}</span>
+              <span className="text-[0.75rem] text-ucc-muted dark:text-slate-400 font-bold tracking-wide mt-2 flex items-center gap-1.5">
                 {s.icon} {s.label}
               </span>
             </div>
@@ -216,9 +216,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== BARRA DE BÚSQUEDA FLOTANTE ===== */}
+      {/* ===== BARRA DE BÚSQUEDA FLOTANTE GLASSMORPHIC ===== */}
       <section className="relative z-20 -mt-10 md:-mt-12 mb-8 px-2 md:px-4 max-w-4xl mx-auto">
-        <div className="bg-white dark:bg-slate-800/95 p-3 rounded-2xl md:rounded-full shadow-custom-lg border border-ucc-border/40 dark:border-slate-700 hover:border-ucc-green/30 hover:shadow-custom-xl transition-all duration-300">
+        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-3.5 rounded-2xl md:rounded-full shadow-custom-lg border border-ucc-border/50 dark:border-slate-700/60 hover:border-ucc-green/40 hover:shadow-custom-xl transition-all duration-300">
           <form className="flex flex-col md:flex-row items-center gap-2" onSubmit={handleSearch}>
             
             {/* Ciudad */}

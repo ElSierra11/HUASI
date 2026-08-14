@@ -90,7 +90,7 @@ export default function PropertyCard({ propiedad }) {
 
   return (
     <div 
-      className="group bg-white rounded-xl-custom border border-ucc-border/50 hover:border-ucc-green/30 shadow-custom-sm hover:shadow-custom-md hover:-translate-y-1.5 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col h-full" 
+      className="group bg-white dark:bg-slate-800/90 rounded-xl-custom border border-ucc-border/50 dark:border-slate-700/60 hover:border-ucc-green/40 dark:hover:border-emerald-500/40 shadow-custom-sm hover:shadow-custom-md hover:-translate-y-1.5 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col h-full" 
       onClick={() => navigate(`/propiedad/${propiedad.id}`)}
     >
       {/* Icon Card Header */}
@@ -100,17 +100,14 @@ export default function PropertyCard({ propiedad }) {
       >
         {/* Badge Indicator: tipo */}
         <span 
-          className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-3.5 py-1 rounded-full text-[0.68rem] font-extrabold tracking-wider uppercase border border-ucc-border/40 shadow-custom-sm flex items-center gap-1.5 z-10"
-          style={{ color: 'var(--primary)' }}
+          className="absolute top-3 left-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3.5 py-1 rounded-full text-[0.68rem] font-extrabold tracking-wider uppercase border border-ucc-border/40 dark:border-slate-700/60 shadow-custom-sm flex items-center gap-1.5 z-10 text-ucc-navy dark:text-white"
         >
           <span className={`w-1.5 h-1.5 rounded-full ${theme.dotClass} animate-pulse-dot`} />
           {getTipoLabel(propiedad.tipo)}
         </span>
 
-
-
         {/* Big Icon */}
-        <div className="text-white flex items-center justify-center group-hover:scale-115 group-hover:rotate-3 transition-all duration-500">
+        <div className="text-white flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
           {React.cloneElement(icon, { size: 56, className: "filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.2)]" })}
         </div>
       </div>
@@ -126,7 +123,7 @@ export default function PropertyCard({ propiedad }) {
             {React.cloneElement(smallIcon, { size: 14, className: "text-white" })}
           </div>
           <span 
-            className="font-heading font-black text-[1.05rem] text-ucc-navy truncate" 
+            className="font-heading font-black text-[1.05rem] text-ucc-navy dark:text-white group-hover:text-ucc-green dark:group-hover:text-emerald-400 transition-colors truncate" 
             title={propiedad.titulo}
           >
             {propiedad.titulo}
@@ -134,8 +131,8 @@ export default function PropertyCard({ propiedad }) {
         </div>
         
         {/* Location Info */}
-        <div className="text-ucc-muted text-xs font-semibold mb-4 flex items-center gap-1.5">
-          <MapPin size={13} className="text-ucc-muted/70 flex-shrink-0" /> 
+        <div className="text-ucc-muted dark:text-slate-400 text-xs font-semibold mb-4 flex items-center gap-1.5">
+          <MapPin size={13} className="text-ucc-muted/70 dark:text-slate-400 flex-shrink-0" /> 
           <span className="truncate">{propiedad.barrio || propiedad.direccion}, {propiedad.ciudad}</span>
         </div>
 
