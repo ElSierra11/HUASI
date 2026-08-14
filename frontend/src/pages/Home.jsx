@@ -126,8 +126,8 @@ export default function Home() {
         </div>
 
         {/* Glow blobs behind */}
-        <div className="absolute top-[-10%] left-[-5%] w-[300px] h-[300px] bg-gradient-to-r from-ucc-cyan/10 to-transparent rounded-full filter blur-[80px] pointer-events-none z-0"></div>
-        <div className="absolute bottom-[-15%] right-[-5%] w-[350px] h-[350px] bg-gradient-to-r from-ucc-green/10 to-transparent rounded-full filter blur-[80px] pointer-events-none z-0"></div>
+        <div className="absolute top-[-10%] left-[-5%] w-[350px] h-[350px] bg-gradient-to-r from-ucc-green/20 to-emerald-400/10 rounded-full filter blur-[90px] pointer-events-none z-0 animate-pulse-glow"></div>
+        <div className="absolute bottom-[-15%] right-[-5%] w-[400px] h-[400px] bg-gradient-to-r from-emerald-500/15 to-transparent rounded-full filter blur-[100px] pointer-events-none z-0 animate-pulse-glow"></div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center relative z-10">
           
@@ -135,13 +135,13 @@ export default function Home() {
           <div className="lg:col-span-7 flex flex-col items-start text-left space-y-4 sm:space-y-6">
             
             {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 bg-ucc-green/10 dark:bg-ucc-green/20 px-3.5 py-1.5 rounded-full text-xs md:text-sm font-extrabold text-ucc-green dark:text-emerald-400 border border-ucc-green/20 dark:border-ucc-green/30 shadow-custom-sm">
-              <Shield size={14} className="text-ucc-green dark:text-emerald-400" /> Red solidaria · 100% solidario
+            <div className="inline-flex items-center gap-2 bg-ucc-green/10 dark:bg-ucc-green/20 px-3.5 py-1.5 rounded-full text-xs md:text-sm font-extrabold text-ucc-green dark:text-emerald-400 border border-ucc-green/20 dark:border-ucc-green/30 shadow-custom-sm hover:scale-105 transition-transform duration-200 cursor-default">
+              <Shield size={14} className="text-ucc-green dark:text-emerald-400 animate-pulse" /> Red solidaria · 100% solidario
             </div>
 
             {/* Slogan Title */}
             <h1 className="font-heading font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-ucc-navy dark:text-white leading-tight tracking-tight">
-              La casa de mi <span className="bg-gradient-to-r from-ucc-green via-emerald-500 to-emerald-400 bg-clip-text text-transparent">amig@</span>
+              La casa de mi <span className="bg-gradient-to-r from-ucc-green via-emerald-400 to-green-500 bg-clip-text text-transparent animate-gradient-text">amig@</span>
             </h1>
 
             {/* Description */}
@@ -153,7 +153,7 @@ export default function Home() {
             <div className="flex gap-4 flex-wrap pt-2">
               <button 
                 onClick={() => scrollToSection('alojamientos')}
-                className="inline-flex items-center justify-center bg-white dark:bg-slate-800 border-2 border-ucc-green text-ucc-navy dark:text-white hover:bg-ucc-green hover:text-white font-bold px-8 py-3.5 rounded-full text-sm shadow-custom hover:shadow-custom-md transition-all duration-200"
+                className="inline-flex items-center justify-center bg-white dark:bg-slate-800 border-2 border-ucc-green text-ucc-navy dark:text-white hover:bg-ucc-green hover:text-white font-bold px-8 py-3.5 rounded-full text-sm shadow-custom hover:shadow-custom-md hover:scale-[1.03] active:scale-[0.98] transition-all duration-200"
               >
                 Ver alojamientos
               </button>
@@ -162,7 +162,7 @@ export default function Home() {
 
           {/* Right Column: Premium Interactive Card */}
           <div className="lg:col-span-5 flex justify-center w-full">
-            <div className="hero-interactive-card p-6 rounded-3xl border border-ucc-border/40 dark:border-slate-700 shadow-custom-lg flex flex-col items-center max-w-sm w-full relative z-10 hover:-translate-y-1 transition-transform duration-300">
+            <div className="hero-interactive-card animate-float p-6 rounded-3xl border border-ucc-border/40 dark:border-slate-700 shadow-custom-lg flex flex-col items-center max-w-sm w-full relative z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
               
               {/* Logo Area */}
               <div className="p-6 rounded-2xl w-full flex flex-col items-center justify-center min-h-[180px] bg-gradient-to-b from-ucc-bg/60 to-ucc-bg/20 dark:from-slate-800/60 dark:to-slate-800/30 border border-ucc-border/40 dark:border-slate-700/60 backdrop-blur-sm huasi-brand-container">
@@ -187,7 +187,7 @@ export default function Home() {
               {/* Action Button */}
               <button 
                 onClick={() => scrollToSection('como-funciona')}
-                className="bg-gradient-to-r from-ucc-green to-emerald-600 hover:from-ucc-green-hover hover:to-emerald-700 text-white font-bold px-6 py-3 rounded-full shadow-custom hover:shadow-custom-md mt-6 w-full text-center text-sm transition-all duration-200"
+                className="bg-gradient-to-r from-ucc-green to-emerald-600 hover:from-ucc-green-hover hover:to-emerald-700 text-white font-bold px-6 py-3 rounded-full shadow-custom hover:shadow-custom-md hover:scale-[1.03] active:scale-[0.98] mt-6 w-full text-center text-sm transition-all duration-200"
               >
                 Descubre cómo funciona
               </button>
