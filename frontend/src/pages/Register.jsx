@@ -438,19 +438,15 @@ export default function Register() {
           })}
         </div>
 
-        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <div style={{ textAlign: 'center', marginBottom: 16 }} className="flex flex-col items-center">
           <img
-            src="/logo_vertical.png"
-            alt="HUASI Logo"
-            style={{
-              height: '105px',
-              width: 'auto',
-              objectFit: 'contain',
-              marginBottom: 12,
-              marginLeft: 'auto',
-              marginRight: 'auto'
-            }}
+            src="/huasi-monograma.png"
+            alt="HUASI Monograma"
+            className="h-20 w-20 object-contain mb-2 transition-transform duration-300 hover:scale-105"
           />
+          <span className="font-heading font-black text-2xl tracking-wider text-ucc-navy dark:text-white">
+            HUASI
+          </span>
         </div>
         <h2 style={{ fontSize: '1.8rem', textAlign: 'center', letterSpacing: '-0.02em', color: 'var(--primary)' }}>Únete a HUASI</h2>
         <p className="subtitle" style={{ textAlign: 'center', fontSize: '0.92rem', color: 'var(--text-muted)', marginTop: '4px', marginBottom: '24px' }}>

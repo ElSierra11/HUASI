@@ -64,9 +64,9 @@ function App() {
               {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
 
-            <h1 style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '1.15rem', fontWeight: 800 }}>
-              <Shield size={22} color="var(--primary)" />
-              <span className="brand-text">HUASI UCC</span>
+            <h1 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.15rem', fontWeight: 800 }}>
+              <img src="/huasi-monograma.png" alt="HUASI" style={{ height: 26, width: 26, objectFit: 'contain' }} />
+              <span className="brand-text">HUASI</span>
               <span style={{
                 fontSize: '0.65rem',
                 background: 'var(--primary)',

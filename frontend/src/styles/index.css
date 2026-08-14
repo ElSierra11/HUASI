@@ -2501,44 +2501,34 @@ body.dark .hero-interactive-card {
 
 /* UNIFIED LOGO SYSTEM FOR LIGHT & DARK MODE */
 .logo-container {
-  background-color: #ffffff !important;
-  border: 1px solid rgba(200, 221, 210, 0.7) !important;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-  padding: 4px 10px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.25s ease;
 }
 
-.logo-img-dark-file {
-  filter: invert(1) hue-rotate(180deg) contrast(1.1);
-  mix-blend-mode: multiply;
-}
-
+.logo-img-dark-file,
 .logo-img-light-file {
-  filter: none;
-  mix-blend-mode: multiply;
+  filter: none !important;
+  mix-blend-mode: normal !important;
 }
 
 .dark .logo-container,
 body.dark .logo-container {
-  background-color: rgba(10, 33, 24, 0.75) !important;
-  border: 1px solid rgba(13, 124, 61, 0.4) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .dark .logo-img-dark-file,
-body.dark .logo-img-dark-file {
-  filter: none !important;
-  mix-blend-mode: screen !important;
-}
-
+body.dark .logo-img-dark-file,
 .dark .logo-img-light-file,
 body.dark .logo-img-light-file {
-  filter: invert(0.92) hue-rotate(180deg) brightness(1.1) !important;
-  mix-blend-mode: screen !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
 }
 
 /* Background overrides for cards and panels in dark mode */

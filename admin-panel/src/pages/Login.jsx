@@ -81,7 +81,8 @@ export default function Login() {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(13, 124, 61, 0.85), rgba(0, 152, 205, 0.85))' }} />
         
         <div style={{ position: 'relative', zIndex: 10 }}>
-          <div style={{ background: 'white', padding: '12px 24px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
+          <div style={{ background: 'white', padding: '10px 20px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
+            <img src="/huasi-monograma.png" alt="HUASI" style={{ height: '24px', width: '24px', objectFit: 'contain' }} />
             <span style={{ fontWeight: 800, color: 'var(--primary)', letterSpacing: '1px' }}>HUASI</span>
           </div>
         </div>
