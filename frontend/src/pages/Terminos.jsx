@@ -62,12 +62,12 @@ export default function Terminos() {
         <section style={{ marginBottom: 24 }}>
           <h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 12 }}>6. Botón de Pánico y Seguridad</h2>
           <p style={{ marginBottom: 12 }}>
-            La plataforma incluye un Botón de Pánico flotante visible en todas las páginas. En caso de experimentar una situación de amenaza o peligro, haga uso del botón inmediatamente para contactar a las autoridades correspondientes (Policía Nacional: 123) o el personal de seguridad de la UCC.
+            La plataforma incluye un Botón de Pánico flotante visible en todas las páginas. En caso de experimentar una situación de amenaza o peligro, haga uso del botón inmediatamente para contactar a las autoridades correspondientes (Policía Nacional: 123) o el personal de seguridad de su campus.
           </p>
         </section>
 
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>HUASI UCC — Al servicio solidario de nuestra comunidad estudiantil.</p>
+          <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>HUASI — Al servicio solidario de nuestra comunidad estudiantil.</p>
         </div>
       </div>
     </div>

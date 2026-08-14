@@ -136,7 +136,7 @@ export default function Home() {
             
             {/* Pill Badge */}
             <div className="inline-flex items-center gap-2 bg-ucc-green/10 dark:bg-ucc-green/20 px-3.5 py-1.5 rounded-full text-xs md:text-sm font-extrabold text-ucc-green dark:text-emerald-400 border border-ucc-green/20 dark:border-ucc-green/30 shadow-custom-sm">
-              <Shield size={14} className="text-ucc-green dark:text-emerald-400" /> Red solidaria UCC · 100% solidario
+              <Shield size={14} className="text-ucc-green dark:text-emerald-400" /> Red solidaria · 100% solidario
             </div>
 
             {/* Slogan Title */}
@@ -199,7 +199,7 @@ export default function Home() {
         <div className="relative z-10 flex justify-center gap-8 md:gap-16 flex-wrap">
           {[
             { label: 'Alojamientos disponibles', value: loading ? '...' : propiedades.length, icon: <HomeIcon size={16} /> },
-            { label: 'Sedes UCC cubiertas', value: '13+', icon: <Users size={16} /> },
+            { label: 'Campus cubiertos', value: '13+', icon: <Users size={16} /> },
             { label: 'Calificación promedio', value: '4.8 ★', icon: <Star size={16} /> },
             { label: 'Comunidad Solidaria', value: '100%', icon: <Heart size={16} fill="currentColor" /> },
           ].map(s => (
@@ -231,7 +231,7 @@ export default function Home() {
               />
             </div>
 
-            {/* Campus UCC */}
+            {/* Campus */}
             <div className="w-full md:flex-1 flex items-center gap-2.5 px-4 py-2.5 hover:bg-ucc-bg/40 dark:hover:bg-slate-700/40 focus-within:bg-ucc-bg/40 dark:focus-within:bg-slate-700/40 rounded-full border-t md:border-t-0 md:border-l border-ucc-border/30 dark:border-slate-700 transition-colors">
               <Building2 size={18} className="text-ucc-muted dark:text-slate-400 flex-shrink-0" />
               <select
@@ -240,7 +240,7 @@ export default function Home() {
                 value={filters.campus}
                 onChange={e => setFilters(f => ({ ...f, campus: e.target.value }))}
               >
-                <option value="">Cualquier campus UCC</option>
+                <option value="">Cualquier campus</option>
                 <option value="Santa Marta">Santa Marta</option>
                 <option value="Bogotá">Bogotá</option>
                 <option value="Medellín">Medellín</option>
@@ -329,7 +329,7 @@ export default function Home() {
       <section className="mb-6 px-2 max-w-5xl mx-auto">
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none justify-start md:justify-center">
           <span className="text-xs font-bold text-ucc-muted flex items-center gap-1 mr-1 flex-shrink-0">
-            <Building2 size={13} className="text-ucc-green" /> Campus UCC:
+            <Building2 size={13} className="text-ucc-green" /> Campus:
           </span>
           {['Todos', 'Santa Marta', 'Bogotá', 'Medellín', 'Bucaramanga', 'Cali', 'Ibagué', 'Pasto'].map(c => {
             const isSelected = (c === 'Todos' && !filters.campus) || filters.campus === c;
@@ -409,7 +409,7 @@ export default function Home() {
         <div className="flex flex-col">
           <h2 className="font-heading font-black text-2xl md:text-3xl text-ucc-navy flex items-center gap-2">
             <Heart size={26} className="text-ucc-green fill-ucc-green" />
-            <span>Hospedajes UCC</span>
+            <span>Hospedajes Solidarios</span>
             {!loading && <span className="text-base font-semibold text-ucc-muted ml-1">({getFilteredPropiedades().length})</span>}
           </h2>
           <p className="text-xs font-semibold text-ucc-muted mt-1">Alojamientos universitarios compartidos de estudiante a estudiante.</p>
@@ -450,7 +450,7 @@ export default function Home() {
         <div className="text-center max-w-xl mx-auto mb-12">
           <span className="text-xs font-black text-ucc-green tracking-widest uppercase">Proceso Simple</span>
           <h2 className="font-heading font-black text-3xl text-ucc-navy mt-2 mb-3">¿Cómo funciona?</h2>
-          <p className="text-ucc-muted font-body text-sm font-semibold">Todo solidario, rápido y seguro dentro de la comunidad UCC.</p>
+          <p className="text-ucc-muted font-body text-sm font-semibold">Todo solidario, rápido y seguro dentro de la comunidad universitaria.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -458,14 +458,14 @@ export default function Home() {
             { 
               step: '01', 
               title: 'Regístrate', 
-              desc: 'Crea tu cuenta con tu correo institucional UCC y verifica tu identidad.', 
+              desc: 'Crea tu cuenta con tu correo institucional y verifica tu identidad.', 
               icon: <ShieldCheck size={28} className="text-ucc-green" />,
               bg: 'bg-ucc-green/10' 
             },
             { 
               step: '02', 
               title: 'Explora', 
-              desc: 'Busca alojamientos disponibles cerca de tu campus o sede UCC.', 
+              desc: 'Busca alojamientos disponibles cerca de tu campus o sede.', 
               icon: <Search size={28} className="text-ucc-cyan" />,
               bg: 'bg-ucc-cyan/10' 
             },
@@ -503,7 +503,7 @@ export default function Home() {
         {/* Text Area */}
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold text-white/95 mb-6 border border-white/10 shadow-custom-sm">
-            <Building2 size={14} className="text-ucc-green-light" /> Para anfitriones de la comunidad UCC
+            <Building2 size={14} className="text-ucc-green-light" /> Para anfitriones de la comunidad universitaria
           </div>
 
           <h2 className="font-heading font-black text-3xl md:text-4xl text-white mb-4 leading-tight">
@@ -512,7 +512,7 @@ export default function Home() {
           </h2>
 
           <p className="text-white/80 font-body text-sm md:text-base mb-8 max-w-md leading-relaxed">
-            ¿Tienes un espacio disponible cerca de alguna sede UCC? Compártelo con la comunidad universitaria. Tu hogar puede ser el hogar de otro mientras estudia o asiste a eventos académicos.
+            ¿Tienes un espacio disponible cerca de algún campus? Compártelo con la comunidad universitaria. Tu hogar puede ser el hogar de otro mientras estudia o asiste a eventos académicos.
           </p>
 
           <div className="flex flex-col gap-3.5 mb-8">

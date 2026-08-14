@@ -3,7 +3,7 @@ import { GraduationCap, Building2, Users, Code2, Heart, Award, Terminal, BookOpe
 
 export default function QuienesSomos() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const images = ['/ucc_campus_1.jpg', '/ucc_campus_2.png'];
+  const images = ['/campus_solidario.jpg'];
   const [activeTab, setActiveTab] = useState('quienes');
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function QuienesSomos() {
               </div>
               
               <p className="text-ucc-muted text-sm md:text-base leading-relaxed font-semibold">
-                <strong>HUASI</strong> nace de la convicción de que la solidaridad universitaria puede trascender las aulas de clase. Este sistema busca mitigar las barreras de movilidad académica para estudiantes y colaboradores en todo el país, operando bajo un modelo con base en la economía solidaria.
+                <strong>HUASI</strong> es una iniciativa estudiantil para crear una red informal de hospedaje solidario. Este sistema busca mitigar las barreras de movilidad académica para estudiantes y colaboradores en todo el país, operando bajo un modelo con base en la economía solidaria.
               </p>
 
               <div className="space-y-4">
@@ -98,7 +98,7 @@ export default function QuienesSomos() {
                   <img 
                     key={src}
                     src={src} 
-                    alt={`Campus UCC ${idx + 1}`} 
+                    alt={`Campus ${idx + 1}`} 
                     className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-in-out ${
                       currentImageIndex === idx ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
                     }`}
@@ -106,7 +106,7 @@ export default function QuienesSomos() {
                 ))}
                 <div className="absolute bottom-6 left-6 right-6 z-20 flex justify-between items-center">
                   <div className="inline-flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full text-xs font-bold text-ucc-navy shadow-sm">
-                    <MapPin size={12} className="text-ucc-green" /> Campus UCC · Infraestructura Solidaria
+                    <MapPin size={12} className="text-ucc-green" /> Campus Universitario · Infraestructura Solidaria
                   </div>
                   <div className="flex gap-1.5">
                     {images.map((_, idx) => (
@@ -131,7 +131,7 @@ export default function QuienesSomos() {
             
             <div className="relative z-10 max-w-3xl">
               <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold text-white mb-6 border border-white/10">
-                <BookOpen size={14} className="text-yellow-300" /> Semillero de Investigación UCC
+                <BookOpen size={14} className="text-yellow-300" /> Semillero de Investigación
               </div>
               
               <h2 className="font-heading font-black text-3xl md:text-4xl text-white mb-4 leading-tight">
@@ -139,7 +139,7 @@ export default function QuienesSomos() {
               </h2>
               
               <p className="text-white/90 font-body text-sm md:text-base mb-6 leading-relaxed">
-                HUASI no es solo una aplicación de hospedaje; es un proyecto científico-tecnológico desarrollado en el marco del semillero de investigación <strong>SIEDSS</strong>. Aquí, los estudiantes de ingeniería de la Universidad Cooperativa de Colombia investigan, estructuran y ponen en marcha soluciones de software orientadas a resolver problemas reales de nuestra comunidad académica, aplicando metodologías ágiles, arquitectura de software escalable y desarrollo full-stack moderno.
+                HUASI no es solo una aplicación de hospedaje; es un proyecto científico-tecnológico desarrollado en el marco del semillero de investigación <strong>SIEDSS</strong>. Aquí, los estudiantes de ingeniería investigan, estructuran y ponen en marcha soluciones de software orientadas a resolver problemas reales de nuestra comunidad académica, aplicando metodologías ágiles, arquitectura de software escalable y desarrollo full-stack moderno.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
@@ -156,7 +156,7 @@ export default function QuienesSomos() {
                 <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/10">
                   <Users className="text-emerald-300 w-6 h-6 mb-2" />
                   <h4 className="font-heading font-bold text-sm text-white mb-1">Trabajo en Red</h4>
-                  <p className="text-white/70 text-[0.7rem] leading-relaxed">Conexión de múltiples sedes de la UCC mediante sistemas distribuidos.</p>
+                  <p className="text-white/70 text-[0.7rem] leading-relaxed">Conexión de múltiples campus mediante sistemas distribuidos.</p>
                 </div>
               </div>
             </div>
@@ -186,7 +186,7 @@ export default function QuienesSomos() {
                     Alejandro Sierra Rincones
                   </h3>
                   <p className="text-ucc-muted font-body text-xs font-bold mb-4 flex items-center gap-1.5">
-                    <GraduationCap size={14} className="text-ucc-cyan" /> Ingeniería de Sistemas UCC
+                    <GraduationCap size={14} className="text-ucc-cyan" /> Ingeniería de Sistemas
                   </p>
                   
                   <p className="text-ucc-muted text-sm font-semibold leading-relaxed mb-6">
@@ -215,7 +215,7 @@ export default function QuienesSomos() {
                     Arnold Mendoza Flores
                   </h3>
                   <p className="text-ucc-muted font-body text-xs font-bold mb-4 flex items-center gap-1.5">
-                    <GraduationCap size={14} className="text-ucc-green" /> Ingeniería de Sistemas UCC
+                    <GraduationCap size={14} className="text-ucc-green" /> Ingeniería de Sistemas
                   </p>
                   
                   <p className="text-ucc-muted text-sm font-semibold leading-relaxed mb-6">

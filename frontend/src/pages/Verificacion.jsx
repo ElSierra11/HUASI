@@ -147,7 +147,7 @@ export default function Verificacion() {
           <ShieldAlert size={28} className="text-ucc-green" /> Verificación Universitaria
         </h1>
         <p className="text-sm text-ucc-muted font-body">
-          Valida tu vinculación con la UCC para acceder a los alojamientos estudiantiles y reservar sin restricciones.
+          Valida tu vinculación universitaria para acceder a los alojamientos estudiantiles y reservar sin restricciones.
         </p>
       </div>
 
@@ -176,7 +176,7 @@ export default function Verificacion() {
               <option value="estudiante">Estudiante de Pregrado / Posgrado</option>
               <option value="docente">Docente Universitario</option>
               <option value="administrativo">Personal Administrativo</option>
-              <option value="egresado">Egresado UCC</option>
+              <option value="egresado">Egresado Universitario</option>
             </select>
           </div>
           <button onClick={() => setStep(2)} className="btn btn-primary btn-block">
@@ -189,7 +189,7 @@ export default function Verificacion() {
       {step === 2 && (
         <div className="card p-8 text-center">
           <h2 className="text-lg font-bold mb-2">Escanear Carnet Universitario</h2>
-          <p className="text-xs text-ucc-muted mb-6">Sube una foto clara del carnet inteligente de la UCC</p>
+          <p className="text-xs text-ucc-muted mb-6">Sube una foto clara de tu carnet universitario</p>
 
           {!isScanningOCR ? (
             <div className="flex flex-col items-center">
@@ -235,7 +235,7 @@ export default function Verificacion() {
               <h3 className="font-bold text-sm text-ucc-navy mb-2 flex items-center gap-2">
                 <RefreshCw className="animate-spin text-ucc-cyan" size={16} /> Procesando OCR de Datos...
               </h3>
-              <p className="text-xs text-ucc-muted">Buscando coincidencia con el registro de la UCC ({scanProgress}%)</p>
+              <p className="text-xs text-ucc-muted">Buscando coincidencia con el registro universitario ({scanProgress}%)</p>
             </div>
           )}
         </div>
@@ -309,7 +309,7 @@ export default function Verificacion() {
           </div>
           <h2 className="text-2xl font-heading font-black text-ucc-navy mb-3">¡Felicidades! Cuenta Verificada</h2>
           <p className="text-sm text-ucc-muted mb-8 max-w-md mx-auto">
-            Hemos validado exitosamente tu vinculación universitaria con la UCC. Tu perfil cuenta ahora con la insignia de <strong>Estudiante Verificado</strong>.
+            Hemos validado exitosamente tu vinculación universitaria. Tu perfil cuenta ahora con la insignia de <strong>Estudiante Verificado</strong>.
           </p>
 
           <button onClick={() => navigate('/')} className="btn btn-primary px-8">

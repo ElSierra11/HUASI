@@ -24,7 +24,7 @@ export default function Register() {
   const [otpError, setOtpError] = useState(false);
   const [resending, setResending] = useState(false);
 
-  // Helper para extraer Nombre y Apellido desde el correo de la UCC
+  // Helper para extraer Nombre y Apellido desde el correo electrónico
   const extractNameFromEmail = (email) => {
     if (!email) return { nombre: '', apellido: '' };
     const prefix = email.split('@')[0];
@@ -103,15 +103,8 @@ export default function Register() {
     setError('');
     setLoading(true);
 
-    const allowedDomains = ['@campusucc.edu.co', '@ucc.edu.co'];
-    if (!allowedDomains.some(domain => form.email.endsWith(domain))) {
-      setError('Debes usar un correo institucional válido (@campusucc.edu.co o @ucc.edu.co)');
-      setLoading(false);
-      return;
-    }
-
     if (!form.campus) {
-      setError('Debes seleccionar tu campus UCC.');
+      setError('Debes seleccionar tu campus o sede.');
       setLoading(false);
       return;
     }
@@ -477,9 +470,9 @@ export default function Register() {
         {step === 1 ? (
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label>Correo Electrónico (@campusucc.edu.co o @ucc.edu.co)</label>
+              <label>Correo Electrónico</label>
               <input type="email" required className="form-control"
-                placeholder="usuario@campusucc.edu.co o usuario@ucc.edu.co"
+                placeholder="usuario@ejemplo.edu.co"
                 value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
             </div>
 
@@ -518,7 +511,7 @@ export default function Register() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
               <div className="form-group">
-                <label>Campus UCC</label>
+                <label>Campus / Sede</label>
                 <select required className="form-control" value={form.campus} onChange={e => setForm(f => ({ ...f, campus: e.target.value }))}>
                   <option value="">Selecciona tu sede...</option>
                   <option value="Santa Marta">Santa Marta</option>
@@ -655,7 +648,7 @@ export default function Register() {
               lineHeight: '1.5'
             }}>
               <strong className="inline-flex items-center gap-1 text-ucc-navy dark:text-white"><HelpCircle size={15} className="text-ucc-green" /> ¿No encuentras el correo en tu bandeja?</strong><br />
-              En correos <strong>@campusucc.edu.co</strong> (Outlook), revisa la carpeta <strong>Correo no deseado (Spam)</strong> o la pestaña <strong>"Otros"</strong>.
+              En tu correo institucional o personal, revisa la carpeta <strong>Correo no deseado (Spam)</strong> o la pestaña <strong>"Otros"</strong>.
             </div>
 
             <button type="button" className="btn btn-secondary btn-block" onClick={handleResendOtp} disabled={resending || timeLeft === 0} style={{ marginBottom: 10, padding: 14 }}>
