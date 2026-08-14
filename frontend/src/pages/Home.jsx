@@ -141,7 +141,7 @@ export default function Home() {
 
             {/* Slogan Title */}
             <h1 className="font-heading font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-ucc-navy dark:text-white leading-tight tracking-tight">
-              La casa de mi <span className="bg-gradient-to-r from-ucc-green to-ucc-cyan bg-clip-text text-transparent">amig@</span>
+              La casa de mi <span className="bg-gradient-to-r from-ucc-green via-emerald-500 to-emerald-400 bg-clip-text text-transparent">amig@</span>
             </h1>
 
             {/* Description */}
@@ -394,7 +394,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => setShowMap(!showMap)}
-          className="bg-white border-2 border-ucc-cyan hover:bg-ucc-cyan hover:text-white text-ucc-navy font-bold px-6 py-2.5 rounded-full text-xs shadow-custom transition-all duration-200 inline-flex items-center gap-2"
+          className="bg-white dark:bg-slate-800 border-2 border-ucc-green hover:bg-ucc-green hover:text-white text-ucc-navy dark:text-white font-bold px-6 py-2.5 rounded-full text-xs shadow-custom transition-all duration-200 inline-flex items-center gap-2"
         >
           <MapPin size={14} />
           {showMap ? 'Ocultar Mapa' : 'Ver Mapa de Alojamientos'}
@@ -410,16 +410,16 @@ export default function Home() {
       {/* ===== LISTINGS: PROPIEDADES ===== */}
       <div id="alojamientos" className="flex justify-between items-center mb-6 scroll-mt-24">
         <div className="flex flex-col">
-          <h2 className="font-heading font-black text-2xl md:text-3xl text-ucc-navy flex items-center gap-2">
+          <h2 className="font-heading font-black text-2xl md:text-3xl text-ucc-navy dark:text-white flex items-center gap-2">
             <Heart size={26} className="text-ucc-green fill-ucc-green" />
             <span>Hospedajes Solidarios</span>
-            {!loading && <span className="text-base font-semibold text-ucc-muted ml-1">({getFilteredPropiedades().length})</span>}
+            {!loading && <span className="text-base font-semibold text-ucc-muted dark:text-slate-400 ml-1">({getFilteredPropiedades().length})</span>}
           </h2>
-          <p className="text-xs font-semibold text-ucc-muted mt-1">Alojamientos universitarios compartidos de estudiante a estudiante.</p>
+          <p className="text-xs font-semibold text-ucc-muted dark:text-slate-400 mt-1">Alojamientos universitarios compartidos de estudiante a estudiante.</p>
         </div>
         {(filters.busqueda || filters.tipo || filters.fecha_inicio || filters.ciudad || filters.campus) && (
           <button
-            className="bg-white border border-ucc-border text-ucc-navy hover:bg-ucc-green-light hover:text-ucc-green font-bold text-xs px-4 py-2 rounded-full transition-all duration-200"
+            className="bg-white dark:bg-slate-800 border border-ucc-border dark:border-slate-700 text-ucc-navy dark:text-white hover:bg-ucc-green-light hover:text-ucc-green font-bold text-xs px-4 py-2 rounded-full transition-all duration-200"
             onClick={() => {
               setFilters({ busqueda: '', tipo: '', ciudad: '', campus: '', fecha_inicio: '', fecha_fin: '' });
               fetchPropiedades({ busqueda: '', tipo: '', ciudad: '', campus: '', fecha_inicio: '', fecha_fin: '' });
@@ -437,10 +437,10 @@ export default function Home() {
           <SkeletonCard />
         </div>
       ) : getFilteredPropiedades().length === 0 ? (
-        <div className="text-center py-12 px-4 bg-white border-2 border-dashed border-ucc-border rounded-xl-custom mb-16">
+        <div className="text-center py-12 px-4 bg-white dark:bg-slate-800/80 border-2 border-dashed border-ucc-border dark:border-slate-700 rounded-xl-custom mb-16">
           <MapPin size={40} className="mx-auto text-ucc-muted mb-3" />
-          <h3 className="font-heading font-bold text-base text-ucc-navy mb-1">No encontramos alojamientos disponibles</h3>
-          <p className="text-ucc-muted text-xs font-semibold">Prueba cambiando los criterios de búsqueda.</p>
+          <h3 className="font-heading font-bold text-base text-ucc-navy dark:text-white mb-1">No encontramos alojamientos disponibles</h3>
+          <p className="text-ucc-muted dark:text-slate-400 text-xs font-semibold">Prueba cambiando los criterios de búsqueda.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-20 slide-up-entrance">
@@ -452,8 +452,8 @@ export default function Home() {
       <section id="como-funciona" className="mb-20 scroll-mt-24">
         <div className="text-center max-w-xl mx-auto mb-12">
           <span className="text-xs font-black text-ucc-green tracking-widest uppercase">Proceso Simple</span>
-          <h2 className="font-heading font-black text-3xl text-ucc-navy mt-2 mb-3">¿Cómo funciona?</h2>
-          <p className="text-ucc-muted font-body text-sm font-semibold">Todo solidario, rápido y seguro dentro de la comunidad universitaria.</p>
+          <h2 className="font-heading font-black text-3xl text-ucc-navy dark:text-white mt-2 mb-3">¿Cómo funciona?</h2>
+          <p className="text-ucc-muted dark:text-slate-400 font-body text-sm font-semibold">Todo solidario, rápido y seguro dentro de la comunidad universitaria.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -469,15 +469,15 @@ export default function Home() {
               step: '02', 
               title: 'Explora', 
               desc: 'Busca alojamientos disponibles cerca de tu campus o sede.', 
-              icon: <Search size={28} className="text-ucc-cyan" />,
-              bg: 'bg-ucc-cyan/10' 
+              icon: <Search size={28} className="text-emerald-500" />,
+              bg: 'bg-emerald-500/10' 
             },
             { 
               step: '03', 
               title: 'Solicita', 
               desc: 'Envía tu solicitud al anfitrión indicando fechas y motivo de visita.', 
-              icon: <Calendar size={28} className="text-ucc-navy" />,
-              bg: 'bg-ucc-navy/10' 
+              icon: <Calendar size={28} className="text-ucc-navy dark:text-emerald-400" />,
+              bg: 'bg-ucc-navy/10 dark:bg-emerald-400/10' 
             },
             { 
               step: '04', 
@@ -487,22 +487,22 @@ export default function Home() {
               bg: 'bg-emerald-500/10' 
             },
           ].map(item => (
-            <div key={item.step} className="bg-white border border-ucc-border/60 hover:border-ucc-green/35 hover:-translate-y-1 transition-all duration-300 rounded-xl-custom p-6 flex flex-col items-center text-center shadow-custom-sm hover:shadow-custom">
-              <div className="w-full flex justify-end text-xs font-black text-ucc-muted/40 font-heading mb-2">
+            <div key={item.step} className="bg-white dark:bg-slate-800/80 border border-ucc-border/60 dark:border-slate-700/60 hover:border-ucc-green/40 hover:-translate-y-1 transition-all duration-300 rounded-xl-custom p-6 flex flex-col items-center text-center shadow-custom-sm hover:shadow-custom">
+              <div className="w-full flex justify-end text-xs font-black text-ucc-muted/40 dark:text-slate-500 font-heading mb-2">
                 {item.step}
               </div>
               <div className={`w-16 h-16 rounded-full ${item.bg} flex items-center justify-center mb-5`}>
                 {item.icon}
               </div>
-              <h3 className="font-heading font-black text-lg text-ucc-navy mb-2">{item.title}</h3>
-              <p className="text-ucc-muted text-xs font-semibold leading-relaxed">{item.desc}</p>
+              <h3 className="font-heading font-black text-lg text-ucc-navy dark:text-white mb-2">{item.title}</h3>
+              <p className="text-ucc-muted dark:text-slate-400 text-xs font-semibold leading-relaxed">{item.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ===== SECTION ANFITRIÓN ===== */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#1a3a5c] via-[#0d7c3d] to-[#00a8e0] rounded-xl-custom text-white p-8 md:p-14 shadow-custom-lg mb-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#061510] via-[#0d7c3d] to-[#10b981] rounded-xl-custom text-white p-8 md:p-14 shadow-custom-lg mb-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         {/* Text Area */}
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold text-white/95 mb-6 border border-white/10 shadow-custom-sm">

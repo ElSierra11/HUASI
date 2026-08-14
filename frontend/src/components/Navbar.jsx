@@ -115,7 +115,7 @@ export default function Navbar() {
             {user.role === 'admin' && (
               <Link
                 to="/admin"
-                className="inline-flex items-center gap-1.5 bg-gradient-to-r from-ucc-cyan to-ucc-green text-white px-4 py-1.5 rounded-full text-xs font-bold hover:shadow-custom transition-all duration-200"
+                className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-ucc-green text-white px-4 py-1.5 rounded-full text-xs font-bold hover:shadow-custom transition-all duration-200"
               >
                 <ShieldCheck size={14} /> Admin
               </Link>

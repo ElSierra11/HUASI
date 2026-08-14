@@ -45,9 +45,9 @@ const TIPO_ICON_SMALL = {
 
 const TIPO_THEMES = {
   cama: {
-    gradient: 'linear-gradient(135deg, #00a8e0, #1d4ed8)', // Cyan a Azul UCC
-    colorClass: 'text-ucc-cyan',
-    dotClass: 'bg-ucc-cyan'
+    gradient: 'linear-gradient(135deg, #10b981, #047857)',
+    colorClass: 'text-emerald-500',
+    dotClass: 'bg-emerald-500'
   },
   sofa: {
     gradient: 'linear-gradient(135deg, #f59e0b, #d97706)', // Naranja / Sofá

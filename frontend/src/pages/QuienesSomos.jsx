@@ -186,7 +186,7 @@ export default function QuienesSomos() {
                     Alejandro Sierra Rincones
                   </h3>
                   <p className="text-ucc-muted font-body text-xs font-bold mb-4 flex items-center gap-1.5">
-                    <GraduationCap size={14} className="text-ucc-cyan" /> Ingeniería de Sistemas
+                    <GraduationCap size={14} className="text-emerald-500" /> Ingeniería de Sistemas
                   </p>
                   
                   <p className="text-ucc-muted text-sm font-semibold leading-relaxed mb-6">
@@ -203,10 +203,10 @@ export default function QuienesSomos() {
               <div className="bg-white border border-ucc-border/60 hover:border-ucc-green/35 hover:-translate-y-1.5 transition-all duration-300 rounded-xl-custom p-8 shadow-custom-sm hover:shadow-custom flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-6">
-                    <div className="w-12 h-12 rounded-xl bg-ucc-cyan/10 flex items-center justify-center">
-                      <Code2 className="text-ucc-cyan w-6 h-6" />
+                    <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                      <Code2 className="text-emerald-500 w-6 h-6" />
                     </div>
-                    <span className="text-[0.7rem] font-black uppercase tracking-wider text-ucc-cyan bg-ucc-cyan-light px-3 py-1 rounded-full">
+                    <span className="text-[0.7rem] font-black uppercase tracking-wider text-emerald-600 bg-emerald-500/10 px-3 py-1 rounded-full">
                       10° Semestre · SIEDSS
                     </span>
                   </div>

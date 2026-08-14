@@ -11,18 +11,18 @@
 :root {
   --primary: #0f172a;
   --primary-light: #1e293b;
-  --accent: #0098cd;
-  --accent-hover: #007ba8;
-  --accent-light: #e4f6fd;
-  --secondary: #7ab800;
-  --secondary-hover: #629100;
-  --success: #7ab800;
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-light: #e4f9ee;
+  --secondary: #10b981;
+  --secondary-hover: #059669;
+  --success: #10b981;
   --success-light: #eef7e5;
   --danger: #ef4444;
   --danger-light: #fee2e2;
   --warning: #f59e0b;
   --warning-light: #fff7e6;
-  --bg: #f4f7fb;
+  --bg: #f4f8f5;
   --bg-card: #ffffff;
   --text: #172033;
   --text-muted: #5c6b82;
@@ -40,13 +40,13 @@
   --font-heading: 'Outfit', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, sans-serif;
 
-  /* UCC Colors */
+  /* HUASI Brand Colors */
   --ucc-navy: #1a3a5c;
-  --ucc-cyan: #00a8e0;
+  --ucc-cyan: #10b981;
   --ucc-green: #0d7c3d;
   --ucc-green-hover: #0a6432;
   --ucc-green-light: #d4f0e0;
-  --ucc-cyan-light: #e0f4ff;
+  --ucc-cyan-light: #e4f9ee;
   --ucc-bg: #f0f6f2;
   --ucc-border: #c8ddd2;
 }
