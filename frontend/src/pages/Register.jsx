@@ -438,13 +438,13 @@ export default function Register() {
           })}
         </div>
 
-        <div style={{ textAlign: 'center', marginBottom: 16 }} className="flex flex-col items-center">
+        <div style={{ textAlign: 'center', marginBottom: 16 }} className="flex flex-col items-center huasi-brand-container">
           <img
             src="/huasi-monograma.png"
             alt="HUASI Monograma"
-            className="h-20 w-20 object-contain mb-2 transition-transform duration-300 hover:scale-105"
+            className="h-20 w-20 object-contain mb-2 huasi-brand-monogram"
           />
-          <span className="font-heading font-black text-2xl tracking-wider text-ucc-navy dark:text-white">
+          <span className="font-heading font-black text-2xl tracking-wider text-ucc-navy dark:text-white huasi-brand-text">
             HUASI
           </span>
         </div>

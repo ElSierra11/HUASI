@@ -32,13 +32,13 @@ export default function Login() {
     <div className="auth-page">
       <div className="auth-card">
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 24 }} className="flex flex-col items-center">
+        <div style={{ textAlign: 'center', marginBottom: 24 }} className="flex flex-col items-center huasi-brand-container">
           <img 
             src="/huasi-monograma.png" 
             alt="HUASI Monograma" 
-            className="h-20 w-20 object-contain mb-2 transition-transform duration-300 hover:scale-105" 
+            className="h-20 w-20 object-contain mb-2 huasi-brand-monogram" 
           />
-          <span className="font-heading font-black text-2xl tracking-wider text-ucc-navy dark:text-white mb-3">
+          <span className="font-heading font-black text-2xl tracking-wider text-ucc-navy dark:text-white mb-3 huasi-brand-text">
             HUASI
           </span>
           <h1 style={{ fontSize: '1.9rem', marginBottom: 6 }} className="font-heading font-black text-ucc-navy dark:text-white">¡Bienvenido de nuevo!</h1>

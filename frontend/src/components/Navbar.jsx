@@ -68,13 +68,13 @@ export default function Navbar() {
       {/* Brand & Sponsors */}
       <div className="flex items-center gap-2">
         {/* HUASI Logo */}
-        <Link to="/" className="navbar-brand flex items-center gap-2.5 no-underline group select-none mr-2 logo-container">
+        <Link to="/" className="navbar-brand flex items-center gap-2.5 no-underline select-none mr-2 huasi-brand-container">
           <img 
             src="/huasi-monograma.png" 
             alt="HUASI Monograma" 
-            className="h-[38px] w-[38px] object-contain group-hover:scale-105 transition-transform duration-300 max-[480px]:h-[32px] max-[480px]:w-[32px]"
+            className="h-[38px] w-[38px] object-contain huasi-brand-monogram max-[480px]:h-[32px] max-[480px]:w-[32px]"
           />
-          <span className="font-heading font-black text-2xl text-ucc-navy dark:text-white tracking-tight">HUASI</span>
+          <span className="font-heading font-black text-2xl text-ucc-navy dark:text-white tracking-tight huasi-brand-text">HUASI</span>
         </Link>
 
       </div>

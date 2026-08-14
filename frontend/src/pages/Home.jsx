@@ -165,13 +165,13 @@ export default function Home() {
             <div className="hero-interactive-card p-6 rounded-3xl border border-ucc-border/40 dark:border-slate-700 shadow-custom-lg flex flex-col items-center max-w-sm w-full relative z-10 hover:-translate-y-1 transition-transform duration-300">
               
               {/* Logo Area */}
-              <div className="p-6 rounded-2xl w-full flex flex-col items-center justify-center min-h-[180px] bg-ucc-bg/40 dark:bg-slate-800/40 border border-ucc-border/30 dark:border-slate-700/50">
+              <div className="p-6 rounded-2xl w-full flex flex-col items-center justify-center min-h-[180px] bg-gradient-to-b from-ucc-bg/60 to-ucc-bg/20 dark:from-slate-800/60 dark:to-slate-800/30 border border-ucc-border/40 dark:border-slate-700/60 backdrop-blur-sm huasi-brand-container">
                 <img 
                   src="/huasi-monograma.png" 
                   alt="HUASI Monograma" 
-                  className="h-28 w-28 object-contain transition-transform duration-300 hover:scale-105" 
+                  className="h-28 w-28 object-contain huasi-brand-monogram" 
                 />
-                <span className="font-heading font-black text-2xl text-ucc-navy dark:text-white tracking-wider mt-3">
+                <span className="font-heading font-black text-2xl text-ucc-navy dark:text-white tracking-wider mt-3 huasi-brand-text">
                   HUASI
                 </span>
               </div>
