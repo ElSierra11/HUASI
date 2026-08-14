@@ -106,6 +106,11 @@ export default function PropertyCard({ propiedad }) {
           {getTipoLabel(propiedad.tipo)}
         </span>
 
+        {/* Verification badge */}
+        <span className="absolute top-3 right-3 bg-emerald-600/90 text-white backdrop-blur-md px-2.5 py-1 rounded-full text-[0.65rem] font-bold shadow-custom-sm flex items-center gap-1 z-10">
+          <ShieldCheck size={12} className="text-white" /> Verificado
+        </span>
+
         {/* Big Icon */}
         <div className="text-white flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
           {React.cloneElement(icon, { size: 56, className: "filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.2)]" })}

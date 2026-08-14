@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import MobileBottomNav from './components/MobileBottomNav';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatWidget from './components/ChatWidget';
@@ -20,9 +21,9 @@ import QuienesSomos from './pages/QuienesSomos';
 
 function App() {
   return (
-    <div className="app pb-16 md:pb-0">
+    <div className="app pb-16 md:pb-0 flex flex-col min-h-screen">
       <Navbar />
-      <main className="main-content">
+      <main className="main-content flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/propiedad/:id" element={<PropertyDetail />} />
@@ -40,6 +41,7 @@ function App() {
           <Route path="/host/reservas" element={<ProtectedRoute><HostReservas /></ProtectedRoute>} />
         </Routes>
       </main>
+      <Footer />
       <ChatWidget />
       <PqrButton />
       <MobileBottomNav />

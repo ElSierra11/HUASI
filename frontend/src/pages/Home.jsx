@@ -345,10 +345,10 @@ export default function Home() {
                   setFilters(f => ({ ...f, campus: newCampus }));
                   fetchPropiedades({ campus: newCampus });
                 }}
-                className={`px-3 py-1 rounded-full text-[0.75rem] font-bold transition-all duration-200 border cursor-pointer whitespace-nowrap ${
+                className={`px-3.5 py-1.5 rounded-full text-[0.75rem] font-bold transition-all duration-200 border cursor-pointer whitespace-nowrap ${
                   isSelected
-                    ? 'bg-ucc-navy text-white border-ucc-navy shadow-custom-sm'
-                    : 'bg-white/80 dark:bg-slate-800 text-ucc-navy dark:text-slate-200 border-ucc-border/50 hover:bg-ucc-green-light hover:text-ucc-green'
+                    ? 'bg-ucc-green text-white border-ucc-green shadow-custom-sm scale-105'
+                    : 'bg-white/90 dark:bg-slate-800 text-ucc-navy dark:text-slate-200 border-ucc-border/50 dark:border-slate-700/60 hover:bg-ucc-green-light dark:hover:bg-emerald-500/20 hover:text-ucc-green dark:hover:text-emerald-400'
                 }`}
               >
                 {c}
@@ -377,8 +377,8 @@ export default function Home() {
                 onClick={() => handleCategoryClick(cat.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 border cursor-pointer ${
                   isActive 
-                    ? 'bg-ucc-green text-white border-ucc-green shadow-custom-sm scale-103' 
-                    : 'bg-white dark:bg-slate-800 text-ucc-navy dark:text-slate-200 border-ucc-border/40 dark:border-slate-700 hover:bg-ucc-bg dark:hover:bg-slate-700'
+                    ? 'bg-gradient-to-r from-ucc-green to-emerald-600 text-white border-ucc-green shadow-custom-sm scale-105' 
+                    : 'bg-white dark:bg-slate-800 text-ucc-navy dark:text-slate-200 border-ucc-border/50 dark:border-slate-700 hover:border-ucc-green/40 hover:text-ucc-green dark:hover:text-emerald-400'
                 }`}
               >
                 {cat.icon}
