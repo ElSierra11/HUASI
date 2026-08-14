@@ -214,7 +214,7 @@ export default function Reportes() {
           <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8, color: 'var(--text)' }}>
             Sin PQRs {filtro !== 'todos' ? `(${filtro}s)` : ''}
           </h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>La comunidad HUASI UCC se comporta adecuadamente.</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>La comunidad HUASI se comporta adecuadamente.</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 24 }}>
@@ -380,7 +380,7 @@ export default function Reportes() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.5, margin: 0 }}>
-            Indica las acciones que has tomado para resolver esta PQR (ej. se contactó al estudiante por correo, se llamó a seguridad UCC, etc.). Las notas quedarán registradas en el reporte.
+            Indica las acciones que has tomado para resolver esta PQR (ej. se contactó al estudiante por correo, etc.). Las notas quedarán registradas en el reporte.
           </p>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label htmlFor="adminNotes">Notas Administrativas (Opcional)</label>
@@ -445,7 +445,7 @@ export default function Reportes() {
             <textarea
               id="reportBlockReason"
               className="form-control"
-              placeholder="Ej. Violación de normas de convivencia: comportamiento inapropiado reportado en el alojamiento de la UCC."
+              placeholder="Ej. Violación de normas de convivencia: comportamiento inapropiado reportado en el alojamiento."
               rows={4}
               value={blockReason}
               onChange={(e) => {

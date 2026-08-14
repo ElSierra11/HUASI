@@ -82,8 +82,6 @@ export default function Login() {
         
         <div style={{ position: 'relative', zIndex: 10 }}>
           <div style={{ background: 'white', padding: '12px 24px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
-            <img src="/ucc_logo.png" alt="UCC" style={{ height: '36px', objectFit: 'contain' }} />
-            <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
             <span style={{ fontWeight: 800, color: 'var(--primary)', letterSpacing: '1px' }}>HUASI</span>
           </div>
         </div>
@@ -93,7 +91,7 @@ export default function Login() {
             Panel de Administración Global
           </h1>
           <p style={{ fontSize: '1.1rem', opacity: 0.9, lineHeight: 1.6, fontWeight: 500 }}>
-            Gestiona la comunidad de HUASI. Revisa solicitudes de estudiantes, modera reportes de comportamiento y asegura que la red solidaria de la UCC funcione a la perfección.
+            Gestiona la comunidad de HUASI. Revisa solicitudes de estudiantes, modera reportes de comportamiento y asegura que la red solidaria funcione a la perfección.
           </p>
         </div>
       </div>
@@ -262,7 +260,7 @@ export default function Login() {
           </form>
 
           <p style={{ textAlign: 'center', marginTop: '40px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-            © {new Date().getFullYear()} Red de Hospedaje Solidario UCC. Todos los derechos reservados.
+            © {new Date().getFullYear()} Red de Hospedaje Solidario. Todos los derechos reservados.
           </p>
         </div>
       </div>

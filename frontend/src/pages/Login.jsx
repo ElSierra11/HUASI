@@ -126,7 +126,7 @@ export default function Login() {
         }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}>
             <Lock size={14} style={{ color: 'var(--text-muted)' }} />
-            <span>Solo para la comunidad de la <strong>Universidad Cooperativa de Colombia</strong></span>
+            <span>Red de Hospedaje Solidario Universitario</span>
           </span>
         </div>
       </div>

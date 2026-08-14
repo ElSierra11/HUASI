@@ -293,7 +293,7 @@ export default function Perfil() {
           <ShieldCheck size={24} className="text-ucc-green" /> Tu Impacto Cooperativo HUASI
         </h3>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 24 }}>
-          HUASI promueve la cooperación universitaria a través de la economía solidaria de INDESCO. Cada espacio que compartes ayuda a sostener y democratizar la movilidad educativa de tus compañeros.
+          HUASI promueve la cooperación universitaria a través de la economía solidaria. Cada espacio que compartes ayuda a sostener y democratizar la movilidad educativa de tus compañeros.
         </p>
 
         {loadingImpact ? (

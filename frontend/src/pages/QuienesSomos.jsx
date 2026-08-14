@@ -24,7 +24,7 @@ export default function QuienesSomos() {
           Comunidad HUASI
         </h1>
         <p className="text-ucc-muted font-body text-base leading-relaxed font-semibold">
-          Conoce al equipo de ingeniería, los pilares de la UCC e INDESCO y el decálogo de convivencia para un hospedaje solidario y seguro.
+          Conoce al equipo de ingeniería, los pilares de la red de hospedaje solidario y el decálogo de convivencia para un hospedaje seguro.
         </p>
       </div>
 
@@ -56,36 +56,36 @@ export default function QuienesSomos() {
 
       {activeTab === 'quienes' ? (
         <div className="animate-fadeIn">
-          {/* ===== PILARES INSTITUCIONALES (UCC & INDESCO) ===== */}
+          {/* ===== PILARES DE LA RED SOLIDARIA ===== */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center mb-20">
             <div className="lg:col-span-7 space-y-6">
               <div className="flex items-center gap-3">
                 <Building2 className="text-ucc-green w-8 h-8" />
                 <h2 className="font-heading font-black text-2xl md:text-3xl text-ucc-navy">
-                  Alianza Solidaria y Educativa
+                  Iniciativa Solidaria y Educativa
                 </h2>
               </div>
               
               <p className="text-ucc-muted text-sm md:text-base leading-relaxed font-semibold">
-                <strong>HUASI</strong> nace de la convicción de que la solidaridad universitaria puede trascender las aulas de clase. Apoyado por la <strong>Universidad Cooperativa de Colombia (UCC)</strong> y el <strong>Instituto de Economía Social y Cooperativismo (INDESCO)</strong>, este sistema busca mitigar las barreras de movilidad académica para estudiantes y colaboradores en todo el país, operando bajo un modelo en el que todo va acorde con base a la economía solidaria.
+                <strong>HUASI</strong> nace de la convicción de que la solidaridad universitaria puede trascender las aulas de clase. Este sistema busca mitigar las barreras de movilidad académica para estudiantes y colaboradores en todo el país, operando bajo un modelo con base en la economía solidaria.
               </p>
 
               <div className="space-y-4">
                 <div className="p-5 bg-white border border-ucc-border/50 rounded-2xl shadow-custom-sm">
                   <h3 className="font-heading font-bold text-base text-ucc-navy mb-2 flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-ucc-cyan" /> Universidad Cooperativa de Colombia
+                    <span className="w-2.5 h-2.5 rounded-full bg-ucc-cyan" /> Red Universitaria
                   </h3>
                   <p className="text-ucc-muted text-xs md:text-sm font-semibold leading-relaxed">
-                    Institución multicampos que promueve la formación integral con un fuerte enfoque social. A través de HUASI, la UCC reafirma su compromiso con la equidad, facilitando que estudiantes y docentes tengan un hogar seguro donde llegar en cualquiera de nuestras sedes nacionales.
+                    Promueve la formación integral con un fuerte enfoque social. A través de HUASI, la comunidad universitaria reafirma su compromiso con la equidad, facilitando que estudiantes y docentes tengan un hogar seguro en campus de cualquier ciudad del país.
                   </p>
                 </div>
 
                 <div className="p-5 bg-white border border-ucc-border/50 rounded-2xl shadow-custom-sm">
                   <h3 className="font-heading font-bold text-base text-ucc-navy mb-2 flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-ucc-green" /> INDESCO
+                    <span className="w-2.5 h-2.5 rounded-full bg-ucc-green" /> Economía Solidaria
                   </h3>
                   <p className="text-ucc-muted text-xs md:text-sm font-semibold leading-relaxed">
-                    Como centro especializado en la economía social y el cooperativismo, INDESCO aporta la fundamentación solidaria de esta plataforma. Aseguramos que HUASI sea un espacio de intercambio sin ánimo de lucro, basado en la confianza mutua, la cooperación y el bienestar colectivo.
+                    Aporta la fundamentación cooperativa de esta plataforma. Aseguramos que HUASI sea un espacio de intercambio sin ánimo de lucro, basado en la confianza mutua, la cooperación y el bienestar colectivo.
                   </p>
                 </div>
               </div>
@@ -239,7 +239,7 @@ export default function QuienesSomos() {
               <Heart size={20} className="text-red-500" /> Decálogo de Convivencia Solidaria HUASI
             </h2>
             <p className="text-xs text-ucc-muted leading-relaxed font-semibold">
-              El hospedaje cooperativo se fundamenta en la confianza mutua, la corresponsabilidad y los principios de la economía solidaria de INDESCO. Sigue estas recomendaciones para garantizar una estadía de excelencia académica.
+              El hospedaje cooperativo se fundamenta en la confianza mutua, la corresponsabilidad y los principios de la economía solidaria. Sigue estas recomendaciones para garantizar una estadía de excelencia académica.
             </p>
           </div>
 
@@ -264,7 +264,7 @@ export default function QuienesSomos() {
                 </li>
                 <li className="flex gap-2 items-start">
                   <span className="w-1.5 h-1.5 rounded-full bg-ucc-green mt-1.5 flex-shrink-0" />
-                  <span><strong>Empatía y Mentoría:</strong> Recuerda que muchos huéspedes provienen de otras sedes y están lejos de sus familias. Guíalos en la ciudad.</span>
+                  <span><strong>Empatía y Mentoría:</strong> Recuerda que muchos huéspedes provienen de otros campus y están lejos de sus familias. Guíalos en la ciudad.</span>
                 </li>
               </ul>
             </div>
@@ -295,10 +295,10 @@ export default function QuienesSomos() {
             </div>
           </div>
 
-          {/* Bienestar UCC */}
+          {/* Bienestar Universitario */}
           <div className="card p-8 border-l-4 border-red-500 bg-red-50/5">
             <h3 className="text-lg font-bold text-red-600 mb-2 flex items-center gap-2">
-              <ShieldAlert size={20} /> Soporte de Emergencia y Bienestar UCC
+              <ShieldAlert size={20} /> Soporte de Emergencia y Bienestar
             </h3>
             <p className="text-xs text-ucc-muted mb-6">
               Si experimentas alguna situación de riesgo, conflicto de convivencia o requieres apoyo emocional o médico durante tu estadía:
@@ -306,12 +306,12 @@ export default function QuienesSomos() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               <div className="bg-white/40 p-4 rounded-xl border border-ucc-border/50 text-center">
                 <strong className="block text-sm text-ucc-navy mb-1">Bienestar Universitario</strong>
-                <span className="text-xs font-bold text-red-600">Línea UCC: Ext. 4040</span>
+                <span className="text-xs font-bold text-red-600">Bienestar Institucional</span>
                 <span className="block text-[10px] text-ucc-muted mt-1">Apoyo psicosocial y acompañamiento</span>
               </div>
               <div className="bg-white/40 p-4 rounded-xl border border-ucc-border/50 text-center">
                 <strong className="block text-sm text-ucc-navy mb-1">Soporte HUASI</strong>
-                <span className="text-xs font-bold text-ucc-cyan">soporte@huasi-ucc.edu.co</span>
+                <span className="text-xs font-bold text-ucc-cyan">soporte@huasi.edu.co</span>
                 <span className="block text-[10px] text-ucc-muted mt-1">Asistencia de la plataforma 24/7</span>
               </div>
               <div className="bg-white/40 p-4 rounded-xl border border-ucc-border/50 text-center">
@@ -330,15 +330,6 @@ export default function QuienesSomos() {
         <p className="text-ucc-muted text-xs font-semibold leading-relaxed mb-4">
           HUASI es un proyecto abierto y en constante crecimiento impulsado por estudiantes con visión solidaria. Si tienes sugerencias de mejora, contáctanos a través de los canales del semillero.
         </p>
-        <div className="flex justify-center gap-6">
-          <div className="flex items-center gap-1.5">
-            <img src="/ucc_logo.png" alt="UCC" className="h-6 object-contain sponsor-logo-light" />
-          </div>
-          <div className="h-5 w-[1px] bg-ucc-border" />
-          <div className="flex items-center gap-1.5">
-            <img src="/indesco.png" alt="INDESCO" className="h-5 object-contain sponsor-logo-light" />
-          </div>
-        </div>
       </div>
     </div>
   );

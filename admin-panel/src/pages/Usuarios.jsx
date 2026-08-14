@@ -243,7 +243,7 @@ export default function Usuarios() {
           <thead>
             <tr>
               <th>Usuario</th>
-              <th>Sede UCC</th>
+              <th>Campus / Sede</th>
               <th>Rol</th>
               <th>Verificación</th>
               <th>Estado de Cuenta</th>
@@ -516,7 +516,7 @@ export default function Usuarios() {
         }
       >
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.5, margin: 0 }}>
-          ¿Estás seguro de que deseas reactivar la cuenta de <strong>{unblockUserEmail}</strong>? Al hacerlo, recuperará todas sus facultades para iniciar sesión, publicar alojamientos y contactar estudiantes de la UCC.
+          ¿Estás seguro de que deseas reactivar la cuenta de <strong>{unblockUserEmail}</strong>? Al hacerlo, recuperará todas sus facultades para iniciar sesión, publicar alojamientos y contactar otros usuarios de la comunidad.
         </p>
       </Modal>
 

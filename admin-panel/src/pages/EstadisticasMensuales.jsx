@@ -42,9 +42,9 @@ export default function EstadisticasMensuales() {
     if (!data) return;
 
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "REPORTES MENSUALES Y ACTIVIDAD HUASI UCC\n\n";
+    csvContent += "REPORTES MENSUALES Y ACTIVIDAD HUASI\n\n";
 
-    csvContent += "DESGLOSE POR CAMPUS UCC\n";
+    csvContent += "DESGLOSE POR CAMPUS\n";
     csvContent += "Campus,Total Alojamientos,Alojamientos Activos\n";
     data.campus.forEach(c => {
       csvContent += `"${c.campus}",${c.total_alojamientos},${c.activos}\n`;
@@ -65,7 +65,7 @@ export default function EstadisticasMensuales() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Reporte_Mensual_HUASI_UCC_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute("download", `Reporte_Mensual_HUASI_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -96,7 +96,7 @@ export default function EstadisticasMensuales() {
             <span>Estadísticas y Reportes Mensuales</span>
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '4px 0 0 0' }}>
-            Indicadores agregados de impacto social y movilidad estudiantil en la Universidad Cooperativa de Colombia (INDESCO).
+            Indicadores agregados de impacto social y movilidad estudiantil.
           </p>
         </div>
 
@@ -170,7 +170,7 @@ export default function EstadisticasMensuales() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
           <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
             <Building2 size={18} style={{ color: 'var(--primary)' }} />
-            <span>Impacto y Cobertura por Sede UCC</span>
+            <span>Impacto y Cobertura por Campus</span>
           </h3>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -193,7 +193,7 @@ export default function EstadisticasMensuales() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Campus / Sede UCC</th>
+                <th>Campus / Sede</th>
                 <th style={{ textAlign: 'center' }}>Total Alojamientos</th>
                 <th style={{ textAlign: 'center' }}>Alojamientos Activos</th>
                 <th style={{ textAlign: 'right' }}>Porcentaje de Cobertura</th>

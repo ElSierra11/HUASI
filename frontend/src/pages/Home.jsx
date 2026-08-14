@@ -146,7 +146,7 @@ export default function Home() {
 
             {/* Description */}
             <p className="font-body text-sm md:text-base text-ucc-muted dark:text-slate-300 font-semibold leading-relaxed max-w-xl">
-              Encuentra alojamiento solidario gracias a la <strong className="text-ucc-navy dark:text-white">Universidad Cooperativa de Colombia</strong>, apoyado por <strong className="text-ucc-navy dark:text-white">INDESCO</strong>, para estudiantes, docentes y colaboradores de la comunidad UCC.
+              Encuentra alojamiento solidario para estudiantes, docentes y colaboradores de la comunidad universitaria.
             </p>
 
             {/* Action Buttons */}
@@ -575,17 +575,8 @@ export default function Home() {
 
       {/* ===== FOOTER ===== */}
       <footer className="mt-20 border-t border-ucc-border/30 pt-10 pb-8 text-center text-ucc-muted font-body">
-        <div className="flex items-center justify-center gap-6 mb-6">
-          <a href="https://www.ucc.edu.co" target="_blank" rel="noopener noreferrer" className="logo-container hover:scale-105 transition-transform duration-200">
-            <img src="/ucc_logo.png" alt="UCC" className="h-8 object-contain logo-img-dark-file" />
-          </a>
-          <div className="h-6 w-[1px] bg-ucc-border/80 dark:bg-emerald-900/60" />
-          <a href="https://www.ucc.edu.co/indesco" target="_blank" rel="noopener noreferrer" className="logo-container hover:scale-105 transition-transform duration-200">
-            <img src="/indesco.png" alt="INDESCO" className="h-7 object-contain logo-img-dark-file" />
-          </a>
-        </div>
         <p className="font-heading font-black text-sm text-ucc-navy tracking-wide uppercase">HUASI — La casa de mi amig@</p>
-        <p className="text-xs mt-1.5 font-bold">Red de Hospedaje Solidario · Universidad Cooperativa de Colombia</p>
+        <p className="text-xs mt-1.5 font-bold">Red de Hospedaje Solidario Universitario</p>
         
         <div className="flex justify-center gap-4 text-xs font-bold mb-6 mt-4 flex-wrap">
           <Link to="/quienes-somos" className="text-ucc-muted hover:text-ucc-green transition-colors">¿Quiénes Somos?</Link>
@@ -595,7 +586,7 @@ export default function Home() {
           <Link to="/privacidad" className="text-ucc-muted hover:text-ucc-green transition-colors">Políticas de Privacidad</Link>
         </div>
 
-        <p className="text-[0.7rem] opacity-60">© {new Date().getFullYear()} UCC · INDESCO · Red Solidaria. Todos los derechos reservados.</p>
+        <p className="text-[0.7rem] opacity-60">© {new Date().getFullYear()} HUASI · Red Solidaria Universitaria. Todos los derechos reservados.</p>
       </footer>
     </div>
   );

@@ -4,9 +4,7 @@ const ASSETS_TO_CACHE = [
   '/pwa-icon-192.png',
   '/pwa-icon-512.png',
   '/apple-touch-icon.png',
-  '/huasi_logo.jpg',
-  '/ucc_logo.png',
-  '/indesco.png'
+  '/huasi_logo.jpg'
 ];
 
 self.addEventListener('install', (event) => {

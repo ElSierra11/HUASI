@@ -13,7 +13,7 @@ export default function Terminos() {
         <div className="alert" style={{ background: '#eff6ff', color: '#1e40af', padding: 16, borderRadius: 8, display: 'flex', gap: 12, marginBottom: 24 }}>
           <Info style={{ flexShrink: 0, marginTop: 2 }} />
           <div>
-            <strong>Acuerdo de Solidaridad Estudiantil:</strong> HUASI es una plataforma 100% solidaria y sin ánimo de lucro diseñada exclusivamente para la comunidad estudiantil de la Universidad Cooperativa de Colombia (UCC). No se permiten transacciones monetarias de ningún tipo.
+            <strong>Acuerdo de Solidaridad Estudiantil:</strong> HUASI es una plataforma 100% solidaria y sin ánimo de lucro diseñada para la comunidad universitaria. No se permiten transacciones monetarias de ningún tipo.
           </div>
         </div>
 
@@ -27,10 +27,10 @@ export default function Terminos() {
         <section style={{ marginBottom: 24 }}>
           <h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 12 }}>2. Elegibilidad y Verificación</h2>
           <p style={{ marginBottom: 12 }}>
-            La plataforma está reservada única y exclusivamente para estudiantes, docentes y personal administrativo activo de la Universidad Cooperativa de Colombia (UCC). Para participar, los usuarios deben:
+            La plataforma está reservada para estudiantes, docentes y personal administrativo activo de la comunidad universitaria. Para participar, los usuarios deben:
           </p>
           <ul style={{ paddingLeft: 20, marginBottom: 12 }}>
-            <li>Registrarse con su correo institucional UCC (<code>@campusucc.edu.co</code> o <code>@ucc.edu.co</code>).</li>
+            <li>Registrarse con un correo electrónico válido.</li>
             <li>Verificar su vinculación subiendo una foto clara de su carnet universitario o documento institucional vigente.</li>
           </ul>
         </section>

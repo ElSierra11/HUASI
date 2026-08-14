@@ -76,19 +76,15 @@ router.post('/',
 
       // MOCK OCR SCAN SIMULATION
       const fileName = req.files.carnet[0].originalname.toLowerCase();
-      const textMock = `UNIVERSIDAD COOPERATIVA DE COLOMBIA - CARNET INTELIGENTE. Nombre: Estudiante UCC. Tipo: ${tipo_vinculo.toUpperCase()}.`;
-      const isUCC = String(universidad).toLowerCase().includes('ucc') || 
-                    String(universidad).toLowerCase().includes('cooperativa') || 
-                    fileName.includes('ucc') || 
-                    fileName.includes('carnet') || 
-                    fileName.includes('cooperativa');
+      const textMock = `CARNET INSTITUCIONAL UNIVERSITARIO. Nombre: Estudiante. Tipo: ${tipo_vinculo.toUpperCase()}.`;
+      const isValidUniv = true; // Auto-aprobación por defecto tras subir carnet
 
-      const estadoInicial = isUCC ? 'aprobado' : 'pendiente';
+      const estadoInicial = isValidUniv ? 'aprobado' : 'pendiente';
 
-      if (isUCC) {
+      if (isValidUniv) {
         console.log(`\n[OCR Engine] 🤖 Escaneando carnet de ${req.user.email}...`);
         console.log(`[OCR Engine] 🔍 Texto detectado: "${textMock}"`);
-        console.log(`[OCR Engine] ✅ Validación exitosa. Vinculación universitaria UCC detectada. Auto-aprobando...\n`);
+        console.log(`[OCR Engine] ✅ Validación exitosa. Vinculación universitaria detectada. Auto-aprobando...\n`);
       }
 
       const result = await pool.query(

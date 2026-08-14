@@ -1,7 +1,7 @@
 {
-  "name": "HUASI — Hospedaje Solidario UCC",
-  "short_name": "HUASI UCC",
-  "description": "Red de Hospedaje Solidario Universitario · Universidad Cooperativa de Colombia e INDESCO",
+  "name": "HUASI — Hospedaje Solidario",
+  "short_name": "HUASI",
+  "description": "Red de Hospedaje Solidario Universitario",
   "start_url": "/",
   "id": "/",
   "display": "standalone",

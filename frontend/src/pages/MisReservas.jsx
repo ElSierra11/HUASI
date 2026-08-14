@@ -283,25 +283,24 @@ export default function MisReservas() {
                               <table class="header-table">
                                 <tr>
                                   <td>
-                                    <img src="${origin}/logo_horizontal.png" alt="HUASI UCC" class="logo-img" style="max-height: 44px; max-width: 150px; width: auto; height: auto; object-fit: contain; margin-right: 12px;" onerror="this.style.display='none'" />
-                                    <img src="${origin}/indesco.png" alt="INDESCO" class="logo-img" style="max-height: 36px; max-width: 120px; width: auto; height: auto; object-fit: contain;" onerror="this.style.display='none'" />
+                                    <img src="${origin}/logo_horizontal.png" alt="HUASI" class="logo-img" style="max-height: 44px; max-width: 150px; width: auto; height: auto; object-fit: contain; margin-right: 12px;" onerror="this.style.display='none'" />
                                   </td>
                                   <td style="text-align: right;">
                                     <div class="stamp-box">
                                       <div class="stamp-title">DOCUMENTO OFICIAL VERIFICADO</div>
-                                      <div class="stamp-sub">RED SOLIDARIA HUASI UCC</div>
+                                      <div class="stamp-sub">RED SOLIDARIA HUASI</div>
                                     </div>
                                   </td>
                                 </tr>
                               </table>
 
                               <div class="title-block">
-                                <div class="institution-name">UNIVERSIDAD COOPERATIVA DE COLOMBIA • INDESCO</div>
+                                <div class="institution-name">HUASI • RED DE HOSPEDAJE SOLIDARIO UNIVERSITARIO</div>
                                 <h1 class="main-title">Comprobante de Hospedaje Universitario</h1>
                               </div>
 
                               <div class="certification-text">
-                                El presente documento certificado acredita la asignación y confirmación de espacio de hospedaje solidario dentro de la red universitaria <strong>HUASI — Universidad Cooperativa de Colombia</strong>.
+                                El presente documento certificado acredita la asignación y confirmación de espacio de hospedaje solidario dentro de la red universitaria <strong>HUASI — Hospedaje Solidario</strong>.
                               </div>
 
                               <table class="data-table">
@@ -331,7 +330,7 @@ export default function MisReservas() {
                                 </tr>
                                 <tr>
                                   <th>Motivo / Evento Académico</th>
-                                  <td>${r.evento || 'Movilidad Académica / Evento UCC'}</td>
+                                  <td>${r.evento || 'Movilidad Académica / Evento Universitario'}</td>
                                 </tr>
                                 <tr>
                                   <th>Estado de la Reserva</th>
@@ -340,7 +339,7 @@ export default function MisReservas() {
                               </table>
 
                               <div class="notice-box">
-                                <strong>Soporte Institucional de Movilidad:</strong> Expedido como acreditación oficial de estadía universitaria intersedes para presentar ante facultades, direcciones de programa y vicerrectorías de la Universidad Cooperativa de Colombia.
+                                <strong>Soporte Institucional de Movilidad:</strong> Expedido como acreditación oficial de estadía universitaria intersedes para presentar ante facultades, direcciones de programa y vicerrectorías.
                               </div>
 
                               <table class="signatures-table">
@@ -348,18 +347,13 @@ export default function MisReservas() {
                                   <td>
                                     <div class="sig-line"></div>
                                     <div class="sig-name">Coordinación Red HUASI</div>
-                                    <div class="sig-role">Movilidad Universitaria UCC</div>
-                                  </td>
-                                  <td>
-                                    <div class="sig-line"></div>
-                                    <div class="sig-name">Dirección INDESCO</div>
-                                    <div class="sig-role">Economía Solidaria UCC</div>
+                                    <div class="sig-role">Movilidad Universitaria</div>
                                   </td>
                                 </tr>
                               </table>
 
                               <div class="footer-text">
-                                HUASI UCC • Universidad Cooperativa de Colombia e INDESCO • Generado el ${fechaEmision}
+                                HUASI • Red de Hospedaje Solidario Universitario • Generado el ${fechaEmision}
                               </div>
                             </div>
 

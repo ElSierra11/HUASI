@@ -212,7 +212,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Usuarios Registrados</span>
             <span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>{usuarios.length}</span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--success)', fontWeight: 600 }}>Comunidad activa UCC</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--success)', fontWeight: 600 }}>Comunidad activa</span>
           </div>
           <div style={{ background: 'rgba(0, 152, 205, 0.1)', color: 'var(--primary)', borderRadius: '14px', padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Users size={26} />
@@ -289,10 +289,10 @@ export default function Dashboard() {
         marginBottom: 40 
       }}>
         
-        {/* Card 1: Sedes UCC */}
+        {/* Card 1: Campus */}
         <div className="card" style={{ background: 'var(--bg-surface)' }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 20, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <MapPin size={18} color="var(--primary)" /> Sedes UCC más Activas
+            <MapPin size={18} color="var(--primary)" /> Campus más Activos
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {campusData.length === 0 ? (

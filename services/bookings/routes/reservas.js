@@ -33,7 +33,7 @@ const sendEmail = async ({ to, subject, html }) => {
     const encodeHeader = (str) => `=?UTF-8?B?${Buffer.from(str, 'utf-8').toString('base64')}?=`;
 
     const rawMessage = [
-      `From: ${encodeHeader('HUASI — Hospedaje Solidario UCC')} <${process.env.GMAIL_USER}>`,
+      `From: ${encodeHeader('HUASI — Hospedaje Solidario')} <${process.env.GMAIL_USER}>`,
       `To: ${to}`,
       `Subject: ${encodeHeader(subject)}`,
       `MIME-Version: 1.0`,

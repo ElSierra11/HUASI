@@ -76,41 +76,6 @@ export default function Navbar() {
           />
         </Link>
 
-        {/* Sponsor UCC */}
-        <div className="hidden sm:flex items-center">
-          <div className="h-7 w-[1.5px] bg-ucc-border/80 dark:bg-emerald-900/60 mx-4" />
-          <a 
-            href="https://www.ucc.edu.co" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            title="Universidad Cooperativa de Colombia"
-            className="logo-container hover:scale-105 transition-transform duration-200"
-          >
-            <img 
-              src="/ucc_logo.png" 
-              alt="UCC Logo" 
-              className="h-7 object-contain logo-img-dark-file"
-            />
-          </a>
-        </div>
-
-        {/* Sponsor INDESCO */}
-        <div className="hidden md:flex items-center">
-          <div className="h-7 w-[1.5px] bg-ucc-border/80 dark:bg-emerald-900/60 mx-4" />
-          <a 
-            href="https://www.ucc.edu.co/indesco" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            title="Instituto de Economía Social y Cooperativismo"
-            className="logo-container hover:scale-105 transition-transform duration-200"
-          >
-            <img 
-              src="/indesco.png" 
-              alt="INDESCO Logo" 
-              className="h-6 object-contain logo-img-dark-file"
-            />
-          </a>
-        </div>
       </div>
 
       {/* Desktop Navigation Links */}

@@ -50,7 +50,7 @@ const sendOtpEmail = async (email, nombre, otp) => {
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
       <div style="text-align: center; margin-bottom: 16px;">
-        <h2 style="color: #0d7c3d; margin: 0; font-size: 20px;">HUASI — Hospedaje Solidario UCC</h2>
+        <h2 style="color: #0d7c3d; margin: 0; font-size: 20px;">HUASI — Hospedaje Solidario</h2>
         <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Verificación de Correo Institucional</p>
       </div>
       <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 16px;">
@@ -59,7 +59,7 @@ const sendOtpEmail = async (email, nombre, otp) => {
         <p style="color: #64748b; font-size: 11px; margin: 8px 0 0 0;">Válido por 5 minutos</p>
       </div>
       <p style="color: #334155; font-size: 13px; line-height: 1.5;">
-        Hola <strong>${nombre}</strong>, ingresa este código en HUASI para verificar tu correo institucional de la Universidad Cooperativa de Colombia.
+        Hola <strong>${nombre}</strong>, ingresa este código en HUASI para verificar tu correo institucional.
       </p>
       <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
       <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
@@ -71,7 +71,7 @@ const sendOtpEmail = async (email, nombre, otp) => {
   const encodeHeader = (str) => `=?UTF-8?B?${Buffer.from(str, 'utf-8').toString('base64')}?=`;
 
   const rawMessage = [
-    `From: ${encodeHeader('HUASI — Hospedaje Solidario UCC')} <${process.env.GMAIL_USER}>`,
+    `From: ${encodeHeader('HUASI — Hospedaje Solidario')} <${process.env.GMAIL_USER}>`,
     `To: ${email}`,
     `Subject: ${encodeHeader('Código de Verificación OTP - HUASI')}`,
     `MIME-Version: 1.0`,
@@ -133,13 +133,13 @@ router.post('/register', async (req, res) => {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    const allowedDomains = ['@campusucc.edu.co', '@ucc.edu.co'];
-    if (!allowedDomains.some(domain => cleanEmail.endsWith(domain))) {
-      return res.status(400).json({ error: 'Debes usar un correo institucional válido (@campusucc.edu.co o @ucc.edu.co)' });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ error: 'Debes ingresar un correo electrónico válido' });
     }
 
     if (!campus) {
-      return res.status(400).json({ error: 'El campus de la UCC es obligatorio' });
+      return res.status(400).json({ error: 'El campus o sede es obligatorio' });
     }
 
     // Verificar si el email ya existe
@@ -570,7 +570,7 @@ router.get('/admin/estadisticas-mensuales', async (req, res) => {
       return res.status(403).json({ error: 'Acceso denegado' });
     }
 
-    // 1. Estadísticas por Campus UCC
+    // 1. Estadísticas por Campus
     const campusStats = await pool.query(`
       SELECT 
         COALESCE(campus_cercano, 'Santa Marta') as campus,

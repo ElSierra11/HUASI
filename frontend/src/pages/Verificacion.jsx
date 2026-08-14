@@ -9,7 +9,7 @@ export default function Verificacion() {
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ universidad: 'Universidad Cooperativa de Colombia', tipo_vinculo: 'estudiante' });
+  const [form, setForm] = useState({ universidad: '', tipo_vinculo: 'estudiante' });
   const [carnetFile, setCarnetFile] = useState(null);
   const [carnetPreview, setCarnetPreview] = useState('');
   

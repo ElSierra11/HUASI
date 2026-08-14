@@ -494,7 +494,7 @@ router.post('/:id/reportar', async (req, res) => {
       return res.status(400).json({ error: 'Debes seleccionar un motivo para el reporte' });
     }
 
-    console.log(`[Reporte Seguridad UCC] Usuario ${req.user.id} reportó propiedad ${id}. Motivo: ${motivo}. Comentario: ${comentario || 'N/A'}`);
+    console.log(`[Reporte Seguridad] Usuario ${req.user.id} reportó propiedad ${id}. Motivo: ${motivo}. Comentario: ${comentario || 'N/A'}`);
 
     // Intentar guardar en tabla reportes si existe
     try {

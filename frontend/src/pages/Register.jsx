@@ -286,7 +286,7 @@ export default function Register() {
           </p>
 
           <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: 32 }}>
-            Tu correo institucional ha sido verificado correctamente. Ya puedes explorar y acceder a la red de alojamiento solidario de la Universidad Cooperativa de Colombia.
+            Tu correo ha sido verificado correctamente. Ya puedes explorar y acceder a la red de alojamiento solidario universitario.
           </p>
 
           {/* Barra de progreso animada */}

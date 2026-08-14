@@ -21,13 +21,13 @@ export default function Privacidad() {
             <Eye size={20} color="var(--success)" /> Datos Públicos y Visibles
           </h2>
           <p style={{ marginBottom: 12 }}>
-            Esta información es de acceso general para todos los usuarios registrados y verificados dentro de la plataforma HUASI UCC:
+            Esta información es de acceso general para todos los usuarios registrados y verificados dentro de la plataforma HUASI:
           </p>
           <ul style={{ paddingLeft: 20, display: 'grid', gap: 8 }}>
             <li><strong>Tu nombre y apellido:</strong> Necesarios para identificarte en la comunidad.</li>
-            <li><strong>Tu sede / campus:</strong> Muestra a qué sede de la Universidad Cooperativa de Colombia perteneces.</li>
+            <li><strong>Tu campus o sede:</strong> Muestra a qué campus perteneces.</li>
             <li><strong>Foto de perfil:</strong> Ayuda a generar confianza mutua en la plataforma.</li>
-            <li><strong>Estado de verificación:</strong> Una insignia que confirma que tu vinculación con la UCC ha sido validada administrativamente.</li>
+            <li><strong>Estado de verificación:</strong> Una insignia que confirma que tu vinculación ha sido validada.</li>
             <li><strong>Tus calificaciones y comentarios:</strong> Evaluaciones sobre tus estadías como huésped o anfitrión.</li>
           </ul>
         </section>
