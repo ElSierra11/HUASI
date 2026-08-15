@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Star, Users, Home, Bed, Sofa, Trees, Coins, Sparkles, HelpCircle, DollarSign, Heart } from 'lucide-react';
+import { MapPin, Star, Users, Home, Bed, Sofa, Trees, Coins, Sparkles, HelpCircle, DollarSign, Heart, ShieldCheck } from 'lucide-react';
 
 const TIPO_LABELS = {
   cama: 'Cama',
