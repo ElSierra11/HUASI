@@ -1,0 +1,490 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { MapPin, Calendar, User, Award, List, Home, Bed, Sofa, Trees, Coins, HelpCircle, CheckCircle2, Star as StarIcon, MessageSquare, FileText } from 'lucide-react';
+import api from '../api';
+import { useToast } from '../components/Toast';
+import Modal from '../components/Modal';
+import { ReservationCardSkeleton } from '../components/SkeletonLoader';
+import EmptyState from '../components/EmptyState';
+import HuasiAlert from '../utils/alerts';
+
+const getNormalizedTipo = (tipo) => {
+  if (!tipo) return 'otro';
+  const t = tipo.toLowerCase();
+  if (t.includes('cama')) return 'cama';
+  if (t.includes('sofa') || t.includes('sofá')) return 'sofa';
+  if (t.includes('hamaca')) return 'hamaca';
+  if (t.includes('habitacion') || t.includes('habitación')) return 'habitacion';
+  if (t.includes('alquiler')) return 'alquiler';
+  return 'otro';
+};
+
+const TIPO_ICON = {
+  cama: <Bed size={32} />,
+  sofa: <Sofa size={32} />,
+  hamaca: <Trees size={32} />,
+  habitacion: <Home size={32} />,
+  alquiler: <Coins size={32} />,
+  otro: <HelpCircle size={32} />
+};
+
+const TIPO_ICON_SMALL = {
+  cama: <Bed size={12} />,
+  sofa: <Sofa size={12} />,
+  hamaca: <Trees size={12} />,
+  habitacion: <Home size={12} />,
+  alquiler: <Coins size={12} />,
+  otro: <HelpCircle size={12} />
+};
+
+const TIPO_THEMES = {
+  cama: { gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' },
+  sofa: { gradient: 'linear-gradient(135deg, #a855f7, #6b21a8)' },
+  hamaca: { gradient: 'linear-gradient(135deg, #10b981, #047857)' },
+  habitacion: { gradient: 'linear-gradient(135deg, #0d9488, #0f766e)' },
+  alquiler: { gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+  otro: { gradient: 'linear-gradient(135deg, #64748b, #334155)' }
+};
+
+const STATUS_LABELS = {
+  pendiente: 'Pendiente',
+  aceptada: 'Reserva confirmada',
+  rechazada: 'Solicitud rechazada',
+  cancelada: 'Cancelada',
+  completada: 'Hospedaje completado'
+};
+
+export default function MisReservas() {
+  const [reservas, setReservas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
+  const [tab, setTab] = useState('todas');
+  const toast = useToast();
+
+  // Review modal state
+  const [reviewModal, setReviewModal] = useState({ open: false, reservaId: null, calificacion: 5, comentario: '' });
+
+  const loadReservas = () => {
+    setLoading(true);
+    setFetchError(null);
+    api.get('/reservas/mis')
+      .then(res => {
+        if (Array.isArray(res.data)) {
+          setReservas(res.data);
+        } else if (res.data && Array.isArray(res.data.reservas)) {
+          setReservas(res.data.reservas);
+        } else {
+          setReservas([]);
+        }
+      })
+      .catch(err => {
+        console.error('Error cargando reservas:', err);
+        setFetchError(err.response?.data?.error || 'No se pudieron cargar tus reservas');
+        setReservas([]);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadReservas();
+  }, []);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'Por definir';
+    try {
+      const cleanStr = String(dateStr).split('T')[0];
+      const parts = cleanStr.split('-');
+      if (parts.length === 3) {
+        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+      }
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('es-CO');
+      }
+      return cleanStr;
+    } catch {
+      return String(dateStr);
+    }
+  };
+
+  const isCompletedDate = (dateStr) => {
+    if (!dateStr) return false;
+    try {
+      const cleanStr = String(dateStr).split('T')[0];
+      const d = new Date(cleanStr + 'T23:59:59');
+      return !isNaN(d.getTime()) && d < new Date();
+    } catch {
+      return false;
+    }
+  };
+
+  const pedirCancelar = async (id) => {
+    const confirmed = await HuasiAlert.confirm({
+      title: '¿Cancelar esta reserva?',
+      text: 'La habitación o espacio quedará nuevamente disponible para otros compañeros universitarios.',
+      confirmText: 'Sí, cancelar reserva',
+      cancelText: 'Mantener reserva',
+      icon: 'warning',
+    });
+
+    if (confirmed) {
+      try {
+        await api.patch(`/reservas/${id}`, { estado: 'cancelada' });
+        setReservas(r => (Array.isArray(r) ? r : []).map(res => res && res.id === id ? { ...res, estado: 'cancelada' } : res));
+        HuasiAlert.success('Reserva cancelada', 'Tu solicitud de hospedaje ha sido cancelada correctamente.');
+      } catch (err) {
+        HuasiAlert.error('Error al cancelar', err.response?.data?.error || 'No se pudo cancelar la reserva');
+      }
+    }
+  };
+
+  const abrirModalReview = (id) => {
+    setReviewModal({ open: true, reservaId: id, calificacion: 5, comentario: '' });
+  };
+
+  const completarReserva = async (id) => {
+    try {
+      await api.patch(`/reservas/${id}`, { estado: 'completada' });
+      setReservas(r => (Array.isArray(r) ? r : []).map(res => res && res.id === id ? { ...res, estado: 'completada' } : res));
+      HuasiAlert.success('Hospedaje completado', 'La reserva ha sido marcada como completada.');
+    } catch (err) {
+      HuasiAlert.error('Error', err.response?.data?.error || 'No se pudo completar la reserva');
+    }
+  };
+
+  const enviarResena = async () => {
+    try {
+      await api.post('/resenas', {
+        reserva_id: reviewModal.reservaId,
+        calificacion: reviewModal.calificacion,
+        comentario: reviewModal.comentario
+      });
+      HuasiAlert.success('¡Gracias por tu evaluación!', 'Tu testimonio ayuda a toda la comunidad universitaria.');
+      setReviewModal({ open: false, reservaId: null, calificacion: 5, comentario: '' });
+      loadReservas();
+    } catch (err) {
+      HuasiAlert.error('Error', err.response?.data?.error || 'No se pudo guardar tu evaluación');
+    }
+  };
+
+  const safeReservas = Array.isArray(reservas) ? reservas.filter(Boolean) : [];
+  const filtered = tab === 'todas' ? safeReservas : safeReservas.filter(r => r && r.estado === tab);
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-4">
+        <div className="h-8 w-40 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse mb-6" />
+        <div className="space-y-4">
+          <ReservationCardSkeleton />
+          <ReservationCardSkeleton />
+          <ReservationCardSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="max-w-md mx-auto py-12">
+        <EmptyState
+          title="No se pudieron cargar tus reservas"
+          description={fetchError}
+          actionLabel="Reintentar"
+          onAction={loadReservas}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <h1 className="font-heading font-black text-2xl md:text-3xl text-ucc-navy dark:text-white mb-6">Tus Viajes Solidarios</h1>
+
+      <div className="tabs" style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
+        {['todas', 'pendiente', 'aceptada', 'completada', 'cancelada'].map(t => {
+          const labels = {
+            todas: 'Todas',
+            pendiente: 'Pendientes',
+            aceptada: 'Aceptadas',
+            completada: 'Completadas',
+            cancelada: 'Canceladas'
+          };
+          return (
+            <button key={t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
+              {labels[t]}
+            </button>
+          );
+        })}
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon={Calendar}
+          title={`No tienes reservas ${tab !== 'todas' ? `con estado "${tab}"` : ''}`}
+          description="Explora alojamientos solidarios de la comunidad UCC y solicita tu primera estadía."
+          actionLabel="Explorar alojamientos"
+          actionLink="/"
+        />
+      ) : (
+        filtered.map(r => {
+          const normalizedTipo = getNormalizedTipo(r.tipo_propiedad);
+          const theme = TIPO_THEMES[normalizedTipo] || TIPO_THEMES.otro;
+          const icon = TIPO_ICON[normalizedTipo] || TIPO_ICON.otro;
+          const smallIcon = TIPO_ICON_SMALL[normalizedTipo] || TIPO_ICON_SMALL.otro;
+
+          return (
+            <div key={r.id} className="list-card">
+              <div className="list-card-img" style={{
+                background: theme.gradient,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                borderRadius: 'var(--radius-sm)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+              }}>
+                {React.cloneElement(icon, { size: 36, color: 'white' })}
+              </div>
+              <div className="list-card-info">
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: theme.gradient,
+                    color: 'white',
+                    borderRadius: '4px',
+                    padding: '4px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.12)',
+                    flexShrink: 0
+                  }}>
+                    {React.cloneElement(smallIcon, { size: 12, color: 'white' })}
+                  </div>
+                  <Link to={`/propiedad/${r.propiedad_id}`} style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                    {r.titulo || 'Alojamiento Universitario'}
+                  </Link>
+                </h3>
+                <p><MapPin size={16} /> {r.barrio || r.direccion || 'Campus Universitario'}</p>
+                <p><Calendar size={16} /> {formatDate(r.fecha_inicio)} — {formatDate(r.fecha_fin)}</p>
+                <p style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <User size={16} /> <span>Anfitrión: {r.host_nombre || ''} {r.host_apellido || ''}</span>
+                  {r.host_id && (
+                    <button 
+                      className="btn btn-secondary btn-sm"
+                      style={{ padding: '2px 8px', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: 4, height: 'auto', margin: 0, marginLeft: 8 }}
+                      onClick={() => window.dispatchEvent(new CustomEvent('open-chat', { detail: { userId: r.host_id } }))}
+                    >
+                      <MessageSquare size={12} /> Chatear
+                    </button>
+                  )}
+                </p>
+                {r.evento && <p><Award size={16} /> {r.evento}</p>}
+              </div>
+              <div className="list-card-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span className={`badge badge-${r.estado || 'pendiente'}`}>{STATUS_LABELS[r.estado] || r.estado || 'Pendiente'}</span>
+                {(r.estado === 'aceptada' || r.estado === 'completada') && (
+                  <button 
+                    className="btn btn-outline btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, borderColor: '#0d7c3d', color: '#0d7c3d', fontWeight: 700 }}
+                    onClick={() => {
+                      const printWin = window.open('', '_blank');
+                      const origin = window.location.origin;
+                      const token = `HUASI-UCC-${r.id}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+                      const fechaEmision = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
+                      const fechaInicioFmt = formatDate(r.fecha_inicio);
+                      const fechaFinFmt = formatDate(r.fecha_fin);
+
+                      printWin.document.write(`
+                        <!DOCTYPE html>
+                        <html lang="es">
+                          <head>
+                            <meta charset="UTF-8" />
+                            <title>Comprobante Oficial HUASI UCC - ${token}</title>
+                            <style>
+                              @page { margin: 12mm; size: letter portrait; }
+                              * { box-sizing: border-box; margin: 0; padding: 0; }
+                              body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #ffffff; color: #0f172a; line-height: 1.5; font-size: 12px; padding: 20px; }
+                              .cert-box { max-width: 720px; margin: 0 auto; border: 2px solid #0d7c3d; padding: 28px; background: #ffffff; }
+                              
+                              .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border-bottom: 2px solid #0d7c3d; padding-bottom: 12px; }
+                              .header-table td { vertical-align: middle; }
+                              .logo-img { max-height: 48px; max-width: 160px; width: auto; height: auto; object-fit: contain; }
+                              .stamp-box { border: 1px solid #0d7c3d; background: #f0fdf4; padding: 8px 14px; text-align: right; border-radius: 4px; }
+                              .stamp-title { font-size: 10px; font-weight: 800; color: #0d7c3d; text-transform: uppercase; letter-spacing: 0.5px; }
+                              .stamp-sub { font-size: 9px; font-weight: 700; color: #047857; }
+
+                              .title-block { text-align: center; margin: 16px 0 20px 0; }
+                              .institution-name { font-size: 11px; font-weight: 800; color: #0d7c3d; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px; }
+                              .main-title { font-size: 19px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px; text-transform: uppercase; }
+
+                              .certification-text { background: #f8fafc; border-left: 4px solid #0d7c3d; padding: 12px 16px; font-size: 12px; color: #334155; margin-bottom: 20px; line-height: 1.5; }
+
+                              .data-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
+                              .data-table th, .data-table td { border: 1px solid #cbd5e1; padding: 9px 12px; text-align: left; }
+                              .data-table th { background: #f1f5f9; color: #475569; font-size: 10px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; width: 35%; }
+                              .data-table td { color: #0f172a; font-weight: 700; background: #ffffff; }
+                              .highlight-val { color: #0d7c3d; font-weight: 800; }
+
+                              .notice-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px 16px; font-size: 11px; color: #166534; margin-bottom: 28px; border-radius: 4px; }
+
+                              .signatures-table { width: 100%; border-collapse: collapse; margin-top: 32px; }
+                              .signatures-table td { width: 50%; text-align: center; vertical-align: bottom; padding: 0 20px; }
+                              .sig-line { border-top: 1px solid #64748b; width: 85%; margin: 0 auto 6px auto; }
+                              .sig-name { font-size: 11px; font-weight: 800; color: #0f172a; }
+                              .sig-role { font-size: 9.5px; color: #64748b; font-weight: 600; text-transform: uppercase; }
+
+                              .footer-text { text-align: center; font-size: 10px; color: #94a3b8; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+
+                              .actions-bar { text-align: center; margin-top: 20px; }
+                              .btn-print { background: #0d7c3d; color: #ffffff; border: none; padding: 10px 24px; font-size: 13px; font-weight: 800; border-radius: 4px; cursor: pointer; }
+
+                              @media print {
+                                body { padding: 0; background: #ffffff; }
+                                .actions-bar { display: none !important; }
+                                .cert-box { border: 2px solid #0d7c3d !important; padding: 20px !important; }
+                              }
+                            </style>
+                          </head>
+                          <body>
+                            <div class="cert-box">
+                              <table class="header-table">
+                                <tr>
+                                  <td>
+                                    <img src="${origin}/logo_horizontal.png" alt="HUASI" class="logo-img" style="max-height: 44px; max-width: 150px; width: auto; height: auto; object-fit: contain; margin-right: 12px;" onerror="this.style.display='none'" />
+                                  </td>
+                                  <td style="text-align: right;">
+                                    <div class="stamp-box">
+                                      <div class="stamp-title">DOCUMENTO OFICIAL VERIFICADO</div>
+                                      <div class="stamp-sub">RED SOLIDARIA HUASI</div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              </table>
+
+                              <div class="title-block">
+                                <div class="institution-name">HUASI • RED DE HOSPEDAJE SOLIDARIO UNIVERSITARIO</div>
+                                <h1 class="main-title">Comprobante de Hospedaje Universitario</h1>
+                              </div>
+
+                              <div class="certification-text">
+                                El presente documento certificado acredita la asignación y confirmación de espacio de hospedaje solidario dentro de la red universitaria <strong>HUASI — Hospedaje Solidario</strong>.
+                              </div>
+
+                              <table class="data-table">
+                                <tr>
+                                  <th>Código Token de Validación</th>
+                                  <td class="highlight-val">${token}</td>
+                                </tr>
+                                <tr>
+                                  <th>Alojamiento Confirmado</th>
+                                  <td>${r.titulo || 'Alojamiento'}</td>
+                                </tr>
+                                <tr>
+                                  <th>Anfitrión Responsable</th>
+                                  <td>${r.host_nombre || ''} ${r.host_apellido || ''}</td>
+                                </tr>
+                                <tr>
+                                  <th>Dirección / Ubicación</th>
+                                  <td>${r.direccion || r.barrio || 'Sede Universitaria'}</td>
+                                </tr>
+                                <tr>
+                                  <th>Fecha de Llegada</th>
+                                  <td>${fechaInicioFmt}</td>
+                                </tr>
+                                <tr>
+                                  <th>Fecha de Salida</th>
+                                  <td>${fechaFinFmt}</td>
+                                </tr>
+                                <tr>
+                                  <th>Motivo / Evento Académico</th>
+                                  <td>${r.evento || 'Movilidad Académica / Evento Universitario'}</td>
+                                </tr>
+                                <tr>
+                                  <th>Estado de la Reserva</th>
+                                  <td class="highlight-val">APROBADA Y CONFIRMADA</td>
+                                </tr>
+                              </table>
+
+                              <div class="notice-box">
+                                <strong>Soporte Institucional de Movilidad:</strong> Expedido como acreditación oficial de estadía universitaria intersedes para presentar ante facultades, direcciones de programa y vicerrectorías.
+                              </div>
+
+                              <table class="signatures-table">
+                                <tr>
+                                  <td>
+                                    <div class="sig-line"></div>
+                                    <div class="sig-name">${r.host_nombre || 'Anfitrión'} ${r.host_apellido || ''}</div>
+                                    <div class="sig-role">Anfitrión Solidario UCC</div>
+                                  </td>
+                                  <td>
+                                    <div class="sig-line"></div>
+                                    <div class="sig-name">Coordinación Red HUASI</div>
+                                    <div class="sig-role">Movilidad Universitaria</div>
+                                  </td>
+                                </tr>
+                              </table>
+
+                              <div class="footer-text">
+                                HUASI • Red de Hospedaje Solidario Universitario • Generado el ${fechaEmision}
+                              </div>
+                            </div>
+
+                            <div class="actions-bar">
+                              <button class="btn-print" onclick="window.print()">Imprimir / Guardar como PDF</button>
+                            </div>
+                          </body>
+                        </html>
+                      `);
+                      printWin.document.close();
+                    }}
+                  >
+                    <FileText size={12} /> Comprobante PDF
+                  </button>
+                )}
+                {r.estado === 'aceptada' && isCompletedDate(r.fecha_fin) && (
+                  <button className="btn btn-success btn-sm" onClick={() => completarReserva(r.id)}>Marcar como completada</button>
+                )}
+                {r.estado === 'completada' && (
+                  <button className="btn btn-primary btn-sm" onClick={() => abrirModalReview(r.id)}>Dejar reseña</button>
+                )}
+                {(r.estado === 'pendiente' || r.estado === 'aceptada') && (
+                  <button className="btn btn-secondary btn-sm" style={{ color: '#ef4444', borderColor: '#fca5a5' }} onClick={() => pedirCancelar(r.id)}>
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })
+      )}
+
+      {/* Review modal */}
+      <Modal
+        open={reviewModal.open}
+        type="success"
+        title="Evaluar estadía"
+        message="Comparte tu experiencia con el anfitrión para mejorar la red solidaria."
+        confirmText="Publicar reseña"
+        cancelText="Cancelar"
+        onConfirm={enviarResena}
+        onCancel={() => setReviewModal({ open: false, reservaId: null, calificacion: 5, comentario: '' })}
+      >
+        <div style={{ display: 'grid', gap: 12, textAlign: 'left', marginTop: 8 }}>
+          <label style={{ fontWeight: 600 }}>Calificación</label>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[1,2,3,4,5].map(v => (
+              <button key={v} type="button" onClick={() => setReviewModal(m => ({ ...m, calificacion: v }))} style={{ border: '1px solid var(--border)', background: reviewModal.calificacion >= v ? 'var(--accent-light)' : 'white', color: reviewModal.calificacion >= v ? 'var(--accent-hover)' : 'var(--text-muted)', borderRadius: 999, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <StarIcon size={16} fill="currentColor" />
+              </button>
+            ))}
+          </div>
+          <label style={{ fontWeight: 600 }}>Comentario</label>
+          <textarea className="form-control" rows={4} value={reviewModal.comentario} onChange={e => setReviewModal(m => ({ ...m, comentario: e.target.value }))} placeholder="Describe la experiencia, puntualidad y convivencia." />
+        </div>
+      </Modal>
+    </div>
+  );
+}

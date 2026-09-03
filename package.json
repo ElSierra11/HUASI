@@ -1,0 +1,23 @@
+{
+  "name": "stayu",
+  "version": "1.0.0",
+  "description": "StayU - Hospedaje universitario gratuito en Santa Marta",
+  "scripts": {
+    "build": "cd services/gateway && npm install && cd ../auth && npm install && cd ../hosts && npm install && cd ../bookings && npm install && cd ../chat && npm install",
+    "start": "node start-backend.js",
+    "install:all": "cd services/gateway && npm install && cd ../auth && npm install && cd ../hosts && npm install && cd ../bookings && npm install && cd ../../frontend && npm install",
+    "dev:gateway": "cd services/gateway && npm run dev",
+    "dev:auth": "cd services/auth && npm run dev",
+    "dev:hosts": "cd services/hosts && npm run dev",
+    "dev:bookings": "cd services/bookings && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "db:init": "docker exec -i stayu_db psql -U postgres -d stayu < database/init.sql",
+    "db:seed": "docker exec -i stayu_db psql -U postgres -d stayu < database/seed.sql"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "pg": "^8.21.0"
+  }
+}
