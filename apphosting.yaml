@@ -1,0 +1,13 @@
+# Configuracion de Firebase App Hosting para HUASI
+runConfig:
+  minInstances: 0
+  maxInstances: 5
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  - variable: BACKEND_URL
+    value: "https://huasi.onrender.com"
+    availability:
+      - RUNTIME

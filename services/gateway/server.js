@@ -55,6 +55,14 @@ app.use('/api/reportes', createProxyMiddleware({
   onError: handleProxyError,
 }));
 
+// Auth Service - Verificación institucional (carnet)
+app.use('/api/verificacion', createProxyMiddleware({
+  target: AUTH_URL,
+  changeOrigin: true,
+  pathRewrite: { '^/api/verificacion': '/verificacion' },
+  onError: handleProxyError,
+}));
+
 // Host Service - Propiedades
 app.use('/api/propiedades', createProxyMiddleware({
   target: HOST_URL,

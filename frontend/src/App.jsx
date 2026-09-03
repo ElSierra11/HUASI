@@ -39,6 +39,7 @@ function App() {
           <Route path="/propiedad/:id" element={<PropertyDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Register />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/quienes-somos" element={<QuienesSomos />} />
           <Route path="/terminos" element={<Terminos />} />
           <Route path="/privacidad" element={<Privacidad />} />

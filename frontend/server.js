@@ -33,8 +33,8 @@ const MIME_TYPES = {
 const server = http.createServer((req, res) => {
   const urlPath = req.url.split('?')[0];
 
-  // 1. Redirigir y hacer proxy de llamadas /api al backend de Render
-  if (urlPath.startsWith('/api')) {
+  // 1. Redirigir y hacer proxy de llamadas /api, /chat-socket y /socket.io al backend de Render
+  if (urlPath.startsWith('/api') || urlPath.startsWith('/chat-socket') || urlPath.startsWith('/socket.io')) {
     const isHttps = backendTarget.protocol === 'https:';
     const client = isHttps ? https : http;
 
@@ -50,9 +50,18 @@ const server = http.createServer((req, res) => {
       method: req.method,
       path: req.url,
       headers: proxyHeaders,
+      timeout: 60000 // 60s timeout para soportar cold-starts en Render
     }, (proxyRes) => {
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res);
+    });
+
+    proxyReq.on('timeout', () => {
+      proxyReq.destroy();
+      if (!res.headersSent) {
+        res.writeHead(504, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'El servidor HUASI se está iniciando. Por favor, reintenta en unos segundos.' }));
+      }
     });
 
     proxyReq.on('error', (err) => {
@@ -61,6 +70,12 @@ const server = http.createServer((req, res) => {
         res.writeHead(502, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Error de comunicación con el backend HUASI.' }));
       }
+    });
+
+    // Evitar fugas si el cliente cierra la pestaña o cancela
+    req.on('aborted', () => proxyReq.destroy());
+    res.on('close', () => {
+      if (!res.writableEnded) proxyReq.destroy();
     });
 
     req.pipe(proxyReq);
