@@ -63,6 +63,8 @@ const io = new Server(server, {
   path: '/chat-socket'
 });
 
+app.set('io', io);
+
 // Map userId → Set<socketId>
 const onlineUsers = new Map();
 
@@ -137,13 +139,32 @@ io.on('connection', (socket) => {
         [conversacion_id]
       );
 
+      // Obtener datos del remitente para que el receptor pueda identificarlo de inmediato en notificaciones
+      const senderQuery = await pool.query(
+        'SELECT nombre, apellido, foto_perfil FROM users WHERE id = $1',
+        [userId]
+      );
+      const sender = senderQuery.rows[0] || {};
+      const fullMessage = {
+        ...message,
+        sender_nombre: sender.nombre || 'Estudiante',
+        sender_apellido: sender.apellido || '',
+        sender_foto: sender.foto_perfil || null
+      };
+
       // Emit to both users
-      io.to(`user_${userId}`).emit('new_message', message);
-      io.to(`user_${receiverId}`).emit('new_message', message);
+      io.to(`user_${userId}`).emit('new_message', fullMessage);
+      io.to(`user_${receiverId}`).emit('new_message', fullMessage);
     } catch (err) {
       console.error('Error sending message:', err);
       socket.emit('error_message', { error: 'Error al enviar mensaje' });
     }
+  });
+
+  // Evento para retransmitir nuevo alojamiento publicado a todos los usuarios conectados
+  socket.on('property_published', (propertyData) => {
+    console.log(`🏠 [Socket Broadcast] Propiedad publicada recibida, avisando a todos los usuarios:`, propertyData?.titulo);
+    io.emit('new_property_published', propertyData);
   });
 
   // Mark messages as read

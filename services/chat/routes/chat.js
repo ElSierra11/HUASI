@@ -142,6 +142,28 @@ router.post('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
     await pool.query('UPDATE conversaciones SET updated_at = NOW() WHERE id = $1', [convId]);
 
     const msg = insertResult.rows[0];
+
+    // Emitir por Socket.IO para que el destinatario reciba la notificación en tiempo real
+    const io = req.app.get('io');
+    if (io) {
+      try {
+        const senderQuery = await pool.query('SELECT nombre, apellido, foto_perfil FROM users WHERE id = $1', [userId]);
+        const sender = senderQuery.rows[0] || {};
+        const fullMsg = {
+          ...msg,
+          sender_nombre: sender.nombre || 'Estudiante',
+          sender_apellido: sender.apellido || '',
+          sender_foto: sender.foto_perfil || null
+        };
+        const conversation = conv.rows[0];
+        const receiverId = conversation.user1_id === userId ? conversation.user2_id : conversation.user1_id;
+        io.to(`user_${userId}`).emit('new_message', fullMsg);
+        io.to(`user_${receiverId}`).emit('new_message', fullMsg);
+      } catch (ioErr) {
+        console.warn('Error emitiendo socket en REST fallback:', ioErr.message);
+      }
+    }
+
     res.status(201).json(msg);
   } catch (err) {
     console.error('Error enviando mensaje por API:', err);

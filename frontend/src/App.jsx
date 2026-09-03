@@ -13,6 +13,8 @@ import Home from './pages/Home';
 import PropertyDetail from './pages/PropertyDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import OlvidoPassword from './pages/OlvidoPassword';
+import RecuperarPassword from './pages/RecuperarPassword';
 import MisReservas from './pages/MisReservas';
 import Chat from './pages/Chat';
 import HostDashboard from './pages/HostDashboard';
@@ -40,6 +42,8 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Register />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/olvido-password" element={<OlvidoPassword />} />
+          <Route path="/recuperar-password" element={<RecuperarPassword />} />
           <Route path="/quienes-somos" element={<QuienesSomos />} />
           <Route path="/terminos" element={<Terminos />} />
           <Route path="/privacidad" element={<Privacidad />} />

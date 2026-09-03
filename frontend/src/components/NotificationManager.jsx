@@ -8,7 +8,8 @@ import {
   requestNotificationPermission,
   showPushNotification,
   notifyBookingStatusChange,
-  notifyNewBookingRequest
+  notifyNewBookingRequest,
+  notifyNewProperty
 } from '../utils/notifications';
 
 export default function NotificationManager() {
@@ -105,6 +106,39 @@ export default function NotificationManager() {
           });
         }
         previousHostReservasRef.current = currentHostReservas;
+
+        // 3. Verificar nuevos alojamientos publicados en HUASI
+        try {
+          const propsRes = await api.get('/propiedades?limit=5');
+          const latestProps = Array.isArray(propsRes.data?.propiedades) ? propsRes.data.propiedades : [];
+          
+          if (latestProps.length > 0) {
+            const rawLastId = localStorage.getItem('huasi_last_known_prop_id');
+            const lastKnownId = rawLastId ? parseInt(rawLastId, 10) : null;
+            const currentMaxId = Math.max(...latestProps.map(p => p.id));
+
+            if (lastKnownId === null) {
+              // Primera vez cargando: registrar el ID más alto existente
+              localStorage.setItem('huasi_last_known_prop_id', String(currentMaxId));
+            } else if (currentMaxId > lastKnownId) {
+              // Se detectó al menos un nuevo alojamiento publicado
+              const newProps = latestProps.filter(p => p.id > lastKnownId && p.host_id !== user.id);
+              newProps.forEach(p => {
+                notifyNewProperty({
+                  propertyId: p.id,
+                  propertyTitle: p.titulo || 'Nuevo Alojamiento',
+                  tipo: p.tipo || 'Habitación',
+                  barrio: p.barrio || '',
+                  ciudad: p.ciudad || 'Santa Marta'
+                });
+              });
+              localStorage.setItem('huasi_last_known_prop_id', String(currentMaxId));
+            }
+          }
+        } catch (propErr) {
+          // Silent catch in background
+        }
+
         isFirstCheckRef.current = false;
       } catch (err) {
         // Silent fail in background polling
@@ -114,10 +148,28 @@ export default function NotificationManager() {
     // Ejecutar verificación inicial
     checkReservationsChanges();
 
-    // Polling cada 12 segundos para detectar cambios de reservas
+    // Polling cada 12 segundos para detectar cambios de reservas y nuevos alojamientos
     const interval = setInterval(checkReservationsChanges, 12000);
     return () => clearInterval(interval);
   }, [user]);
+
+  // Escuchar evento personalizado de publicación inmediata
+  useEffect(() => {
+    const handleImmediatePropPublished = (e) => {
+      const p = e.detail;
+      if (p) {
+        notifyNewProperty({
+          propertyId: p.id,
+          propertyTitle: p.titulo || 'Nuevo Alojamiento',
+          tipo: p.tipo || 'Habitación',
+          barrio: p.barrio || '',
+          ciudad: p.ciudad || 'Santa Marta'
+        });
+      }
+    };
+    window.addEventListener('huasi:property-published', handleImmediatePropPublished);
+    return () => window.removeEventListener('huasi:property-published', handleImmediatePropPublished);
+  }, []);
 
   if (!showPrompt || permission !== 'default' || dismissed) {
     return null;

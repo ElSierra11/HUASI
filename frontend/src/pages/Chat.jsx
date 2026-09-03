@@ -82,24 +82,34 @@ export default function Chat() {
 
       // Disparar Notificación Push si el mensaje es de otro usuario y la ventana/conversación no está activa
       if (msg.sender_id !== user.id && (!isActive || document.hidden)) {
-        api.get('/chat/conversaciones')
-          .then((res) => {
-            const list = res.data || [];
-            const conv = list.find((c) => c.id === msg.conversacion_id);
-            const senderName = conv ? `${conv.otro_nombre || ''} ${conv.otro_apellido || ''}`.trim() : 'Estudiante StayU';
-            notifyChatMessage({
-              senderName: senderName || 'Usuario StayU',
-              messageText: msg.contenido,
-              conversacionId: msg.conversacion_id
-            });
-          })
-          .catch(() => {
-            notifyChatMessage({
-              senderName: 'Usuario StayU',
-              messageText: msg.contenido,
-              conversacionId: msg.conversacion_id
-            });
+        const directSender = msg.sender_nombre ? `${msg.sender_nombre} ${msg.sender_apellido || ''}`.trim() : '';
+
+        if (directSender) {
+          notifyChatMessage({
+            senderName: directSender,
+            messageText: msg.contenido,
+            conversacionId: msg.conversacion_id
           });
+        } else {
+          api.get('/chat/conversaciones')
+            .then((res) => {
+              const list = res.data || [];
+              const conv = list.find((c) => c.id === msg.conversacion_id);
+              const senderName = conv ? getOtherUserName(conv) : 'Estudiante HUASI';
+              notifyChatMessage({
+                senderName: senderName || 'Estudiante HUASI',
+                messageText: msg.contenido,
+                conversacionId: msg.conversacion_id
+              });
+            })
+            .catch(() => {
+              notifyChatMessage({
+                senderName: 'Estudiante HUASI',
+                messageText: msg.contenido,
+                conversacionId: msg.conversacion_id
+              });
+            });
+        }
       }
     });
 

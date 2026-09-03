@@ -21,7 +21,9 @@ CREATE TABLE IF NOT EXISTS users (
     otp_attempts INTEGER DEFAULT 0,
     otp_locked_until TIMESTAMP,
     otp_last_sent_at TIMESTAMP,
-    otp_resend_count INTEGER DEFAULT 0
+    otp_resend_count INTEGER DEFAULT 0,
+    reset_password_token VARCHAR(255),
+    reset_password_expires_at TIMESTAMP
 );
 
 -- Tabla de verificaciones universitarias

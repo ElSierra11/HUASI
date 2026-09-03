@@ -22,7 +22,7 @@ api.interceptors.response.use(
     const originalRequestUrl = error.config?.url;
     // Si da 401 pero era solo revisando la sesión (/auth/me), no redirigimos forzosamente
     if (error.response?.status === 401 && originalRequestUrl !== '/auth/me') {
-      const publicPaths = ['/login', '/register', '/registro', '/terminos', '/privacidad', '/quienes-somos', '/'];
+      const publicPaths = ['/login', '/register', '/registro', '/olvido-password', '/recuperar-password', '/terminos', '/privacidad', '/quienes-somos', '/'];
       const isPublic = publicPaths.includes(window.location.pathname) || window.location.pathname.startsWith('/propiedad/');
       if (!isPublic) {
         window.location.href = '/login';

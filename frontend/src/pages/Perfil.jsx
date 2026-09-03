@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { UserCircle, ShieldCheck, Mail, Phone, Edit3, Sun, ArrowUpRight, ArrowDownLeft, GraduationCap, Bell, BellRing, Check } from 'lucide-react';
 import api from '../api';
-import { getNotificationPermission, requestNotificationPermission, showPushNotification } from '../utils/notifications';
+import { getNotificationPermission, requestNotificationPermission, showPushNotification, notifyChatMessage, notifyNewProperty } from '../utils/notifications';
 
 export default function Perfil() {
   const { user, refreshUser } = useAuth();
@@ -23,9 +23,11 @@ export default function Perfil() {
   const [prefForm, setPrefForm] = useState({
     estudio: 'dia',
     ruido: 'medio',
-    mascotas: 'si',
-    visitas: 'si',
-    fumar: 'no'
+    visitas: 'moderado',
+    limpieza: 'diaria',
+    mascotas: false,
+    fumar: false,
+    descripcion_personal: ''
   });
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [prefsMsg, setPrefsMsg] = useState('');
@@ -37,30 +39,46 @@ export default function Perfil() {
     setNotifPerm(perm);
     if (perm === 'granted') {
       showPushNotification({
-        title: '🎉 Notificaciones StayU configuradas',
-        body: '¡Todo listo! Recibirás avisos de reservas y mensajes en tiempo real.',
+        title: '🎉 Notificaciones HUASI configuradas',
+        body: '¡Todo listo! Recibirás avisos de reservas, mensajes y nuevos alojamientos en tiempo real.',
         icon: '/huasi-monograma.png',
         url: '/perfil'
       });
-      setTestNotifMsg('¡Notificación de prueba enviada con éxito!');
+      setTestNotifMsg('¡Notificaciones activadas y configuradas con éxito!');
       setTimeout(() => setTestNotifMsg(''), 4000);
     }
   };
 
   const handleSendTestPush = async () => {
     const success = await showPushNotification({
-      title: '🛎️ Prueba de Notificación StayU',
-      body: 'Esta es una prueba de cómo recibirás tus alertas de reservas y mensajes.',
+      title: '🛎️ Prueba de Notificación HUASI',
+      body: 'Esta es una prueba de alerta en tiempo real en tu dispositivo.',
       icon: '/huasi-monograma.png',
-      url: '/mis-reservas'
+      url: '/perfil'
     });
-    if (success) {
-      setTestNotifMsg('¡Notificación enviada a tu dispositivo!');
-      setTimeout(() => setTestNotifMsg(''), 4000);
-    } else {
-      setTestNotifMsg('Por favor activa los permisos de notificación primero.');
-      setTimeout(() => setTestNotifMsg(''), 4000);
-    }
+    setTestNotifMsg(success ? '¡Notificación enviada a tu dispositivo!' : 'Por favor activa los permisos de notificación primero.');
+    setTimeout(() => setTestNotifMsg(''), 4000);
+  };
+
+  const handleTestChatNotif = async () => {
+    const success = await notifyChatMessage({
+      senderName: 'María Pérez (Estudiante UCC)',
+      messageText: 'Hola, ¿el alojamiento sigue disponible para la próxima semana?'
+    });
+    setTestNotifMsg(success ? '¡Notificación de chat enviada con sonido!' : 'Por favor activa los permisos de notificación primero.');
+    setTimeout(() => setTestNotifMsg(''), 4000);
+  };
+
+  const handleTestPropertyNotif = async () => {
+    const success = await notifyNewProperty({
+      propertyId: 1,
+      propertyTitle: 'Habitación Universitaria Campus Santa Marta',
+      tipo: 'Habitación privada',
+      barrio: 'Mamatoco',
+      ciudad: 'Santa Marta'
+    });
+    setTestNotifMsg(success ? '¡Notificación de nuevo alojamiento enviada con sonido!' : 'Por favor activa los permisos de notificación primero.');
+    setTimeout(() => setTestNotifMsg(''), 4000);
   };
 
   useEffect(() => {
@@ -392,14 +410,32 @@ export default function Perfil() {
               <Bell size={16} /> Activar Notificaciones Push
             </button>
           ) : (
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={handleSendTestPush}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
-            >
-              <BellRing size={16} /> Enviar notificación de prueba
-            </button>
+            <>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleSendTestPush}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+              >
+                <BellRing size={16} /> Prueba General
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleTestChatNotif}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+              >
+                💬 Probar Notificación de Chat
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleTestPropertyNotif}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+              >
+                🏠 Probar Nuevo Alojamiento
+              </button>
+            </>
           )}
         </div>
       </div>

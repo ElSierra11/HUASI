@@ -1,7 +1,15 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const pool = require('../db');
+
+// Auto-verificar columnas para recuperación de contraseñas de forma idempotente
+pool.query(`
+  ALTER TABLE users 
+  ADD COLUMN IF NOT EXISTS reset_password_token VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS reset_password_expires_at TIMESTAMP;
+`).catch(err => console.warn('Aviso al verificar columnas de password reset:', err.message));
 
 const router = express.Router();
 
@@ -155,6 +163,116 @@ const sendOtpEmailBackground = async (email, nombre, otp) => {
   } catch (err) {
     console.error('❌ [OTP EMAIL ERROR] No se pudo enviar el correo:', err.message);
     return { success: false, error: err.message };
+  }
+};
+
+const sendResetPasswordEmail = async (email, nombre, resetLink) => {
+  console.log(`📧 [Email Sending] Enviando enlace de recuperación a: ${email}`);
+
+  const htmlBody = `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h2 style="color: #0d7c3d; margin: 0; font-size: 24px; font-weight: 800;">HUASI</h2>
+        <p style="color: #64748b; font-size: 13px; margin-top: 4px; letter-spacing: 0.5px;">Hospedaje Solidario Universitario UCC</p>
+      </div>
+      
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+        <h3 style="color: #1e293b; font-size: 18px; margin: 0 0 12px 0;">Recuperación de Contraseña</h3>
+        <p style="color: #475569; font-size: 14px; line-height: 1.6; margin: 0 0 20px 0;">
+          Hola <strong>${nombre || 'Estudiante'}</strong>, recibimos una solicitud para restablecer la contraseña de tu cuenta institucional en HUASI.
+        </p>
+        
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${resetLink}" 
+             style="background: linear-gradient(135deg, #0d7c3d, #059669); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px; box-shadow: 0 4px 12px rgba(13,124,61,0.25);">
+            🔑 Restablecer mi Contraseña
+          </a>
+        </div>
+        
+        <p style="color: #64748b; font-size: 12px; margin: 16px 0 0 0; line-height: 1.5;">
+          Si el botón no funciona, haz clic o copia el siguiente enlace directo en tu navegador:<br />
+          <a href="${resetLink}" style="color: #0d7c3d; word-break: break-all; font-weight: 600;">${resetLink}</a>
+        </p>
+      </div>
+
+      <div style="padding: 12px 16px; background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; margin-bottom: 20px;">
+        <p style="color: #92400e; font-size: 12px; margin: 0; line-height: 1.5;">
+          ⏱️ <strong>Seguridad:</strong> Este enlace directo expira en <strong>60 minutos</strong> y solo puede utilizarse una vez. Si no fuiste tú quien solicitó este cambio, ignora este correo; tu cuenta continuará protegida.
+        </p>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+      <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
+        HUASI — Universidad Cooperativa de Colombia (UCC) & INDESCO<br />
+        Este es un correo automático de seguridad, por favor no respondas a este mensaje.
+      </p>
+    </div>
+  `;
+
+  // MÉTODO 1: OAuth2 REST API (Funciona en Render)
+  if (process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET && process.env.GMAIL_REFRESH_TOKEN) {
+    try {
+      console.log(`  [OAuth2] Intentando enviar correo de recuperación vía Gmail REST API...`);
+      const accessToken = await getGmailAccessToken();
+      const encodeHeader = (str) => `=?UTF-8?B?${Buffer.from(str, 'utf-8').toString('base64')}?=`;
+
+      const rawMessage = [
+        `From: ${encodeHeader('HUASI — Seguridad UCC')} <${process.env.GMAIL_USER || 'huasicorrespondencia@gmail.com'}>`,
+        `To: ${email}`,
+        `Subject: ${encodeHeader('🔑 Recuperación de Contraseña - HUASI UCC')}`,
+        `MIME-Version: 1.0`,
+        `Content-Type: text/html; charset=utf-8`,
+        `Content-Transfer-Encoding: base64`,
+        ``,
+        Buffer.from(htmlBody, 'utf-8').toString('base64'),
+      ].join('\r\n');
+
+      const encodedMessage = Buffer.from(rawMessage, 'utf-8').toString('base64url');
+
+      const gmailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ raw: encodedMessage }),
+      });
+
+      const result = await gmailRes.json();
+      if (!gmailRes.ok) {
+        throw new Error(result.error?.message || 'Error enviando email via Gmail API');
+      }
+
+      console.log(`✅ [Gmail OAuth2 API] Email de recuperación enviado con éxito. Id: ${result.id}`);
+      return result;
+    } catch (oauthErr) {
+      console.warn(`⚠️ [OAuth2 Error] ${oauthErr.message}`);
+    }
+  }
+
+  // MÉTODO 2: SMTP con Nodemailer
+  try {
+    console.log(`  [SMTP] Intentando enviar correo de recuperación vía SMTP...`);
+    const transporter = createSmtpTransporter();
+    const senderEmail = process.env.SMTP_USER || process.env.GMAIL_USER || 'huasicorrespondencia@gmail.com';
+
+    const sendPromise = transporter.sendMail({
+      from: `"HUASI — Seguridad UCC" <${senderEmail}>`,
+      to: email,
+      subject: '🔑 Recuperación de Contraseña - HUASI UCC',
+      html: htmlBody,
+    });
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('SMTP timeout: Render bloquea puertos SMTP')), 8000)
+    );
+
+    const info = await Promise.race([sendPromise, timeoutPromise]);
+    console.log(`✅ [SMTP] Email de recuperación enviado a ${email}. Id: ${info.messageId}`);
+    return info;
+  } catch (smtpErr) {
+    console.error(`❌ [SMTP Error] ${smtpErr.message}`);
+    throw new Error(`No se pudo enviar el correo de recuperación: ${smtpErr.message}`);
   }
 };
 
@@ -464,6 +582,131 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+
+// ============ SOLICITAR RECUPERACIÓN DE CONTRASEÑA ============
+router.post('/olvido-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.trim()) {
+      return res.status(400).json({ error: 'El correo electrónico es obligatorio' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Validar formato de correo institucional
+    const allowedDomains = ['campusucc.edu.co', 'ucc.edu.co'];
+    const domain = cleanEmail.split('@')[1];
+    if (!allowedDomains.includes(domain)) {
+      return res.status(400).json({
+        error: 'El correo debe pertenecer a @campusucc.edu.co o @ucc.edu.co'
+      });
+    }
+
+    const userRes = await pool.query('SELECT id, nombre, email FROM users WHERE LOWER(email) = $1', [cleanEmail]);
+
+    if (userRes.rows.length === 0) {
+      // Por privacidad y seguridad, responder con mensaje general sin revelar si el correo existe
+      return res.json({
+        message: 'Si el correo ingresado está registrado en HUASI, recibirás un enlace seguro para restablecer tu contraseña en los próximos minutos.'
+      });
+    }
+
+    const user = userRes.rows[0];
+    const token = crypto.randomBytes(32).toString('hex');
+
+    // Guardar token con expiración de 1 hora
+    await pool.query(
+      `UPDATE users 
+       SET reset_password_token = $1, reset_password_expires_at = NOW() + INTERVAL '1 hour'
+       WHERE id = $2`,
+      [token, user.id]
+    );
+
+    // Determinar la URL del frontend para el enlace directo
+    let baseUrl = req.headers.origin || req.headers.referer;
+    if (baseUrl) {
+      try {
+        const parsed = new URL(baseUrl);
+        baseUrl = parsed.origin;
+      } catch (e) {}
+    }
+    if (!baseUrl || baseUrl.includes('localhost:4000') || baseUrl.includes('localhost:4001')) {
+      baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    }
+
+    const resetLink = `${baseUrl}/recuperar-password?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
+    console.log(`🔗 [Reset Password Link] Enlace generado para ${cleanEmail}: ${resetLink}`);
+
+    // Enviar correo electrónico
+    try {
+      await sendResetPasswordEmail(cleanEmail, user.nombre, resetLink);
+    } catch (mailErr) {
+      console.error('Error enviando correo de recuperación:', mailErr.message);
+    }
+
+    res.json({
+      message: 'Si el correo ingresado está registrado en HUASI, recibirás un enlace seguro para restablecer tu contraseña en los próximos minutos.'
+    });
+  } catch (err) {
+    console.error('Error en /olvido-password:', err);
+    res.status(500).json({ error: 'Error interno al procesar la solicitud de recuperación' });
+  }
+});
+
+// ============ RESTABLECER CONTRASEÑA CON TOKEN ============
+router.post('/recuperar-password', async (req, res) => {
+  try {
+    const { token, email, nuevo_password } = req.body;
+
+    if (!token || !email || !nuevo_password) {
+      return res.status(400).json({ error: 'Token, correo y nueva contraseña son obligatorios' });
+    }
+
+    if (nuevo_password.length < 6) {
+      return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Buscar usuario con el token correspondiente
+    const userRes = await pool.query(
+      `SELECT id, nombre, email, reset_password_expires_at 
+       FROM users 
+       WHERE LOWER(email) = $1 AND reset_password_token = $2`,
+      [cleanEmail, token]
+    );
+
+    if (userRes.rows.length === 0) {
+      return res.status(400).json({ error: 'El enlace de recuperación no es válido o ya fue utilizado.' });
+    }
+
+    const user = userRes.rows[0];
+
+    // Verificar si ya expiró (más de 1 hora)
+    if (new Date(user.reset_password_expires_at) < new Date()) {
+      return res.status(400).json({ error: 'El enlace de recuperación ha expirado. Por favor solicita uno nuevo.' });
+    }
+
+    // Hashear nueva contraseña
+    const passwordHash = await bcrypt.hash(nuevo_password, 10);
+
+    // Actualizar contraseña e invalidar el token de un solo uso
+    await pool.query(
+      `UPDATE users 
+       SET password_hash = $1, reset_password_token = NULL, reset_password_expires_at = NULL, updated_at = NOW()
+       WHERE id = $2`,
+      [passwordHash, user.id]
+    );
+
+    console.log(`✅ [Password Reset] Contraseña restablecida con éxito para ${cleanEmail}`);
+
+    res.json({ message: '¡Tu contraseña ha sido restablecida exitosamente! Ya puedes iniciar sesión con tu nueva clave.' });
+  } catch (err) {
+    console.error('Error en /recuperar-password:', err);
+    res.status(500).json({ error: 'Error interno del servidor al restablecer contraseña' });
+  }
+});
+
 
 // ============ LOGOUT ============
 router.post('/logout', (req, res) => {

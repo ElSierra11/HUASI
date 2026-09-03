@@ -128,29 +128,44 @@ export default function ChatWidget() {
       });
 
       // Update global unread count and trigger push notification
-      if (msg.sender_id !== user.id && !isActive) {
+      if (msg.sender_id !== user.id && (!isActive || document.hidden)) {
         setUnreadTotal(prev => prev + 1);
         
-        // Disparar Notificación Push del Sistema
-        api.get('/chat/conversaciones')
-          .then(res => {
-            const list = res.data || [];
-            const conv = list.find(c => c.id === msg.conversacion_id);
-            const senderName = conv ? `${conv.otro_nombre || ''} ${conv.otro_apellido || ''}`.trim() : 'Estudiante StayU';
-            notifyChatMessage({
-              senderName: senderName || 'Usuario StayU',
-              messageText: msg.contenido,
-              conversacionId: msg.conversacion_id
-            });
-          })
-          .catch(() => {
-            notifyChatMessage({
-              senderName: 'Usuario StayU',
-              messageText: msg.contenido,
-              conversacionId: msg.conversacion_id
-            });
+        // Extraer nombre real del remitente directamente del mensaje
+        const directSender = msg.sender_nombre ? `${msg.sender_nombre} ${msg.sender_apellido || ''}`.trim() : '';
+
+        if (directSender) {
+          notifyChatMessage({
+            senderName: directSender,
+            messageText: msg.contenido,
+            conversacionId: msg.conversacion_id
           });
+        } else {
+          api.get('/chat/conversaciones')
+            .then(res => {
+              const list = res.data || [];
+              const conv = list.find(c => c.id === msg.conversacion_id);
+              const senderName = conv ? getOtherUserName(conv) : 'Estudiante HUASI';
+              notifyChatMessage({
+                senderName: senderName || 'Estudiante HUASI',
+                messageText: msg.contenido,
+                conversacionId: msg.conversacion_id
+              });
+            })
+            .catch(() => {
+              notifyChatMessage({
+                senderName: 'Estudiante HUASI',
+                messageText: msg.contenido,
+                conversacionId: msg.conversacion_id
+              });
+            });
+        }
       }
+    });
+
+    // Escuchar evento en tiempo real de nuevo alojamiento publicado
+    socket.on('new_property_published', (propertyData) => {
+      window.dispatchEvent(new CustomEvent('huasi:property-published', { detail: propertyData }));
     });
 
     socket.on('user_typing', (data) => {

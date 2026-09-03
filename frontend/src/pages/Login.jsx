@@ -128,6 +128,20 @@ export default function Login() {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+              <Link 
+                to="/olvido-password" 
+                style={{ 
+                  fontSize: '0.84rem', 
+                  color: 'var(--ucc-green)', 
+                  fontWeight: 600,
+                  textDecoration: 'none'
+                }}
+                className="hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
           </div>
 
           <button

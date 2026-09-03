@@ -77,12 +77,51 @@ export async function showPushNotification({
   }
 }
 
+// Reproducir sonido sutil y armónico de notificación usando Web Audio API nativa
+export function playNotificationSound() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    
+    // Tono 1 (880Hz - La5)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(880, ctx.currentTime);
+    gain1.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(ctx.currentTime);
+    osc1.stop(ctx.currentTime + 0.35);
+
+    // Tono 2 (1318.5Hz - Mi6) armonioso
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1318.5, ctx.currentTime + 0.08);
+    gain2.gain.setValueAtTime(0.1, ctx.currentTime + 0.08);
+    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(ctx.currentTime + 0.08);
+    osc2.stop(ctx.currentTime + 0.5);
+  } catch (err) {
+    // Si el navegador requiere interacción de usuario previa
+  }
+}
+
 // Notificación especializada: Nuevo mensaje de chat
 export async function notifyChatMessage({ senderName = 'Usuario', messageText = '', conversacionId = null }) {
+  playNotificationSound();
   const shortText = messageText.length > 80 ? messageText.substring(0, 80) + '...' : messageText;
   return showPushNotification({
-    title: `💬 Nuevo mensaje de ${senderName}`,
-    body: shortText || 'Te ha enviado un nuevo mensaje en StayU.',
+    title: `💬 Mensaje de ${senderName}`,
+    body: shortText || 'Te ha escrito un nuevo mensaje en HUASI.',
     icon: '/huasi-monograma.png',
     url: conversacionId ? `/chat` : '/chat',
     tag: `chat-${conversacionId || 'msg'}`,
@@ -90,9 +129,24 @@ export async function notifyChatMessage({ senderName = 'Usuario', messageText = 
   });
 }
 
+// Notificación especializada: Publicación de nuevo alojamiento
+export async function notifyNewProperty({ propertyId, propertyTitle = 'Alojamiento Universitario', tipo = 'Habitación', barrio = '', ciudad = 'Santa Marta' }) {
+  playNotificationSound();
+  const ubicacion = barrio ? `${barrio}, ${ciudad}` : ciudad;
+  return showPushNotification({
+    title: '🏠 ¡Nuevo alojamiento en HUASI!',
+    body: `"${propertyTitle}" (${tipo}) está disponible en ${ubicacion}. ¡Toca para ver detalles y reservar!`,
+    icon: '/huasi-monograma.png',
+    url: propertyId ? `/propiedad/${propertyId}` : '/',
+    tag: `propiedad-nueva-${propertyId || Date.now()}`,
+    data: { url: propertyId ? `/propiedad/${propertyId}` : '/' }
+  });
+}
+
 // Notificación especializada: Cambio de estado en reserva (Aceptada / Rechazada / Completada)
 export async function notifyBookingStatusChange({ estado, propertyTitle = 'Alojamiento', hostName = '' }) {
-  let title = 'StayU — Actualización de Reserva';
+  playNotificationSound();
+  let title = 'HUASI — Actualización de Reserva';
   let body = `Tu solicitud para "${propertyTitle}" ha sido actualizada.`;
 
   if (estado === 'aceptada') {
@@ -118,6 +172,7 @@ export async function notifyBookingStatusChange({ estado, propertyTitle = 'Aloja
 
 // Notificación especializada: Nueva solicitud de reserva para el Anfitrión
 export async function notifyNewBookingRequest({ guestName = 'Un estudiante', propertyTitle = 'tu alojamiento' }) {
+  playNotificationSound();
   return showPushNotification({
     title: '🛎️ ¡Nueva solicitud de hospedaje!',
     body: `${guestName} ha solicitado reservar "${propertyTitle}". Revisa y responde en tu panel.`,
@@ -127,3 +182,4 @@ export async function notifyNewBookingRequest({ guestName = 'Un estudiante', pro
     data: { url: '/host/reservas' }
   });
 }
+
