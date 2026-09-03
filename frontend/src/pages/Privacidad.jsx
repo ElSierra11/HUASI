@@ -37,10 +37,10 @@ export default function Privacidad() {
             <EyeOff size={20} color="var(--danger)" /> Datos Privados y Protegidos
           </h2>
           <p style={{ marginBottom: 12 }}>
-            Esta información está estrictamente protegida y **no se revela al público general**, a menos que se concrete y apruebe una reserva entre ambas partes:
+            Esta información está estrictamente protegida y no se revela al público general, a menos que se concrete y apruebe una reserva entre ambas partes:
           </p>
           <ul style={{ paddingLeft: 20, display: 'grid', gap: 8, marginBottom: 12 }}>
-            <li><strong>Correo institucional y teléfono celular:</strong> Se comparten únicamente con el anfitrión/huésped una vez que una solicitud de reserva ha sido **aprobada** oficialmente.</li>
+            <li><strong>Correo institucional y teléfono celular:</strong> Se comparten únicamente con el anfitrión/huésped una vez que una solicitud de reserva ha sido <strong>aprobada</strong> oficialmente.</li>
             <li><strong>Documentos de verificación (carnet / cédula):</strong> Son estrictamente confidenciales y accesibles solo por el equipo administrativo del panel de HUASI para el proceso de validación. Nunca serán publicados en el portal.</li>
             <li><strong>Contraseña de acceso:</strong> Está cifrada en nuestra base de datos mediante algoritmos unidireccionales (bcrypt) de alta seguridad, haciéndola inaccesible inclusive para los administradores.</li>
           </ul>

@@ -106,7 +106,7 @@ export default function Register() {
     return () => clearInterval(timer);
   }, [step, timeLeft]);
 
-  // Countdown de redireccion en paso 3
+  // Countdown de redirección en paso 3
   useEffect(() => {
     if (step !== 3) return;
     if (countdown <= 0) {
