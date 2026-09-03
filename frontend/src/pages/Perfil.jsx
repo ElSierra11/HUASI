@@ -364,7 +364,7 @@ export default function Perfil() {
       <div className="card" style={{ padding: 40, marginTop: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 12 }}>
           <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-            <BellRing size={24} className="text-ucc-green" /> Notificaciones Push del Sistema (PWA)
+            <BellRing size={24} className="text-ucc-green" /> Notificaciones Push del Sistema
           </h3>
           <span className={`badge ${notifPerm === 'granted' ? 'badge-verificado' : 'badge-pendiente'}`} style={{ fontSize: '0.78rem' }}>
             {notifPerm === 'granted' ? 'Activadas en este dispositivo' : 'Permiso pendiente'}

@@ -90,11 +90,11 @@ export default function PwaInstallBanner() {
 
   return (
     <>
-      {/* Banner flotante discreto de instalación rápida */}
-      <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-40 animate-fade-in">
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-emerald-500/30 flex items-center justify-between gap-3 text-slate-800 dark:text-white">
+      {/* Banner flotante discreto de instalación rápida (ubicado a la izquierda para no chocar con PQR ni chat) */}
+      <div className="fixed bottom-24 md:bottom-6 left-4 right-4 md:right-auto md:left-6 md:max-w-sm z-40 animate-fade-in">
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3.5 rounded-2xl shadow-2xl border border-emerald-500/30 flex items-center justify-between gap-3 text-slate-800 dark:text-white">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-12 h-12 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-800">
+            <div className="w-11 h-11 rounded-xl bg-white p-1 shadow-md flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-800">
               <img src="/huasi-monograma.png" alt="HUASI" className="w-full h-full object-contain" />
             </div>
             <div className="min-w-0">
@@ -103,11 +103,11 @@ export default function PwaInstallBanner() {
                   Instalar HUASI
                 </span>
                 <span className="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                  App PWA
+                  Gratis
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                Acceso directo rápido y modo sin conexión
+                Acceso directo rápido a tus alojamientos
               </p>
             </div>
           </div>
