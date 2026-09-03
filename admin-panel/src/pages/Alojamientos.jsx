@@ -21,7 +21,8 @@ import {
   FileText,
   Loader2,
   X,
-  Download
+  Download,
+  Trash2
 } from 'lucide-react';
 import api from '../api';
 import { useToast } from '../components/Toast';
@@ -62,6 +63,30 @@ export default function Alojamientos({ onActionFinished }) {
     action: null,
     processing: false
   });
+
+  // Modal para eliminar definitivamente un alojamiento
+  const [deleteModal, setDeleteModal] = useState({
+    open: false,
+    propId: null,
+    propTitle: null,
+    processing: false
+  });
+
+  const handleDeleteProperty = async () => {
+    if (!deleteModal.propId) return;
+    setDeleteModal(prev => ({ ...prev, processing: true }));
+    try {
+      await api.delete(`/propiedades/${deleteModal.propId}`);
+      showToast('Alojamiento eliminado exitosamente', 'success');
+      setAlojamientos(prev => prev.filter(p => p.id !== deleteModal.propId));
+      setDeleteModal({ open: false, propId: null, propTitle: null, processing: false });
+      if (onActionFinished) onActionFinished();
+    } catch (err) {
+      console.error('Error eliminando alojamiento:', err);
+      showToast(err.response?.data?.error || 'Error al eliminar el alojamiento', 'error');
+      setDeleteModal(prev => ({ ...prev, processing: false }));
+    }
+  };
 
   useEffect(() => {
     fetchAlojamientos();
@@ -518,6 +543,20 @@ export default function Alojamientos({ onActionFinished }) {
                           {p.activo ? <Ban size={14} /> : <Unlock size={14} />}
                         </button>
                       )}
+
+                      <button
+                        onClick={() => setDeleteModal({
+                          open: true,
+                          propId: p.id,
+                          propTitle: p.titulo,
+                          processing: false
+                        })}
+                        className="btn btn-danger"
+                        style={{ fontSize: '0.8rem', padding: '6px 10px', display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: '6px', background: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.25)' }}
+                        title="Eliminar alojamiento permanentemente"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -777,6 +816,57 @@ export default function Alojamientos({ onActionFinished }) {
               >
                 {toggleModal.processing && <Loader2 size={14} className="animate-spin" />}
                 {toggleModal.action === 'desactivar' ? 'Sí, dar de baja' : 'Sí, activar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmación Eliminar Alojamiento */}
+      {deleteModal.open && (
+        <div className="modal-overlay" onClick={() => !deleteModal.processing && setDeleteModal(prev => ({ ...prev, open: false }))}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px', padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <Trash2 size={24} color="var(--danger)" />
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: 'var(--danger)' }}>
+                Eliminar Alojamiento
+              </h3>
+            </div>
+
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6, margin: '0 0 16px 0' }}>
+              ¿Estás seguro de que deseas eliminar permanentemente el alojamiento <strong>"{deleteModal.propTitle}"</strong> (ID: {deleteModal.propId})?
+            </p>
+
+            <div style={{
+              background: '#fef2f2',
+              border: '1px solid #fee2e2',
+              borderRadius: '6px',
+              padding: '10px 14px',
+              marginBottom: 20,
+              fontSize: '0.82rem',
+              color: '#991b1b',
+              lineHeight: 1.5
+            }}>
+              ⚠️ <strong>Advertencia:</strong> Esta acción es irreversible. Se eliminarán permanentemente el registro del alojamiento, su disponibilidad, reservas asociadas y reseñas vinculadas.
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button 
+                className="btn" 
+                onClick={() => setDeleteModal(prev => ({ ...prev, open: false }))}
+                disabled={deleteModal.processing}
+                style={{ background: 'var(--border)', color: 'var(--text)', fontSize: '0.85rem' }}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn btn-danger"
+                onClick={handleDeleteProperty}
+                disabled={deleteModal.processing}
+                style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
+              >
+                {deleteModal.processing && <Loader2 size={14} className="animate-spin" />}
+                {deleteModal.processing ? 'Eliminando...' : 'Sí, eliminar permanentemente'}
               </button>
             </div>
           </div>

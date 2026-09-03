@@ -17,11 +17,13 @@ import {
   ShieldCheck,
   Clock,
   AlertTriangle,
-  XCircle
+  XCircle,
+  Trash2
 } from 'lucide-react';
 import { ReservationCardSkeleton } from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
 import api from '../api';
+import HuasiAlert from '../utils/alerts';
 
 const getNormalizedTipo = (tipo) => {
   if (!tipo) return 'otro';
@@ -99,6 +101,24 @@ export default function HostDashboard() {
     } catch (err) {
       console.error('Error al volver a publicar:', err);
       alert('Error al volver a publicar la propiedad.');
+    }
+  };
+
+  const handleEliminar = async (p) => {
+    const res = await HuasiAlert.confirm(
+      '¿Eliminar este alojamiento?',
+      `¿Estás seguro de que deseas eliminar permanentemente "${p.titulo}"? Esta acción borrará todas sus reservas y no se puede deshacer.`,
+      'Sí, eliminar'
+    );
+    if (res.isConfirmed) {
+      try {
+        await api.delete(`/propiedades/${p.id}`);
+        HuasiAlert.toast('Alojamiento eliminado exitosamente', 'success');
+        setPropiedades(prev => prev.filter(item => item.id !== p.id));
+      } catch (err) {
+        console.error('Error al eliminar alojamiento:', err);
+        HuasiAlert.error('Error', err.response?.data?.error || 'No se pudo eliminar el alojamiento.');
+      }
     }
   };
 
@@ -329,6 +349,14 @@ export default function HostDashboard() {
                       )}
                       <Link to={`/propiedad/${p.id}`} className="btn btn-outline btn-sm">Ver anuncio</Link>
                       <Link to={`/host/editar/${p.id}`} className="btn btn-secondary btn-sm"><Edit size={14} /> Editar</Link>
+                      <button
+                        className="btn btn-sm"
+                        style={{ color: '#dc2626', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                        onClick={() => handleEliminar(p)}
+                        title="Eliminar alojamiento"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
 

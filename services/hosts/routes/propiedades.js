@@ -790,5 +790,59 @@ router.post('/:id/reportar', async (req, res) => {
   }
 });
 
+// ============ ELIMINAR PROPIEDAD (ADMIN O HOST PROPIETARIO) ============
+router.delete('/:id', async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'No autenticado' });
+    }
+
+    const { id } = req.params;
+
+    const propRes = await pool.query('SELECT * FROM propiedades WHERE id = $1', [id]);
+    if (propRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Alojamiento no encontrado' });
+    }
+
+    const propiedad = propRes.rows[0];
+
+    // Solo el anfitrión dueño o un administrador pueden eliminar la propiedad
+    if (Number(propiedad.host_id) !== Number(req.user.id) && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'No tienes permisos para eliminar este alojamiento' });
+    }
+
+    // Limpiar dependencias en cascada
+    try {
+      await pool.query('DELETE FROM resenas WHERE propiedad_id = $1', [id]);
+    } catch (e) {
+      console.warn('Nota: Limpiando reseñas asociadas:', e.message);
+    }
+    try {
+      await pool.query('DELETE FROM reportes WHERE propiedad_id = $1', [id]);
+    } catch (e) {
+      console.warn('Nota: Limpiando reportes asociados:', e.message);
+    }
+    try {
+      await pool.query('DELETE FROM disponibilidad WHERE propiedad_id = $1', [id]);
+    } catch (e) {
+      console.warn('Nota: Limpiando disponibilidad asociada:', e.message);
+    }
+    try {
+      await pool.query('DELETE FROM reservas WHERE propiedad_id = $1', [id]);
+    } catch (e) {
+      console.warn('Nota: Limpiando reservas asociadas:', e.message);
+    }
+
+    await pool.query('DELETE FROM propiedades WHERE id = $1', [id]);
+
+    console.log(`🗑️ [Alojamiento Eliminado] ID: ${id} ("${propiedad.titulo}") por usuario ID: ${req.user.id} (${req.user.role})`);
+
+    res.json({ message: 'Alojamiento eliminado exitosamente', id: parseInt(id, 10) });
+  } catch (err) {
+    console.error('Error eliminando alojamiento:', err);
+    res.status(500).json({ error: 'Error interno del servidor al eliminar el alojamiento' });
+  }
+});
+
 module.exports = router;
 
