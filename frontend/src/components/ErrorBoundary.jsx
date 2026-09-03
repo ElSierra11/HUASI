@@ -37,6 +37,10 @@ export default class ErrorBoundary extends React.Component {
 
   handleGoHome = () => {
     this.setState({ hasError: false, error: null });
+    try {
+      const u = localStorage.getItem('stayu_user');
+      if (u === 'undefined' || u === 'null') localStorage.removeItem('stayu_user');
+    } catch {}
     window.location.href = '/';
   };
 

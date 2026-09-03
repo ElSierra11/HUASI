@@ -15,8 +15,14 @@ function decodeJwt(token) {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('stayu_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('stayu_user');
+      if (!saved || saved === 'undefined' || saved === 'null') return null;
+      return JSON.parse(saved);
+    } catch (e) {
+      localStorage.removeItem('stayu_user');
+      return null;
+    }
   });
   const [loading, setLoading] = useState(true);
 
@@ -27,18 +33,24 @@ export function AuthProvider({ children }) {
 
     api.get('/auth/me')
       .then(res => {
-        setUser(res.data);
-        localStorage.setItem('stayu_user', JSON.stringify(res.data));
+        if (res.data && typeof res.data === 'object' && res.data.id) {
+          setUser(res.data);
+          localStorage.setItem('stayu_user', JSON.stringify(res.data));
+        }
       })
       .catch(() => {
         // Si /me falla, verificar si hay token válido (no expirado) en localStorage
-        if (token && savedUser) {
-          const decoded = decodeJwt(token);
-          if (decoded && decoded.exp * 1000 > Date.now()) {
-            // El token todavía es válido — mantener la sesión local
-            setUser(JSON.parse(savedUser));
-          } else {
-            // Token expirado o inválido — cerrar sesión
+        if (token && savedUser && savedUser !== 'undefined' && savedUser !== 'null') {
+          try {
+            const decoded = decodeJwt(token);
+            if (decoded && decoded.exp * 1000 > Date.now()) {
+              setUser(JSON.parse(savedUser));
+            } else {
+              setUser(null);
+              localStorage.removeItem('stayu_user');
+              localStorage.removeItem('stayu_token');
+            }
+          } catch {
             setUser(null);
             localStorage.removeItem('stayu_user');
             localStorage.removeItem('stayu_token');
