@@ -5,3 +5,9 @@ runConfig:
   concurrency: 80
   cpu: 1
   memoryMiB: 512
+
+env:
+  - variable: BACKEND_URL
+    value: "https://huasi.onrender.com"
+    availability:
+      - RUNTIME

@@ -35,7 +35,7 @@ export default function Login() {
     try {
       await login(form.email, form.password);
       HuasiAlert.toast('¡Bienvenido a HUASI!', 'success');
-      navigate('/');
+      navigate('/perfil');
     } catch (err) {
       const msg = err.response?.status === 401
         ? 'Credenciales incorrectas. Por favor, verifica tu correo y contraseña.'

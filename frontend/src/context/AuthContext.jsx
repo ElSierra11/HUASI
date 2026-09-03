@@ -53,6 +53,9 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
+    if (!res.data || typeof res.data !== 'object' || !res.data.user) {
+      throw new Error(res.data?.error || 'Respuesta inválida del servidor de autenticación');
+    }
     setUser(res.data.user);
     localStorage.setItem('stayu_user', JSON.stringify(res.data.user));
     if (res.data.token) {
@@ -68,6 +71,9 @@ export function AuthProvider({ children }) {
 
   const verifyOtp = async (email, otp) => {
     const res = await api.post('/auth/verify-otp', { email, otp });
+    if (!res.data || typeof res.data !== 'object' || !res.data.user) {
+      throw new Error(res.data?.error || 'Respuesta inválida al verificar el código');
+    }
     setUser(res.data.user);
     localStorage.setItem('stayu_user', JSON.stringify(res.data.user));
     if (res.data.token) {
