@@ -35,9 +35,18 @@ export default function OlvidoPassword() {
       setSubmitted(true);
       HuasiAlert.toast('Enlace de recuperación enviado', 'success');
     } catch (err) {
-      const msg = err.response?.data?.error || 'Ocurrió un error al procesar tu solicitud. Por favor intenta de nuevo.';
+      let msg = err.response?.data?.error;
+      if (!msg) {
+        if (err.response?.status === 404) {
+          msg = 'El servidor backend se está actualizando con el último despliegue en Render. Por favor espera unos instantes y vuelve a intentar.';
+        } else if (err.response?.status === 502 || err.response?.status === 504) {
+          msg = 'El servidor se está iniciando (cold-start). Por favor espera 30 segundos y vuelve a intentar.';
+        } else {
+          msg = 'Ocurrió un error al procesar tu solicitud. Por favor intenta de nuevo en un momento.';
+        }
+      }
       setError(msg);
-      HuasiAlert.error('Error', msg);
+      HuasiAlert.error('Aviso', msg);
     } finally {
       setLoading(false);
     }
