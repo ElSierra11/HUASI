@@ -1203,19 +1203,25 @@ router.patch('/admin/usuarios/:id/bloquear', async (req, res) => {
 
 // ============ ADMIN: ELIMINAR USUARIO ============
 router.delete('/admin/usuarios/:id', async (req, res) => {
+  let client;
   try {
     if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Acceso denegado' });
+      return res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de administrador.' });
     }
 
     const { id } = req.params;
+    const targetId = parseInt(id, 10);
+
+    if (isNaN(targetId)) {
+      return res.status(400).json({ error: 'ID de usuario inválido' });
+    }
 
     // Evitar que el admin se elimine a sí mismo
-    if (parseInt(id) === req.user.id) {
+    if (targetId === req.user.id) {
       return res.status(400).json({ error: 'No puedes eliminar tu propia cuenta de administrador' });
     }
 
-    const userCheck = await pool.query('SELECT id, email, role FROM users WHERE id = $1', [id]);
+    const userCheck = await pool.query('SELECT id, email, role FROM users WHERE id = $1', [targetId]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -1224,13 +1230,111 @@ router.delete('/admin/usuarios/:id', async (req, res) => {
       return res.status(403).json({ error: 'No puedes eliminar otra cuenta de administrador' });
     }
 
-    // Eliminar usuario (ON DELETE CASCADE en DB se encarga del resto)
-    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    client = await pool.connect();
+    await client.query('BEGIN');
 
-    res.json({ message: `Cuenta de ${userCheck.rows[0].email} eliminada permanentemente.` });
+    const safeExec = async (sql, params = []) => {
+      try {
+        await client.query(sql, params);
+      } catch (e) {
+        console.warn(`[SafeCleanup Warning] ${e.message}`);
+      }
+    };
+
+    // 1. Desvincular usuario como revisor/auditor en tablas que puedan referenciarlo
+    await safeExec('UPDATE verificaciones SET revisado_por = NULL WHERE revisado_por = $1', [targetId]);
+    await safeExec('UPDATE propiedades SET revisado_por = NULL WHERE revisado_por = $1', [targetId]);
+    await safeExec('UPDATE reportes SET revisado_por = NULL WHERE revisado_por = $1', [targetId]);
+
+    // 2. Reportes asociados al usuario (reportador, reportado o sobre sus alojamientos)
+    await safeExec('DELETE FROM reportes WHERE reportador_id = $1 OR reportado_id = $1', [targetId]);
+    await safeExec('DELETE FROM reportes WHERE propiedad_id IN (SELECT id FROM propiedades WHERE host_id = $1)', [targetId]);
+
+    // 3. Reseñas asociadas (autor, destinatario, o de propiedades/reservas del usuario)
+    await safeExec('DELETE FROM resenas WHERE autor_id = $1 OR destino_id = $1', [targetId]);
+    await safeExec('DELETE FROM resenas WHERE propiedad_id IN (SELECT id FROM propiedades WHERE host_id = $1)', [targetId]);
+    await safeExec('DELETE FROM resenas WHERE reserva_id IN (SELECT id FROM reservas WHERE guest_id = $1)', [targetId]);
+
+    // 4. Transacciones de Soles (puntos solidarios)
+    await safeExec('DELETE FROM soles_transacciones WHERE user_id = $1', [targetId]);
+    await safeExec('DELETE FROM soles_transacciones WHERE reserva_id IN (SELECT id FROM reservas WHERE guest_id = $1)', [targetId]);
+    await safeExec(`DELETE FROM soles_transacciones WHERE reserva_id IN (
+      SELECT r.id FROM reservas r JOIN propiedades p ON r.propiedad_id = p.id WHERE p.host_id = $1
+    )`, [targetId]);
+
+    // 5. Reservas (como huésped o recibidas en sus propiedades)
+    await safeExec('DELETE FROM reservas WHERE guest_id = $1', [targetId]);
+    await safeExec('DELETE FROM reservas WHERE propiedad_id IN (SELECT id FROM propiedades WHERE host_id = $1)', [targetId]);
+
+    // 6. Disponibilidad de propiedades
+    await safeExec('DELETE FROM disponibilidad WHERE propiedad_id IN (SELECT id FROM propiedades WHERE host_id = $1)', [targetId]);
+
+    // 7. Mensajes y conversaciones del chat
+    await safeExec('DELETE FROM mensajes WHERE sender_id = $1', [targetId]);
+    await safeExec(`DELETE FROM mensajes WHERE conversacion_id IN (
+      SELECT id FROM conversaciones WHERE user1_id = $1 OR user2_id = $1
+    )`, [targetId]);
+    await safeExec('DELETE FROM conversaciones WHERE user1_id = $1 OR user2_id = $1', [targetId]);
+
+    // 8. Actividades registradas del usuario
+    await safeExec('DELETE FROM user_actividades WHERE user_id = $1', [targetId]);
+
+    // 9. Verificaciones estudiantiles del usuario
+    await safeExec('DELETE FROM verificaciones WHERE user_id = $1', [targetId]);
+
+    // 10. Propiedades publicadas por el anfitrión
+    await safeExec('DELETE FROM propiedades WHERE host_id = $1', [targetId]);
+
+    // 11. Limpieza dinámica adicional de cualquier Foreign Key restante apuntando a users(id)
+    try {
+      const fkQuery = await client.query(`
+        SELECT 
+          tc.table_name, 
+          kcu.column_name,
+          c.is_nullable
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu 
+          ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+        JOIN information_schema.constraint_column_usage ccu 
+          ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema
+        JOIN information_schema.columns c 
+          ON c.table_name = tc.table_name AND c.column_name = kcu.column_name AND c.table_schema = tc.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY' 
+          AND ccu.table_name = 'users'
+          AND tc.table_name != 'users';
+      `);
+
+      for (const fk of fkQuery.rows) {
+        if (fk.is_nullable === 'YES') {
+          await safeExec(`UPDATE ${fk.table_name} SET ${fk.column_name} = NULL WHERE ${fk.column_name} = $1`, [targetId]);
+        } else {
+          await safeExec(`DELETE FROM ${fk.table_name} WHERE ${fk.column_name} = $1`, [targetId]);
+        }
+      }
+    } catch (e) {
+      console.warn('[DynamicFK Cleanup Warning]', e.message);
+    }
+
+    // 12. Finalmente, eliminar de users
+    await client.query('DELETE FROM users WHERE id = $1', [targetId]);
+
+    await client.query('COMMIT');
+
+    console.log(`🗑️ [ADMIN] Cuenta de ${userCheck.rows[0].email} (ID: ${targetId}) eliminada permanentemente.`);
+    res.json({ success: true, message: `Cuenta de ${userCheck.rows[0].email} eliminada permanentemente.` });
   } catch (err) {
+    if (client) {
+      await client.query('ROLLBACK').catch(() => {});
+    }
     console.error('Error eliminando usuario:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    res.status(500).json({ 
+      error: 'Error al eliminar usuario en la base de datos',
+      detail: err.message || err.detail 
+    });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
