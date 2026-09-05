@@ -46,6 +46,19 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'auth' });
 });
 
+// Auto-verificar cuentas pendientes reportadas (idempotente)
+const pool = require('./db');
+pool.query(`
+  UPDATE users 
+  SET email_verificado = TRUE, verificado = TRUE, otp_code = NULL, otp_expires_at = NULL 
+  WHERE LOWER(email) = 'freddy.castron@campusucc.edu.co';
+`).then(r => {
+  if (r.rowCount > 0) {
+    console.log('✅ [AUTO-VERIFY] Cuenta de Freddy Castro (freddy.castron@campusucc.edu.co) verificada automáticamente.');
+  }
+}).catch(err => console.warn('Aviso auto-verificación:', err.message));
+
 app.listen(PORT, () => {
-  console.log(`🔐 Auth Service corriendo en puerto ${PORT} (Gmail OAuth2 & OTP activos)`);
+  console.log(`🔐 Auth Service corriendo en puerto ${PORT} (Brevo / Resend / OAuth2 & OTP activos)`);
 });
+

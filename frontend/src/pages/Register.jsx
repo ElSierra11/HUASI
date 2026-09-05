@@ -93,15 +93,13 @@ export default function Register() {
     }));
   }, [form.email]);
 
-  // Timer del OTP
+  // Cooldown del botón de reenvío de OTP (30s)
   useEffect(() => {
     let timer;
     if (step === 2 && timeLeft > 0) {
       timer = setInterval(() => {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
-    } else if (timeLeft === 0 && step === 2) {
-      setError('El código OTP ha expirado. Por favor, intenta registrarte de nuevo.');
     }
     return () => clearInterval(timer);
   }, [step, timeLeft]);
@@ -176,7 +174,7 @@ export default function Register() {
       setUserName(form.nombre);
       setSuccessMsg(res.message || 'Código OTP enviado a tu correo.');
       setStep(2);
-      setTimeLeft(300);
+      setTimeLeft(30);
       HuasiAlert.success('¡Código Enviado!', 'Hemos enviado un código OTP de 6 dígitos a tu correo institucional.');
     } catch (err) {
       const msg = err.response?.data?.error || err.message || 'Error en el registro';
@@ -244,11 +242,6 @@ export default function Register() {
     setError('');
     setOtpError(false);
 
-    if (timeLeft <= 0) {
-      setError('El código OTP ha expirado. Solicita uno nuevo para continuar.');
-      return;
-    }
-
     if (otpValue.length !== 6) {
       setOtpError(true);
       setError('Ingresa los 6 dígitos del código OTP.');
@@ -285,7 +278,7 @@ export default function Register() {
       const res = await register(form);
       setSuccessMsg(res.message || 'Se envió un nuevo código OTP a tu correo.');
       setStep(2);
-      setTimeLeft(300);
+      setTimeLeft(30);
       resetOtp();
       HuasiAlert.toast('Nuevo código OTP enviado', 'info');
     } catch (err) {
@@ -750,12 +743,12 @@ export default function Register() {
               justifyContent: 'center',
               gap: 8,
               marginBottom: 8,
-              color: timeLeft < 60 ? 'var(--danger)' : 'var(--text-muted)',
+              color: '#0d7c3d',
               fontWeight: 700,
               fontSize: '0.95rem'
             }}>
-              <Clock size={18} />
-              <span>Tiempo restante: {formatTime(timeLeft)}</span>
+              <ShieldCheck size={18} />
+              <span>Código válido por 24 horas</span>
             </div>
 
             <div style={{
@@ -764,12 +757,11 @@ export default function Register() {
               alignItems: 'center',
               gap: 8,
               marginBottom: 12,
-              color: 'var(--accent-hover)',
-              fontSize: '0.9rem',
-              fontWeight: 600
+              color: 'var(--text-muted)',
+              fontSize: '0.88rem'
             }}>
-              <ShieldCheck size={16} />
-              <span>Tu correo está a un paso de quedar verificado.</span>
+              <Clock size={16} />
+              <span>{timeLeft > 0 ? `Podrás solicitar otro código en ${timeLeft}s` : 'Ingresa el código que recibiste en tu correo UCC'}</span>
             </div>
 
             {otpError && (
@@ -830,8 +822,20 @@ export default function Register() {
               En tu correo institucional o personal, revisa la carpeta <strong>Correo no deseado (Spam)</strong> o la pestaña <strong>"Otros"</strong>.
             </div>
 
-            <button type="button" className="btn btn-secondary btn-block" onClick={handleResendOtp} disabled={resending || timeLeft === 0} style={{ marginBottom: 10, padding: 14 }}>
-              {resending ? <><Loader2 className="animate-spin" size={16} /> Reenviando…</> : <><RefreshCw size={16} /> Reenviar código</>}
+            <button 
+              type="button" 
+              className="btn btn-secondary btn-block" 
+              onClick={handleResendOtp} 
+              disabled={resending || timeLeft > 0} 
+              style={{ marginBottom: 10, padding: 14 }}
+            >
+              {resending ? (
+                <><Loader2 className="animate-spin" size={16} /> Reenviando…</>
+              ) : timeLeft > 0 ? (
+                <><Clock size={16} /> Reenviar código ({timeLeft}s)</>
+              ) : (
+                <><RefreshCw size={16} /> Reenviar código</>
+              )}
             </button>
 
             <button type="button" className="btn btn-secondary btn-block" onClick={() => setStep(1)} style={{ marginTop: 12, padding: 16 }}>

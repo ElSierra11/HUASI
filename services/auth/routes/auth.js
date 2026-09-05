@@ -17,14 +17,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
 const isProd = process.env.NODE_ENV === 'production' || !!process.env.DATABASE_URL || !!process.env.RENDER;
 
 // ============ OTP CONFIG & HELPERS ============
-const OTP_WINDOW_MINUTES = 5;
+// 1440 minutos = 24 horas para que los estudiantes nunca se queden bloqueados si el correo tarda en llegar
+const OTP_WINDOW_MINUTES = parseInt(process.env.OTP_WINDOW_MINUTES || '1440', 10);
 const MAX_OTP_ATTEMPTS = 5;
 const OTP_LOCKOUT_MINUTES = 5;
 const RESEND_COOLDOWN_SECONDS = 30;
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// ============ EMAIL CONFIG (Nodemailer SMTP con Gmail App Password + Fallback OAuth2) ============
+// ============ EMAIL CONFIG (Brevo HTTP API, Resend HTTP API, Gmail OAuth2 y Fallback SMTP) ============
 const nodemailer = require('nodemailer');
 
 const createSmtpTransporter = () => {
@@ -39,22 +40,87 @@ const createSmtpTransporter = () => {
   });
 };
 
+const getGmailOAuthCredentials = () => {
+  const clientId = process.env.GMAIL_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GMAIL_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GMAIL_REFRESH_TOKEN || process.env.GOOGLE_REFRESH_TOKEN;
+  return { clientId, clientSecret, refreshToken };
+};
+
 const getGmailAccessToken = async () => {
+  const { clientId, clientSecret, refreshToken } = getGmailOAuthCredentials();
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error('Faltan credenciales de Google OAuth2 (Client ID, Client Secret o Refresh Token no configurados)');
+  }
+
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      client_id: process.env.GMAIL_CLIENT_ID,
-      client_secret: process.env.GMAIL_CLIENT_SECRET,
-      refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
       grant_type: 'refresh_token',
     }),
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.error_description || data.error || 'Error obteniendo access token');
+    console.error('❌ [Google OAuth2 Error Details]:', data);
+    const detail = data.error_description || data.error || 'Error desconocido al renovar access token';
+    throw new Error(`Google OAuth falló (${data.error || 'error'}): ${detail}`);
   }
   return data.access_token;
+};
+
+// Enviar vía Brevo HTTP REST API (Puerto 443 HTTPS - Funciona 100% en Render y no requiere verificar dominio)
+const sendViaBrevo = async (toEmail, toName, subject, htmlContent) => {
+  if (!process.env.BREVO_API_KEY) return null;
+  console.log(`  [Brevo API] Enviando email a ${toEmail} vía HTTPS (puerto 443)...`);
+  const senderEmail = process.env.BREVO_SENDER || process.env.SMTP_USER || process.env.GMAIL_USER || 'huasicorrespondencia@gmail.com';
+  
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': process.env.BREVO_API_KEY,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      sender: { name: 'HUASI — Hospedaje Solidario UCC', email: senderEmail },
+      to: [{ email: toEmail, name: toName || 'Estudiante UCC' }],
+      subject: subject,
+      htmlContent: htmlContent
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Error enviando correo vía Brevo API');
+  }
+  console.log(`✅ [Brevo API] Email enviado con éxito. MessageId: ${data.messageId}`);
+  return data;
+};
+
+// Enviar vía Resend HTTP API (Puerto 443 HTTPS)
+const sendViaResend = async (toEmail, toName, subject, htmlContent) => {
+  if (!process.env.RESEND_API_KEY) return null;
+  console.log(`  [Resend API] Enviando email a ${toEmail} vía HTTPS...`);
+  const { Resend } = require('resend');
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const sender = process.env.RESEND_FROM || 'HUASI <onboarding@resend.dev>';
+
+  const { data, error } = await resend.emails.send({
+    from: sender,
+    to: toEmail,
+    subject: subject,
+    html: htmlContent
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Error enviando correo vía Resend');
+  }
+  console.log(`✅ [Resend API] Email enviado con éxito. Id: ${data?.id}`);
+  return data;
 };
 
 const sendOtpEmail = async (email, nombre, otp) => {
@@ -69,7 +135,7 @@ const sendOtpEmail = async (email, nombre, otp) => {
       <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 20px;">
         <p style="color: #166534; font-size: 14px; margin: 0 0 8px 0; font-weight: bold;">Tu código de verificación es:</p>
         <span style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #0d7c3d; display: inline-block;">${otp}</span>
-        <p style="color: #64748b; font-size: 12px; margin: 8px 0 0 0;">⏱️ Válido por 5 minutos</p>
+        <p style="color: #64748b; font-size: 12px; margin: 8px 0 0 0;">⏱️ Válido por 24 horas</p>
       </div>
       <p style="color: #334155; font-size: 14px; line-height: 1.5;">
         Hola <strong>${nombre || 'Usuario'}</strong>, ingresa este código en HUASI para verificar tu correo institucional.
@@ -81,8 +147,27 @@ const sendOtpEmail = async (email, nombre, otp) => {
     </div>
   `;
 
-  // ===== MÉTODO 1: Gmail REST API vía OAuth2 (HTTP — funciona en Render) =====
-  if (process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET && process.env.GMAIL_REFRESH_TOKEN) {
+  // ===== MÉTODO 1: Brevo HTTP REST API (Recomendado en Render) =====
+  if (process.env.BREVO_API_KEY) {
+    try {
+      return await sendViaBrevo(email, nombre, 'Código de Verificación OTP - HUASI UCC', htmlBody);
+    } catch (brevoErr) {
+      console.warn(`⚠️ [Brevo API Error] ${brevoErr.message}`);
+    }
+  }
+
+  // ===== MÉTODO 2: Resend HTTP REST API (Recomendado en Render) =====
+  if (process.env.RESEND_API_KEY) {
+    try {
+      return await sendViaResend(email, nombre, 'Código de Verificación OTP - HUASI UCC', htmlBody);
+    } catch (resendErr) {
+      console.warn(`⚠️ [Resend API Error] ${resendErr.message}`);
+    }
+  }
+
+  // ===== MÉTODO 3: Gmail REST API vía OAuth2 (HTTP — funciona en Render si hay refresh token) =====
+  const oauthCreds = getGmailOAuthCredentials();
+  if (oauthCreds.clientId && oauthCreds.clientSecret && oauthCreds.refreshToken) {
     try {
       console.log(`  [OAuth2] Intentando enviar vía Gmail REST API...`);
       const accessToken = await getGmailAccessToken();
@@ -122,7 +207,7 @@ const sendOtpEmail = async (email, nombre, otp) => {
     }
   }
 
-  // ===== MÉTODO 2: Nodemailer SMTP (funciona local, puede fallar en Render) =====
+  // ===== MÉTODO 4: Nodemailer SMTP (Funciona en desarrollo local) =====
   try {
     console.log(`  [SMTP] Intentando enviar vía SMTP con timeout de 8s...`);
     const transporter = createSmtpTransporter();
@@ -137,7 +222,7 @@ const sendOtpEmail = async (email, nombre, otp) => {
     });
 
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('SMTP timeout: Render probablemente bloquea puertos SMTP')), 8000)
+      setTimeout(() => reject(new Error('SMTP timeout: Render bloquea puertos SMTP salientes (usa BREVO_API_KEY o RESEND_API_KEY)')), 8000)
     );
 
     const info = await Promise.race([sendPromise, timeoutPromise]);
@@ -145,7 +230,7 @@ const sendOtpEmail = async (email, nombre, otp) => {
     return info;
   } catch (smtpErr) {
     console.error(`❌ [SMTP Error] ${smtpErr.message}`);
-    throw new Error(`No se pudo enviar el correo: OAuth2 y SMTP fallaron. Último error: ${smtpErr.message}`);
+    throw new Error(`No se pudo enviar el correo: ${smtpErr.message}`);
   }
 };
 
@@ -209,8 +294,27 @@ const sendResetPasswordEmail = async (email, nombre, resetLink) => {
     </div>
   `;
 
-  // MÉTODO 1: OAuth2 REST API (Funciona en Render)
-  if (process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET && process.env.GMAIL_REFRESH_TOKEN) {
+  // ===== MÉTODO 1: Brevo HTTP REST API (Puerto 443) =====
+  if (process.env.BREVO_API_KEY) {
+    try {
+      return await sendViaBrevo(email, nombre, '🔑 Recuperación de Contraseña - HUASI UCC', htmlBody);
+    } catch (brevoErr) {
+      console.warn(`⚠️ [Brevo Error] ${brevoErr.message}`);
+    }
+  }
+
+  // ===== MÉTODO 2: Resend HTTP REST API (Puerto 443) =====
+  if (process.env.RESEND_API_KEY) {
+    try {
+      return await sendViaResend(email, nombre, '🔑 Recuperación de Contraseña - HUASI UCC', htmlBody);
+    } catch (resendErr) {
+      console.warn(`⚠️ [Resend Error] ${resendErr.message}`);
+    }
+  }
+
+  // ===== MÉTODO 3: OAuth2 REST API (Funciona en Render si hay refresh token) =====
+  const oauthCreds = getGmailOAuthCredentials();
+  if (oauthCreds.clientId && oauthCreds.clientSecret && oauthCreds.refreshToken) {
     try {
       console.log(`  [OAuth2] Intentando enviar correo de recuperación vía Gmail REST API...`);
       const accessToken = await getGmailAccessToken();
@@ -250,7 +354,7 @@ const sendResetPasswordEmail = async (email, nombre, resetLink) => {
     }
   }
 
-  // MÉTODO 2: SMTP con Nodemailer
+  // ===== MÉTODO 4: SMTP con Nodemailer =====
   try {
     console.log(`  [SMTP] Intentando enviar correo de recuperación vía SMTP...`);
     const transporter = createSmtpTransporter();
@@ -264,7 +368,7 @@ const sendResetPasswordEmail = async (email, nombre, resetLink) => {
     });
 
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('SMTP timeout: Render bloquea puertos SMTP')), 8000)
+      setTimeout(() => reject(new Error('SMTP timeout: Render bloquea puertos SMTP salientes (usa BREVO_API_KEY o RESEND_API_KEY)')), 8000)
     );
 
     const info = await Promise.race([sendPromise, timeoutPromise]);
@@ -276,21 +380,95 @@ const sendResetPasswordEmail = async (email, nombre, resetLink) => {
   }
 };
 
-// Endpoint de diagnóstico de email (temporal)
+// Endpoint de diagnóstico de email
 router.get('/test-email', async (req, res) => {
+  const oauthCreds = getGmailOAuthCredentials();
+  let googleOAuthStatus = 'no_configurado';
+  let googleOAuthError = null;
+
+  if (oauthCreds.clientId && oauthCreds.clientSecret && oauthCreds.refreshToken) {
+    try {
+      await getGmailAccessToken();
+      googleOAuthStatus = 'activo_y_valido';
+    } catch (gErr) {
+      googleOAuthStatus = 'error_al_autenticar';
+      googleOAuthError = gErr.message;
+    }
+  }
+
   try {
     console.log('[TEST EMAIL] Probando envío de correo...');
-    console.log(`  SMTP_USER: ${process.env.SMTP_USER || 'NO DEFINIDO'}`);
-    console.log(`  SMTP_PASS: ${process.env.SMTP_PASS ? '****' + process.env.SMTP_PASS.slice(-4) : 'NO DEFINIDO'}`);
-    console.log(`  GMAIL_USER: ${process.env.GMAIL_USER || 'NO DEFINIDO'}`);
-    console.log(`  GMAIL_CLIENT_ID: ${process.env.GMAIL_CLIENT_ID ? 'SÍ' : 'NO'}`);
-    console.log(`  GMAIL_REFRESH_TOKEN: ${process.env.GMAIL_REFRESH_TOKEN ? 'SÍ' : 'NO'}`);
-
-    const testEmail = process.env.SMTP_USER || process.env.GMAIL_USER || 'huasicorrespondencia@gmail.com';
-    const info = await sendOtpEmail(testEmail, 'Test', '999999');
-    res.json({ success: true, message: `Email de prueba enviado a ${testEmail}`, info: info?.messageId || info?.id || 'ok' });
+    const targetEmail = req.query.email || process.env.SMTP_USER || process.env.GMAIL_USER || 'huasicorrespondencia@gmail.com';
+    const info = await sendOtpEmail(targetEmail, 'Test HUASI', '123456');
+    res.json({ 
+      success: true, 
+      message: `Email de prueba enviado a ${targetEmail}`,
+      providers: {
+        brevo: !!process.env.BREVO_API_KEY,
+        resend: !!process.env.RESEND_API_KEY,
+        googleOAuth: {
+          status: googleOAuthStatus,
+          configured: !!(oauthCreds.clientId && oauthCreds.clientSecret && oauthCreds.refreshToken),
+          hasClientId: !!oauthCreds.clientId,
+          hasClientSecret: !!oauthCreds.clientSecret,
+          hasRefreshToken: !!oauthCreds.refreshToken,
+          error: googleOAuthError
+        },
+        smtp: !!process.env.SMTP_USER
+      },
+      otpWindowMinutes: OTP_WINDOW_MINUTES,
+      info
+    });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message, stack: err.stack?.split('\n').slice(0, 3) });
+    res.status(500).json({ 
+      success: false, 
+      error: err.message, 
+      providers: {
+        brevo: !!process.env.BREVO_API_KEY,
+        resend: !!process.env.RESEND_API_KEY,
+        googleOAuth: {
+          status: googleOAuthStatus,
+          configured: !!(oauthCreds.clientId && oauthCreds.clientSecret && oauthCreds.refreshToken),
+          hasClientId: !!oauthCreds.clientId,
+          hasClientSecret: !!oauthCreds.clientSecret,
+          hasRefreshToken: !!oauthCreds.refreshToken,
+          error: googleOAuthError
+        },
+        smtp: !!process.env.SMTP_USER
+      }
+    });
+  }
+});
+
+// Endpoint de verificación administrativa (para verificar manualmente a un estudiante si lo requiere)
+router.post('/admin/verificar-email', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email requerido' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const result = await pool.query(
+      `UPDATE users 
+       SET email_verificado = TRUE, verificado = TRUE, otp_code = NULL, otp_expires_at = NULL, otp_attempts = 0, otp_locked_until = NULL
+       WHERE LOWER(email) = $1
+       RETURNING id, email, nombre, apellido, email_verificado, verificado`,
+      [cleanEmail]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: `No se encontró ningún usuario con el correo: ${cleanEmail}` });
+    }
+
+    console.log(`✅ [ADMIN VERIFY] Usuario ${cleanEmail} verificado manualmente.`);
+    res.json({
+      success: true,
+      message: `Cuenta de ${cleanEmail} verificada exitosamente. Ya puede iniciar sesión en HUASI.`,
+      user: result.rows[0]
+    });
+  } catch (err) {
+    console.error('Error en verificación administrativa:', err);
+    res.status(500).json({ error: 'Error al verificar usuario: ' + err.message });
   }
 });
 
