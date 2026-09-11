@@ -171,7 +171,7 @@ export default function Navbar() {
             {/* Admin panel link */}
             {user.role === 'admin' && (
               <a
-                href="/admin"
+                href="https://huasi-mdp5.vercel.app/login"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-ucc-green text-white px-4 py-1.5 rounded-full text-xs font-bold hover:shadow-custom transition-all duration-200"
@@ -290,7 +290,7 @@ export default function Navbar() {
             )}
 
             {user.role === 'admin' && (
-              <a href="/admin" target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)} className={isActive('/admin') ? 'mobile-nav-active' : ''}>
+              <a href="https://huasi-mdp5.vercel.app/login" target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)}>
                 <ShieldCheck size={16} /> Panel Admin
               </a>
             )}
