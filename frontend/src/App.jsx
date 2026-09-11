@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import SplashScreen from './components/SplashScreen';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -41,7 +41,7 @@ function App() {
           <Route path="/propiedad/:id" element={<PropertyDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Register />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/register" element={<Navigate to="/registro" replace />} />
           <Route path="/olvido-password" element={<OlvidoPassword />} />
           <Route path="/recuperar-password" element={<RecuperarPassword />} />
           <Route path="/quienes-somos" element={<QuienesSomos />} />
@@ -55,6 +55,14 @@ function App() {
           <Route path="/host/nueva-propiedad" element={<ProtectedRoute><HostPropertyForm /></ProtectedRoute>} />
           <Route path="/host/editar/:id" element={<ProtectedRoute><HostPropertyForm /></ProtectedRoute>} />
           <Route path="/host/reservas" element={<ProtectedRoute><HostReservas /></ProtectedRoute>} />
+          <Route path="*" element={
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+              <span className="text-8xl font-black font-heading text-ucc-green/20 select-none">404</span>
+              <h1 className="font-heading font-black text-2xl text-ucc-navy dark:text-white mt-2">Página no encontrada</h1>
+              <p className="text-ucc-muted dark:text-slate-400 mt-2 mb-6 max-w-sm">La ruta que buscas no existe. Vuelve al inicio para explorar alojamientos solidarios.</p>
+              <a href="/" className="inline-flex items-center gap-2 bg-gradient-to-r from-ucc-green to-emerald-600 text-white font-bold px-6 py-3 rounded-full shadow-custom hover:shadow-custom-md transition-all duration-200">Volver al inicio</a>
+            </div>
+          } />
         </Routes>
       </main>
       <Footer />

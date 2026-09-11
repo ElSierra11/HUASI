@@ -7,15 +7,11 @@ import { ToastProvider } from './components/Toast.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import './styles/index.css'
 
-// Initial theme check before mount
+// Siempre iniciar en modo claro al entrar a la página
 try {
-  if (
-    localStorage.getItem('theme') === 'dark' ||
-    (!localStorage.getItem('theme') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
-  ) {
-    document.documentElement.classList.add('dark');
-    document.body.classList.add('dark');
-  }
+  document.documentElement.classList.remove('dark');
+  document.body.classList.remove('dark');
+  localStorage.setItem('theme', 'light');
 } catch (e) {
   console.warn('Theme init warning:', e);
 }

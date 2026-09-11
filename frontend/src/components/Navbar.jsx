@@ -9,10 +9,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(
-    localStorage.getItem('theme') === 'dark' || 
-    (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
-  );
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     if (darkMode) {
@@ -173,12 +170,14 @@ export default function Navbar() {
 
             {/* Admin panel link */}
             {user.role === 'admin' && (
-              <Link
-                to="/admin"
+              <a
+                href="/admin"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-ucc-green text-white px-4 py-1.5 rounded-full text-xs font-bold hover:shadow-custom transition-all duration-200"
               >
                 <ShieldCheck size={14} /> Admin
-              </Link>
+              </a>
             )}
 
             <Link
@@ -291,9 +290,9 @@ export default function Navbar() {
             )}
 
             {user.role === 'admin' && (
-              <Link to="/admin" onClick={() => setMenuOpen(false)} className={isActive('/admin') ? 'mobile-nav-active' : ''}>
+              <a href="/admin" target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)} className={isActive('/admin') ? 'mobile-nav-active' : ''}>
                 <ShieldCheck size={16} /> Panel Admin
-              </Link>
+              </a>
             )}
 
             <Link to="/mis-reservas" onClick={() => setMenuOpen(false)} className={isActive('/mis-reservas') ? 'mobile-nav-active' : ''}>
