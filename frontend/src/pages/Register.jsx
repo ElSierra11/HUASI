@@ -2,15 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { Link, useNavigate } from 'react-router-dom';
-import { Clock, CheckCircle, ArrowRight, Loader2, ShieldCheck, RefreshCw, HelpCircle, AlertTriangle, Eye, EyeOff, Lock, Check } from 'lucide-react';
+import { Clock, CheckCircle, ArrowRight, Loader2, ShieldCheck, RefreshCw, HelpCircle, AlertTriangle, Eye, EyeOff, Lock, Check, Phone, CreditCard, CheckCircle2, XCircle } from 'lucide-react';
 import HuasiAlert from '../utils/alerts';
 
 export default function Register() {
   const { register, verifyOtp } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '', nombre: '', apellido: '', campus: '' });
+  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '', nombre: '', apellido: '', campus: '', telefono: '', tipo_documento: 'cedula', numero_documento: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otp, setOtp] = useState('');
   const [otpArray, setOtpArray] = useState(['', '', '', '', '', '']);
   const otpRefs = useRef([]);
@@ -165,6 +166,27 @@ export default function Register() {
       const msg = 'Debes aceptar los Términos y Condiciones y las Políticas de Privacidad.';
       setError(msg);
       HuasiAlert.warning('Aceptación requerida', msg);
+      return;
+    }
+
+    if (!form.telefono || form.telefono.trim().length < 7) {
+      const msg = 'Debes ingresar un número de teléfono válido.';
+      setError(msg);
+      HuasiAlert.warning('Teléfono requerido', msg);
+      return;
+    }
+
+    if (!form.numero_documento || form.numero_documento.trim().length < 4) {
+      const msg = 'Debes ingresar un número de documento válido.';
+      setError(msg);
+      HuasiAlert.warning('Documento requerido', msg);
+      return;
+    }
+
+    if (form.password !== form.confirmPassword) {
+      const msg = 'Las contraseñas no coinciden. Vuelve a escribirlas.';
+      setError(msg);
+      HuasiAlert.warning('Contraseñas no coinciden', msg);
       return;
     }
 
@@ -600,6 +622,60 @@ export default function Register() {
               </select>
             </div>
 
+            {/* Teléfono */}
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label>Teléfono de Contacto</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Phone size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                <input
+                  type="tel"
+                  required
+                  className="form-control"
+                  placeholder="+57 300 000 0000"
+                  style={{ paddingLeft: 44 }}
+                  value={form.telefono}
+                  onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            {/* Tipo y Número de Documento */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Tipo de Documento</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <CreditCard size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none', zIndex: 1 }} />
+                  <select
+                    required
+                    className="form-control"
+                    style={{ paddingLeft: 44 }}
+                    value={form.tipo_documento}
+                    onChange={e => setForm(f => ({ ...f, tipo_documento: e.target.value }))}
+                  >
+                    <option value="cedula">Cédula de Ciudadanía</option>
+                    <option value="tarjeta_identidad">Tarjeta de Identidad</option>
+                  </select>
+                </div>
+                {form.tipo_documento === 'tarjeta_identidad' && (
+                  <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: 4, display: 'block' }}>
+                    Para menores de edad.
+                  </small>
+                )}
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Número de Documento</label>
+                <input
+                  type="text"
+                  required
+                  className="form-control"
+                  placeholder="Ej. 1234567890"
+                  maxLength={12}
+                  value={form.numero_documento}
+                  onChange={e => setForm(f => ({ ...f, numero_documento: e.target.value.replace(/[^0-9]/g, '') }))}
+                />
+              </div>
+            </div>
+
             <div className="form-group" style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <label style={{ margin: 0 }}>Contraseña</label>
@@ -706,6 +782,61 @@ export default function Register() {
                   {pwdHasNumber ? <Check size={12} strokeWidth={3} /> : <span style={{ width: 12, textAlign: 'center' }}>•</span>}
                   1+ número
                 </span>
+              </div>
+            </div>
+
+            {/* Confirmar Contraseña */}
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <label style={{ margin: 0 }}>Confirmar Contraseña</label>
+                {form.confirmPassword && (
+                  form.password === form.confirmPassword
+                    ? <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0d7c3d', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <CheckCircle2 size={14} /> Coinciden
+                      </span>
+                    : <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <XCircle size={14} /> No coinciden
+                      </span>
+                )}
+              </div>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Lock size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  className="form-control"
+                  placeholder="Repite tu contraseña"
+                  style={{
+                    paddingLeft: 44,
+                    paddingRight: 44,
+                    borderColor: form.confirmPassword
+                      ? (form.password === form.confirmPassword ? '#86efac' : '#fca5a5')
+                      : undefined
+                  }}
+                  value={form.confirmPassword}
+                  onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(prev => !prev)}
+                  aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-muted)',
+                    padding: 4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '4px',
+                    transition: 'color 0.2s ease'
+                  }}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 

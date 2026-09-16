@@ -11,6 +11,14 @@ pool.query(`
   ADD COLUMN IF NOT EXISTS reset_password_expires_at TIMESTAMP;
 `).catch(err => console.warn('Aviso al verificar columnas de password reset:', err.message));
 
+// Auto-migrar columnas de documento e información de contacto
+pool.query(`
+  ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS tipo_documento VARCHAR(30) DEFAULT 'cedula',
+    ADD COLUMN IF NOT EXISTS numero_documento VARCHAR(30),
+    ADD COLUMN IF NOT EXISTS campus VARCHAR(100);
+`).catch(err => console.warn('Aviso al verificar columnas de documento:', err.message));
+
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
@@ -482,10 +490,22 @@ const getOtpStatus = (user) => {
 // ============ REGISTER ============
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, nombre, apellido, telefono, role, campus } = req.body;
+    const { email, password, nombre, apellido, telefono, tipo_documento, numero_documento, role, campus } = req.body;
 
     if (!email || !password || !nombre || !apellido) {
       return res.status(400).json({ error: 'Email, contraseña, nombre y apellido son obligatorios' });
+    }
+
+    if (!telefono || String(telefono).trim().length < 7) {
+      return res.status(400).json({ error: 'Debes ingresar un número de teléfono válido' });
+    }
+
+    if (!tipo_documento || !['cedula', 'tarjeta_identidad'].includes(tipo_documento)) {
+      return res.status(400).json({ error: 'Tipo de documento inválido' });
+    }
+
+    if (!numero_documento || String(numero_documento).trim().length < 4) {
+      return res.status(400).json({ error: 'Debes ingresar un número de documento válido' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
@@ -535,9 +555,10 @@ router.post('/register', async (req, res) => {
       await pool.query(
         `UPDATE users 
          SET password_hash = $1, nombre = $2, apellido = $3, telefono = $4, role = $5, campus = $6, otp_code = $7, otp_expires_at = $8,
+             tipo_documento = $10, numero_documento = $11,
              otp_attempts = 0, otp_locked_until = NULL, otp_last_sent_at = NOW(), otp_resend_count = COALESCE(otp_resend_count, 0) + 1
          WHERE LOWER(email) = $9`,
-        [password_hash, nombre, apellido, telefono || null, role === 'admin' ? 'admin' : 'user', campus, otp, otp_expires_at, cleanEmail]
+        [password_hash, nombre, apellido, telefono || null, role === 'admin' ? 'admin' : 'user', campus, otp, otp_expires_at, cleanEmail, tipo_documento || 'cedula', numero_documento || null]
       );
 
       // Enviar OTP y esperar resultado
@@ -561,10 +582,10 @@ router.post('/register', async (req, res) => {
 
     // Insertar usuario no verificado con OTP
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, nombre, apellido, telefono, role, email_verificado, verificado, campus, otp_code, otp_expires_at, otp_attempts, otp_locked_until, otp_last_sent_at, otp_resend_count)
-       VALUES ($1, $2, $3, $4, $5, $6, FALSE, FALSE, $7, $8, $9, 0, NULL, NOW(), 1)
+      `INSERT INTO users (email, password_hash, nombre, apellido, telefono, role, email_verificado, verificado, campus, tipo_documento, numero_documento, otp_code, otp_expires_at, otp_attempts, otp_locked_until, otp_last_sent_at, otp_resend_count)
+       VALUES ($1, $2, $3, $4, $5, $6, FALSE, FALSE, $7, $8, $9, $10, $11, 0, NULL, NOW(), 1)
        RETURNING id, email, nombre, apellido, role, campus`,
-      [cleanEmail, password_hash, nombre, apellido, telefono || null, userRole, campus, otp, otp_expires_at]
+      [cleanEmail, password_hash, nombre, apellido, telefono || null, userRole, campus, tipo_documento || 'cedula', numero_documento || null, otp, otp_expires_at]
     );
 
     // Enviar OTP y esperar resultado
