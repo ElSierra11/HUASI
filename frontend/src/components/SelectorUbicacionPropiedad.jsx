@@ -94,7 +94,7 @@ export default function SelectorUbicacionPropiedad({
 
       marker.bindPopup(`
         <div style="text-align: center; padding: 4px; font-family: system-ui;">
-          <strong style="color: #0d7c3d; font-size: 13px;">📍 Ubicación de tu Alojamiento</strong>
+          <strong style="color: #0d7c3d; font-size: 13px;">Ubicacion de tu Alojamiento</strong>
           <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b;">Arrastra para ajustar el punto exacto.</p>
         </div>
       `).openPopup();
@@ -212,7 +212,7 @@ export default function SelectorUbicacionPropiedad({
     }
   };
 
-  // Geolocalización del navegador
+  // Geolocalización del navegador con seguimiento de alta precisión
   const detectCurrentLocation = () => {
     if (!navigator.geolocation) {
       alert('Tu navegador no soporta geolocalización.');
@@ -224,15 +224,27 @@ export default function SelectorUbicacionPropiedad({
       (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        updateMapPosition(lat, lng, 17);
+        const accuracy = pos.coords.accuracy; // metros
+
+        // Zoom adaptivo: cuanto más precisa la señal, más se acerca
+        const zoom = accuracy < 20 ? 18 : accuracy < 50 ? 17 : accuracy < 100 ? 16 : accuracy < 300 ? 15 : 14;
+
+        updateMapPosition(lat, lng, zoom);
         setLocating(false);
-        setGeoMsg({ type: 'success', text: 'Ubicación GPS actual detectada con éxito.' });
+        setGeoMsg({
+          type: 'success',
+          text: `Ubicación GPS detectada. Precisión: ${Math.round(accuracy)} m.`
+        });
       },
       (err) => {
         setLocating(false);
-        setGeoMsg({ type: 'warning', text: 'No pudimos acceder a tu GPS. Por favor arrastra el marcador manualmente.' });
+        setGeoMsg({ type: 'warning', text: 'No pudimos acceder a tu GPS. Arrastra el marcador para fijar la ubicación.' });
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0 // siempre lectura fresca, sin caché
+      }
     );
   };
 
@@ -301,8 +313,9 @@ export default function SelectorUbicacionPropiedad({
         <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
         
         {/* Overlay informativo en la esquina inferior */}
-        <div className="absolute bottom-2 left-2 z-[999] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[0.68rem] font-bold text-slate-700 dark:text-slate-300 shadow-sm pointer-events-none">
-          📍 Arrastra el marcador o haz clic en el mapa para ajustar
+        <div className="absolute bottom-2 left-2 z-[999] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[0.68rem] font-bold text-slate-700 dark:text-slate-300 shadow-sm pointer-events-none flex items-center gap-1">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          Arrastra el marcador o haz clic en el mapa para ajustar
         </div>
       </div>
 
