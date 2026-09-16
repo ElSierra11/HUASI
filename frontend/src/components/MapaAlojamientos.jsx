@@ -150,6 +150,8 @@ export default function MapaAlojamientos({ propiedades = [] }) {
   const accuracyCircleRef = useRef(null);
   const watchIdRef = useRef(null);
   const watchTimeoutRef = useRef(null);
+  // Cache de coordenadas geocodificadas: id -> { lat, lng, approximate }
+  const geocodedCacheRef = useRef({});
   const navigate = useNavigate();
 
   const [userLocation, setUserLocation] = useState(null);
@@ -158,9 +160,78 @@ export default function MapaAlojamientos({ propiedades = [] }) {
   const [maxDistance, setMaxDistance] = useState(99999);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [isSatellite, setIsSatellite] = useState(false);
-  const [gpsAccuracy, setGpsAccuracy] = useState(null); // metros
+  const [gpsAccuracy, setGpsAccuracy] = useState(null);
+  // IDs de propiedades cuya geocodificación ya está lista
+  const [geocodedIds, setGeocodedIds] = useState([]); // metros
 
   const defaultCoords = { lat: 11.2263, lng: -74.1868 };
+
+  // Obtener coordenadas de una propiedad:
+  // 1. Coordenadas exactas guardadas en BD
+  // 2. Resultado de geocodificación Nominatim (cache)
+  // 3. Fallback: centro del campus (marcado como aproximado)
+  const resolvePropertyCoords = (prop, idx = 0) => {
+    // Exactas en BD
+    if (prop?.latitud && prop?.longitud) {
+      const lat = parseFloat(prop.latitud);
+      const lng = parseFloat(prop.longitud);
+      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng, approximate: false };
+    }
+    // Geocodificadas en memoria
+    const cached = geocodedCacheRef.current[prop?.id];
+    if (cached) return cached;
+    // Fallback campus (aproximado)
+    return { ...getPropertyCoordinates(prop, idx), approximate: true };
+  };
+
+  // Geocodificar propiedades sin coordenadas usando Nominatim (1 req/seg)
+  const geocodePropertiesWithoutCoords = async (props) => {
+    const needsGeo = props.filter(p =>
+      (!p.latitud || !p.longitud) && !geocodedCacheRef.current[p.id]
+    );
+    if (needsGeo.length === 0) return;
+
+    for (const prop of needsGeo) {
+      try {
+        const queryParts = [
+          prop.direccion?.trim(),
+          prop.barrio?.trim(),
+          prop.ciudad?.trim() || prop.campus_cercano?.trim(),
+          'Colombia'
+        ].filter(Boolean);
+
+        if (queryParts.length < 2) {
+          // No hay suficiente información para geocodificar
+          geocodedCacheRef.current[prop.id] = { ...getPropertyCoordinates(prop), approximate: true };
+          continue;
+        }
+
+        const q = encodeURIComponent(queryParts.join(', '));
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${q}&limit=1&countrycodes=co`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+        const data = await res.json();
+
+        if (data && data.length > 0) {
+          geocodedCacheRef.current[prop.id] = {
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon),
+            approximate: false
+          };
+        } else {
+          // Nominatim no encontró nada — fallback campus aproximado
+          geocodedCacheRef.current[prop.id] = { ...getPropertyCoordinates(prop), approximate: true };
+        }
+      } catch {
+        geocodedCacheRef.current[prop.id] = { ...getPropertyCoordinates(prop), approximate: true };
+      }
+
+      // Trigger re-render para mostrar marcadores actualizados
+      setGeocodedIds(prev => [...prev, prop.id]);
+
+      // Respetar el rate limit de Nominatim: 1 req/seg
+      await new Promise(r => setTimeout(r, 1100));
+    }
+  };
 
   // Limpiar el watchPosition al desmontar
   const stopWatching = () => {
@@ -348,31 +419,33 @@ export default function MapaAlojamientos({ propiedades = [] }) {
 
       safeProps.forEach((prop, idx) => {
         try {
-          const coords = getPropertyCoordinates(prop, idx);
-          if (!coords || isNaN(coords.lat) || isNaN(coords.lng)) return;
+          const coordResult = resolvePropertyCoords(prop, idx);
+          if (!coordResult || isNaN(coordResult.lat) || isNaN(coordResult.lng)) return;
+          const { lat, lng, approximate } = coordResult;
 
           const dist = (userLocation && !isNaN(userLocation.lat) && !isNaN(userLocation.lng))
-            ? calculateDistance(userLocation.lat, userLocation.lng, coords.lat, coords.lng)
+            ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
             : null;
 
           if (dist && maxDistance < 9999 && parseFloat(dist) > maxDistance) return;
 
-          bounds.extend([coords.lat, coords.lng]);
+          bounds.extend([lat, lng]);
 
-          const gmapsUrl = getGoogleMapsUrl(coords.lat, coords.lng, `${prop.direccion || ''}, ${prop.ciudad || ''}`);
-          const wazeUrl = getWazeUrl(coords.lat, coords.lng);
+          const gmapsUrl = getGoogleMapsUrl(lat, lng, `${prop.direccion || ''}, ${prop.ciudad || ''}`);
+          const wazeUrl = getWazeUrl(lat, lng);
 
+          // Marcador exacto: verde sólido | Aproximado: verde claro con borde punteado
           const propIcon = window.L.divIcon({
             className: 'custom-prop-marker',
             html: `
               <div style="
-                background: #0d7c3d;
+                background: ${approximate ? 'rgba(13,124,61,0.65)' : '#0d7c3d'};
                 color: white;
                 font-size: 11px;
                 font-weight: 800;
                 padding: 4px 8px;
                 border-radius: 12px;
-                border: 2px solid white;
+                border: ${approximate ? '2px dashed rgba(255,255,255,0.8)' : '2px solid white'};
                 box-shadow: 0 4px 10px rgba(0,0,0,0.3);
                 white-space: nowrap;
                 display: flex;
@@ -391,6 +464,7 @@ export default function MapaAlojamientos({ propiedades = [] }) {
               <h4 style="margin: 0 0 4px 0; color: #0d7c3d; font-size: 0.92rem; font-weight: 800; line-height: 1.25;">
                 ${prop.titulo || 'Hospedaje UCC'}
               </h4>
+              ${approximate ? `<p style="margin: 0 0 6px 0; font-size: 0.7rem; color: #f59e0b; font-weight: 700; background: #fef3c7; padding: 3px 7px; border-radius: 6px; display: inline-block;">Ubicacion aproximada</p>` : ''}
               <p style="margin: 0 0 8px 0; font-size: 0.76rem; color: #475569; line-height: 1.35;">
                 ${prop.barrio ? `${prop.barrio}, ` : ''}${prop.ciudad || prop.campus_cercano || 'Campus UCC'}
                 ${dist ? `<br><strong style="color:#0d7c3d;">A ${dist} km de tu ubicacion</strong>` : ''}
@@ -401,36 +475,18 @@ export default function MapaAlojamientos({ propiedades = [] }) {
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
                 <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" style="
-                  background: #1a73e8;
-                  color: #ffffff;
-                  padding: 6px 8px;
-                  border-radius: 6px;
-                  text-decoration: none;
-                  font-size: 0.72rem;
-                  font-weight: 700;
-                  text-align: center;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  gap: 4px;
+                  background: #1a73e8; color: #ffffff; padding: 6px 8px; border-radius: 6px;
+                  text-decoration: none; font-size: 0.72rem; font-weight: 700; text-align: center;
+                  display: flex; align-items: center; justify-content: center; gap: 4px;
                   box-shadow: 0 2px 4px rgba(26,115,232,0.25);
                 ">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                   Google Maps
                 </a>
                 <a href="${wazeUrl}" target="_blank" rel="noopener noreferrer" style="
-                  background: #33ccff;
-                  color: #0b1f3a;
-                  padding: 6px 8px;
-                  border-radius: 6px;
-                  text-decoration: none;
-                  font-size: 0.72rem;
-                  font-weight: 800;
-                  text-align: center;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  gap: 4px;
+                  background: #33ccff; color: #0b1f3a; padding: 6px 8px; border-radius: 6px;
+                  text-decoration: none; font-size: 0.72rem; font-weight: 800; text-align: center;
+                  display: flex; align-items: center; justify-content: center; gap: 4px;
                   box-shadow: 0 2px 4px rgba(51,204,255,0.3);
                 ">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 2.85 1.2 5.42 3.12 7.24l-1.04 2.45c-.15.35.12.75.5.75h9.42c5.52 0 10-4.48 10-10S17.52 2 12 2zm-3.5 11c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm7 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
@@ -439,27 +495,20 @@ export default function MapaAlojamientos({ propiedades = [] }) {
               </div>
 
               <a href="/propiedad/${prop.id}" style="
-                display: block;
-                background: #0d7c3d;
-                color: white;
-                padding: 6px 12px;
-                border-radius: 6px;
-                text-decoration: none;
-                font-size: 0.76rem;
-                font-weight: bold;
-                text-align: center;
-                box-shadow: 0 2px 4px rgba(13,124,61,0.25);
+                display: block; background: #0d7c3d; color: white; padding: 6px 12px;
+                border-radius: 6px; text-decoration: none; font-size: 0.76rem; font-weight: bold;
+                text-align: center; box-shadow: 0 2px 4px rgba(13,124,61,0.25);
               ">Ver Alojamiento</a>
             </div>
           `;
 
-          const marker = window.L.marker([coords.lat, coords.lng], {
+          const marker = window.L.marker([lat, lng], {
             icon: propIcon,
             _isPropertyMarker: true
           }).addTo(map).bindPopup(popupContent);
 
           marker.on('click', () => {
-            setSelectedProperty({ ...prop, dist, lat: coords.lat, lng: coords.lng });
+            setSelectedProperty({ ...prop, dist, lat, lng, approximate });
           });
         } catch (e) {
           console.warn('Error añadiendo marcador de propiedad:', e);
@@ -523,7 +572,14 @@ export default function MapaAlojamientos({ propiedades = [] }) {
     if (mapInstanceRef.current) {
       renderMarkers();
     }
-  }, [userLocation, propiedades, maxDistance]);
+  }, [userLocation, propiedades, maxDistance, geocodedIds]);
+
+  // Geocodificar propiedades sin coords cuando cambia la lista
+  useEffect(() => {
+    if (propiedades && propiedades.length > 0) {
+      geocodePropertiesWithoutCoords(propiedades);
+    }
+  }, [propiedades]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', padding: 20 }}>

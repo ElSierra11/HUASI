@@ -95,6 +95,23 @@ export default function HostPropertyForm() {
     setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
+  // Geocodificar dirección con Nominatim cuando el host no fijó el mapa manualmente
+  const geocodeAddress = async (direccion, barrio, campus) => {
+    try {
+      const queryParts = [direccion.trim(), barrio?.trim(), campus || '', 'Colombia'].filter(Boolean);
+      const q = encodeURIComponent(queryParts.join(', '));
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${q}&limit=1&countrycodes=co`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+      const data = await res.json();
+      if (data && data.length > 0) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const nextErrors = validateForm(form);
@@ -108,9 +125,22 @@ export default function HostPropertyForm() {
 
     setSaving(true);
     setError('');
+
+    // Auto-geocodificar si el host no fijó coordenadas en el mapa
+    let finalForm = { ...form };
+    if (!finalForm.latitud || !finalForm.longitud) {
+      const geo = await geocodeAddress(finalForm.direccion, finalForm.barrio, finalForm.campus_cercano);
+      if (geo) {
+        finalForm = { ...finalForm, latitud: geo.lat, longitud: geo.lng };
+        toast.success('Dirección geocodificada correctamente.');
+      } else {
+        toast.warning('No encontramos tu dirección exacta. Los estudiantes verán una ubicación aproximada.');
+      }
+    }
+
     try {
       const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => {
+      Object.entries(finalForm).forEach(([k, v]) => {
         if (k === 'amenidades') {
           fd.append(k, JSON.stringify(v));
         } else {
