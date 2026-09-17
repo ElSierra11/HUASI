@@ -23,7 +23,7 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// Auth middleware — extract user from JWT
+// Auth middleware
 app.use((req, res, next) => {
   const token = req.cookies?.stayu_token || req.cookies?.stayu_admin_token ||
     (req.headers['x-user-id'] ? null : null);
@@ -41,29 +41,46 @@ app.use((req, res, next) => {
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
       req.user = decoded;
-    } catch (err) {
-      // Token inválido
-    }
+    } catch (err) { /* Token inválido */ }
   }
   next();
 });
 
-// REST routes
 app.use('/', chatRoutes);
-
-// Health
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'chat' }));
 
 // ============ SOCKET.IO ============
 const io = new Server(server, {
-  cors: {
-    origin: true,
-    credentials: true
-  },
+  cors: { origin: true, credentials: true },
   path: '/chat-socket'
 });
 
 app.set('io', io);
+
+// ──────────────────────────────────────────
+// Schema checker — detecta si la migración
+// de media (tipo/metadata) ya fue ejecutada.
+// Se evalúa una sola vez en el arranque.
+// ──────────────────────────────────────────
+let _hasMediaCols = null;
+async function hasMediaCols() {
+  if (_hasMediaCols !== null) return _hasMediaCols;
+  try {
+    const res = await pool.query(`
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'mensajes' AND column_name = 'tipo' LIMIT 1
+    `);
+    _hasMediaCols = res.rows.length > 0;
+    if (!_hasMediaCols) {
+      console.warn('⚠️  [Chat] Columnas tipo/metadata NO encontradas en mensajes. Ejecuta: node migrate_chat_media.js');
+    } else {
+      console.log('✓  [Chat] Columnas tipo/metadata detectadas en mensajes.');
+    }
+  } catch (_) {
+    _hasMediaCols = false;
+  }
+  return _hasMediaCols;
+}
 
 // Map userId → Set<socketId>
 const onlineUsers = new Map();
@@ -82,7 +99,6 @@ io.use((socket, next) => {
     parseCookie(cookieStr, 'stayu_admin_token');
 
   if (!token) return next(new Error('Authentication required'));
-
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     socket.user = decoded;
@@ -96,13 +112,8 @@ io.on('connection', (socket) => {
   const userId = socket.user.id;
   console.log(`💬 User ${userId} connected (socket: ${socket.id})`);
 
-  // Track online user
-  if (!onlineUsers.has(userId)) {
-    onlineUsers.set(userId, new Set());
-  }
+  if (!onlineUsers.has(userId)) onlineUsers.set(userId, new Set());
   onlineUsers.get(userId).add(socket.id);
-
-  // Join personal room
   socket.join(`user_${userId}`);
 
   // ============ CHAT MESSAGES ============
@@ -115,29 +126,35 @@ io.on('connection', (socket) => {
         'SELECT * FROM conversaciones WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)',
         [conversacion_id, userId]
       );
-
       if (conv.rows.length === 0) return;
 
       const conversation = conv.rows[0];
       const receiverId = conversation.user1_id === userId ? conversation.user2_id : conversation.user1_id;
 
-      const result = await pool.query(
-        `INSERT INTO mensajes (conversacion_id, sender_id, contenido, tipo, metadata)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, conversacion_id, sender_id, contenido, tipo, metadata, leido, created_at`,
-        [conversacion_id, userId, contenido.trim(), tipo, metadata ? JSON.stringify(metadata) : null]
-      );
+      // ── INSERT compatible con esquema viejo o nuevo ──
+      let message;
+      if (await hasMediaCols()) {
+        const result = await pool.query(
+          `INSERT INTO mensajes (conversacion_id, sender_id, contenido, tipo, metadata)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id, conversacion_id, sender_id, contenido, tipo, metadata, leido, created_at`,
+          [conversacion_id, userId, contenido.trim(), tipo, metadata ? JSON.stringify(metadata) : null]
+        );
+        message = result.rows[0];
+      } else {
+        const result = await pool.query(
+          `INSERT INTO mensajes (conversacion_id, sender_id, contenido)
+           VALUES ($1, $2, $3)
+           RETURNING id, conversacion_id, sender_id, contenido, leido, created_at`,
+          [conversacion_id, userId, contenido.trim()]
+        );
+        message = { ...result.rows[0], tipo: 'texto', metadata: null };
+      }
 
-      const message = result.rows[0];
-
-      await pool.query(
-        'UPDATE conversaciones SET updated_at = NOW() WHERE id = $1',
-        [conversacion_id]
-      );
+      await pool.query('UPDATE conversaciones SET updated_at = NOW() WHERE id = $1', [conversacion_id]);
 
       const senderQuery = await pool.query(
-        'SELECT nombre, apellido, foto_perfil FROM users WHERE id = $1',
-        [userId]
+        'SELECT nombre, apellido, foto_perfil FROM users WHERE id = $1', [userId]
       );
       const sender = senderQuery.rows[0] || {};
       const fullMessage = {
@@ -155,74 +172,40 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ============ WEBRTC SIGNALING — Llamadas de voz/video ============
-
-  // Solicitar llamada al otro usuario
+  // ============ WEBRTC SIGNALING ============
   socket.on('call_request', (data) => {
-    // data: { conversacion_id, receiverId, callType: 'audio'|'video', callerName }
     const { receiverId } = data;
     console.log(`📞 Llamada de usuario ${userId} a ${receiverId}`);
-    io.to(`user_${receiverId}`).emit('call_incoming', {
-      ...data,
-      callerId: userId
-    });
+    io.to(`user_${receiverId}`).emit('call_incoming', { ...data, callerId: userId });
   });
 
-  // Aceptar llamada
   socket.on('call_accept', (data) => {
-    // data: { callerId, conversacion_id, callType }
-    io.to(`user_${data.callerId}`).emit('call_accepted', {
-      ...data,
-      receiverId: userId
-    });
+    io.to(`user_${data.callerId}`).emit('call_accepted', { ...data, receiverId: userId });
   });
 
-  // Rechazar llamada
   socket.on('call_reject', (data) => {
-    // data: { callerId }
-    io.to(`user_${data.callerId}`).emit('call_rejected', {
-      receiverId: userId
-    });
+    io.to(`user_${data.callerId}`).emit('call_rejected', { receiverId: userId });
   });
 
-  // Terminar llamada
   socket.on('call_end', (data) => {
-    // data: { peerId }
-    io.to(`user_${data.peerId}`).emit('call_ended', {
-      by: userId
-    });
+    io.to(`user_${data.peerId}`).emit('call_ended', { by: userId });
   });
 
-  // WebRTC Offer (SDP)
   socket.on('webrtc_offer', (data) => {
-    // data: { peerId, offer }
-    io.to(`user_${data.peerId}`).emit('webrtc_offer', {
-      offer: data.offer,
-      fromId: userId
-    });
+    io.to(`user_${data.peerId}`).emit('webrtc_offer', { offer: data.offer, fromId: userId });
   });
 
-  // WebRTC Answer (SDP)
   socket.on('webrtc_answer', (data) => {
-    // data: { peerId, answer }
-    io.to(`user_${data.peerId}`).emit('webrtc_answer', {
-      answer: data.answer,
-      fromId: userId
-    });
+    io.to(`user_${data.peerId}`).emit('webrtc_answer', { answer: data.answer, fromId: userId });
   });
 
-  // ICE Candidates
   socket.on('webrtc_ice_candidate', (data) => {
-    // data: { peerId, candidate }
-    io.to(`user_${data.peerId}`).emit('webrtc_ice_candidate', {
-      candidate: data.candidate,
-      fromId: userId
-    });
+    io.to(`user_${data.peerId}`).emit('webrtc_ice_candidate', { candidate: data.candidate, fromId: userId });
   });
 
-  // ============ BROADCAST — Nueva propiedad publicada ============
+  // ============ BROADCAST ============
   socket.on('property_published', (propertyData) => {
-    console.log(`🏠 [Socket Broadcast] Propiedad publicada: ${propertyData?.titulo}`);
+    console.log(`🏠 [Broadcast] Propiedad publicada: ${propertyData?.titulo}`);
     io.emit('new_property_published', propertyData);
   });
 
@@ -234,11 +217,10 @@ io.on('connection', (socket) => {
         'UPDATE mensajes SET leido = TRUE WHERE conversacion_id = $1 AND sender_id != $2 AND leido = FALSE',
         [conversacion_id, userId]
       );
-
       const conv = await pool.query('SELECT * FROM conversaciones WHERE id = $1', [conversacion_id]);
       if (conv.rows.length > 0) {
-        const conversation = conv.rows[0];
-        const otherId = conversation.user1_id === userId ? conversation.user2_id : conversation.user1_id;
+        const c = conv.rows[0];
+        const otherId = c.user1_id === userId ? c.user2_id : c.user1_id;
         io.to(`user_${otherId}`).emit('messages_read', { conversacion_id });
       }
     } catch (err) {
@@ -246,7 +228,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ============ TYPING INDICATORS ============
+  // ============ TYPING ============
   socket.on('typing', (data) => {
     const { conversacion_id, receiverId } = data;
     io.to(`user_${receiverId}`).emit('user_typing', { conversacion_id, userId });
@@ -260,12 +242,12 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log(`💬 User ${userId} disconnected (socket: ${socket.id})`);
     onlineUsers.get(userId)?.delete(socket.id);
-    if (onlineUsers.get(userId)?.size === 0) {
-      onlineUsers.delete(userId);
-    }
+    if (onlineUsers.get(userId)?.size === 0) onlineUsers.delete(userId);
   });
 });
 
 server.listen(PORT, () => {
   console.log(`💬 Chat Service corriendo en puerto ${PORT}`);
+  // Calentar el schema checker al arrancar
+  hasMediaCols().catch(() => {});
 });

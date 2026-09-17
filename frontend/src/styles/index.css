@@ -2021,6 +2021,68 @@ textarea.form-control {
   transform: scale(0.95);
 }
 
+/* ── Text input & send button (inside chat-w-input-bar) ── */
+.chat-text-input {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1.5px solid #c8ddd2;
+  border-radius: var(--radius-full);
+  font-size: 0.88rem;
+  font-family: var(--font-body);
+  background: #f0f6f2;
+  color: var(--text);
+  outline: none;
+  transition: all 0.2s;
+  min-width: 0;
+}
+
+.chat-text-input::placeholder { color: #94a3b8; }
+
+.chat-text-input:focus {
+  border-color: var(--ucc-green);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(13, 124, 61, 0.1);
+}
+
+.chat-send-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0d7c3d 0%, #0a9e50 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(13, 124, 61, 0.3);
+}
+
+.chat-send-btn:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 5px 16px rgba(13, 124, 61, 0.4);
+}
+
+.chat-send-btn:disabled {
+  background: #c8ddd2;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+[data-theme='dark'] .chat-text-input {
+  background: #1e293b;
+  border-color: rgba(255,255,255,0.1);
+  color: #f1f5f9;
+}
+
+[data-theme='dark'] .chat-text-input:focus {
+  background: #0f172a;
+  border-color: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.1);
+}
+
 /* ── Location bubble ── */
 .chat-location-bubble {
   width: 210px;
