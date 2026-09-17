@@ -5,7 +5,7 @@ import { io } from 'socket.io-client';
 import {
   Send, MessageCircle, X, ArrowLeft, ChevronDown, Home, Eye,
   Phone, Video, Image, MapPin, Camera,
-  PhoneOff, VideoOff, Mic, MicOff, Search
+  PhoneOff, VideoOff, Mic, MicOff, Search, Download
 } from 'lucide-react';
 import api from '../api';
 import { notifyChatMessage, notifyIncomingCall, startRingtone, stopRingtone } from '../utils/notifications';
@@ -105,6 +105,7 @@ export default function ChatWidget({ isFullPage = false }) {
   const [typing, setTyping] = useState(false);
   const [unreadTotal, setUnreadTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
   const [reservaInfo, setReservaInfo] = useState(null);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -150,6 +151,15 @@ export default function ChatWidget({ isFullPage = false }) {
   useEffect(() => {
     if (isFullPage) setOpen(true);
   }, [isFullPage]);
+
+  // Cerrar visor de imagen con tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setSelectedImage(null);
+    };
+    if (selectedImage) window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedImage]);
 
   // ── Call timer ──
   useEffect(() => {
@@ -720,11 +730,17 @@ export default function ChatWidget({ isFullPage = false }) {
       }
 
       return (
-        <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block' }}>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setSelectedImage(url)}
+          style={{ cursor: 'pointer', display: 'inline-block', position: 'relative' }}
+          title="Toca para ampliar la imagen"
+        >
           <img
             src={url}
             alt="Imagen enviada"
-            style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, objectFit: 'cover', display: 'block', cursor: 'pointer' }}
+            style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, objectFit: 'cover', display: 'block' }}
             onError={e => {
               e.target.style.display = 'none';
               const parent = e.target.parentElement;
@@ -737,7 +753,7 @@ export default function ChatWidget({ isFullPage = false }) {
               }
             }}
           />
-        </a>
+        </div>
       );
     }
 
@@ -829,6 +845,40 @@ export default function ChatWidget({ isFullPage = false }) {
               </>
             )}
           </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── VISOR DE IMAGEN A PANTALLA COMPLETA (LIGHTBOX CON BOTÓN RETORNAR) ──
+  const renderImageLightbox = () => {
+    if (!selectedImage) return null;
+    return (
+      <div className="chat-image-lightbox" onClick={() => setSelectedImage(null)}>
+        <div className="chat-lightbox-header" onClick={e => e.stopPropagation()}>
+          <button className="chat-lightbox-back-btn" onClick={() => setSelectedImage(null)} title="Retornar al chat">
+            <ArrowLeft size={19} />
+            <span>Retornar al chat</span>
+          </button>
+          <div className="chat-lightbox-actions">
+            <a
+              href={selectedImage}
+              download="imagen-huasi.jpg"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="chat-lightbox-action-btn"
+              title="Descargar imagen"
+            >
+              <Download size={17} />
+              <span>Descargar</span>
+            </a>
+            <button className="chat-lightbox-close-btn" onClick={() => setSelectedImage(null)} title="Cerrar">
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+        <div className="chat-lightbox-content" onClick={e => e.stopPropagation()}>
+          <img src={selectedImage} alt="Imagen ampliada" className="chat-lightbox-img" />
         </div>
       </div>
     );
@@ -1081,6 +1131,9 @@ export default function ChatWidget({ isFullPage = false }) {
         {/* Full-screen call overlay */}
         {callState && renderCallOverlay()}
 
+        {/* Full-screen Image Lightbox con botón Retornar */}
+        {renderImageLightbox()}
+
         {/* SIDEBAR: Lista de conversaciones */}
         <div className={`chat-fp-sidebar ${activeConv ? 'hidden-mobile' : ''}`}>
           <div className="chat-w-header">
@@ -1106,6 +1159,9 @@ export default function ChatWidget({ isFullPage = false }) {
 
       {/* Call overlay */}
       {callState && renderCallOverlay()}
+
+      {/* Full-screen Image Lightbox con botón Retornar */}
+      {renderImageLightbox()}
 
       {/* FLOATING BUBBLE */}
       <button className="chat-fab" onClick={() => { setOpen(!open); if (!open) setActiveConv(null); }} title="Mensajes">
