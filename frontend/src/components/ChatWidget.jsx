@@ -8,7 +8,7 @@ import {
   PhoneOff, VideoOff, Mic, MicOff
 } from 'lucide-react';
 import api from '../api';
-import { notifyChatMessage } from '../utils/notifications';
+import { notifyChatMessage, notifyIncomingCall, stopRingtone } from '../utils/notifications';
 
 // ── Leaflet (lazy — sólo se carga si hay mensajes de ubicación) ──
 let LeafletLoaded = false;
@@ -186,6 +186,7 @@ export default function ChatWidget() {
 
   // ── WebRTC helpers ──
   const endCall = useCallback(() => {
+    stopRingtone(); // detener tono de llamada si estaba sonando
     peerConnectionRef.current?.close();
     peerConnectionRef.current = null;
     localStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -287,6 +288,11 @@ export default function ChatWidget() {
       setCallData(data);
       setCallType(data.callType || 'audio');
       setCallState('incoming');
+      // Ringtone + push notification aunque la app esté en background
+      notifyIncomingCall({
+        callerName: data.callerName || 'Un usuario',
+        callType: data.callType || 'audio'
+      });
     });
 
     socket.on('call_accepted', async (data) => {
@@ -564,7 +570,12 @@ export default function ChatWidget() {
 
   // ── Render bubble content ──
   const renderMessageContent = (msg) => {
-    const tipo = msg.tipo || 'texto';
+    const contenido = msg.contenido || '';
+    // Detectar tipo por contenido cuando la migración aún no ha corrido (tipo='texto' por defecto)
+    let tipo = msg.tipo || 'texto';
+    if (tipo === 'texto' && contenido.startsWith('[imagen]')) tipo = 'imagen';
+    if (tipo === 'texto' && contenido.startsWith('[ubicacion]')) tipo = 'ubicacion';
+
     let meta = msg.metadata;
     if (typeof meta === 'string') { try { meta = JSON.parse(meta); } catch (_) { meta = null; } }
 

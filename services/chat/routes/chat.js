@@ -50,14 +50,18 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// Servir uploads estáticos
+// Servir uploads estáticos (accesibles como /uploads/chat/filename)
 router.use('/uploads/chat', express.static(UPLOADS_DIR));
 
 // ============ UPLOAD IMAGE ============
-router.post('/chat/upload-image', requireAuth, upload.single('imagen'), async (req, res) => {
+// Gateway rewrites: /api/chat/upload-image → /upload-image
+router.post('/upload-image', requireAuth, upload.single('imagen'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo' });
-    const baseUrl = process.env.CHAT_PUBLIC_URL || `http://localhost:${process.env.CHAT_PORT || 4004}`;
+    // La URL de la imagen pasa por el gateway (/api/chat/uploads/chat/...) o por CHAT_PUBLIC_URL
+    const baseUrl = process.env.CHAT_PUBLIC_URL
+      || (process.env.GATEWAY_PUBLIC_URL ? `${process.env.GATEWAY_PUBLIC_URL}/api/chat` : null)
+      || `http://localhost:${process.env.CHAT_PORT || 4004}`;
     const url = `${baseUrl}/uploads/chat/${req.file.filename}`;
     res.json({ url, filename: req.file.filename });
   } catch (err) {

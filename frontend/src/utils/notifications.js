@@ -183,3 +183,56 @@ export async function notifyNewBookingRequest({ guestName = 'Un estudiante', pro
   });
 }
 
+// ──────────────────────────────────────────────────────────────
+// Tono de llamada (ringtone) + notificación de llamada entrante
+// ──────────────────────────────────────────────────────────────
+let _ringtoneInterval = null;
+let _ringtoneCtx = null;
+
+function _playRingStep() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!_ringtoneCtx || _ringtoneCtx.state === 'closed') _ringtoneCtx = new AudioCtx();
+    if (_ringtoneCtx.state === 'suspended') _ringtoneCtx.resume();
+    const now = _ringtoneCtx.currentTime;
+    // Dos pulsos dobles tipo teléfono
+    [[0, 440], [0.18, 660], [0.55, 440], [0.73, 660]].forEach(([t, freq]) => {
+      const osc = _ringtoneCtx.createOscillator();
+      const gain = _ringtoneCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + t);
+      gain.gain.setValueAtTime(0, now + t);
+      gain.gain.linearRampToValueAtTime(0.15, now + t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + t + 0.16);
+      osc.connect(gain);
+      gain.connect(_ringtoneCtx.destination);
+      osc.start(now + t);
+      osc.stop(now + t + 0.16);
+    });
+  } catch (_) {}
+}
+
+export function startRingtone() {
+  stopRingtone();
+  _playRingStep();
+  _ringtoneInterval = setInterval(_playRingStep, 1400);
+}
+
+export function stopRingtone() {
+  if (_ringtoneInterval) { clearInterval(_ringtoneInterval); _ringtoneInterval = null; }
+}
+
+// Notificación especializada: Llamada entrante
+export async function notifyIncomingCall({ callerName = 'Un usuario', callType = 'audio' }) {
+  startRingtone();
+  const typeLabel = callType === 'video' ? 'videollamada' : 'llamada de voz';
+  return showPushNotification({
+    title: `Llamada entrante — ${callerName}`,
+    body: `${callerName} te está haciendo una ${typeLabel}. Abre HUASI para responder.`,
+    icon: '/huasi-monograma.png',
+    url: '/',
+    tag: 'call-incoming',
+    data: { url: '/', callerName, callType }
+  });
+}
