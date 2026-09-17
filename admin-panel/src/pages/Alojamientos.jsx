@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Home, 
   Search, 
@@ -36,6 +37,7 @@ export default function Alojamientos({ onActionFinished }) {
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [filtroCampus, setFiltroCampus] = useState('');
   const { showToast } = useToast();
+  const [searchParams] = useSearchParams();
 
   // Debounce del término de búsqueda para no filtrar en cada tecla
   const debouncedSearch = useDebounce(searchTerm, 350);
@@ -91,6 +93,30 @@ export default function Alojamientos({ onActionFinished }) {
   useEffect(() => {
     fetchAlojamientos();
   }, []);
+
+  // Sincronizar filtros si se navega desde una notificación
+  useEffect(() => {
+    const searchParam = searchParams.get('search');
+    const estadoParam = searchParams.get('estado');
+
+    if (searchParam) {
+      setSearchTerm(searchParam);
+    }
+    if (estadoParam) {
+      setFiltroEstado(estadoParam);
+    }
+  }, [searchParams]);
+
+  // Si se especificó un ID de propiedad específico en la URL, abrir su modal de dictamen directamente
+  useEffect(() => {
+    const idParam = searchParams.get('id');
+    if (idParam && alojamientos.length > 0) {
+      const targetProp = alojamientos.find(p => String(p.id) === String(idParam));
+      if (targetProp) {
+        handleOpenInspection(targetProp);
+      }
+    }
+  }, [searchParams, alojamientos]);
 
   const fetchAlojamientos = async () => {
     setLoading(true);
@@ -476,28 +502,60 @@ export default function Alojamientos({ onActionFinished }) {
                 </td>
               </tr>
             ) : (
-              filtered.map(p => (
-                <tr key={p.id}>
+              filtered.map(p => {
+              const isHighlighted = searchParams.get('id') && String(p.id) === String(searchParams.get('id'));
+              return (
+                <tr 
+                  key={p.id}
+                  style={{
+                    background: isHighlighted ? 'rgba(245, 158, 11, 0.08)' : undefined,
+                    transition: 'background 0.3s ease'
+                  }}
+                >
                   <td>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.95rem' }}>{p.titulo}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.95rem' }}>{p.titulo}</span>
+                        {p.created_at && (Date.now() - new Date(p.created_at).getTime() < 48 * 3600 * 1000) && (
+                          <span style={{
+                            fontSize: '0.66rem',
+                            background: 'rgba(245, 158, 11, 0.15)',
+                            color: '#b45309',
+                            padding: '1px 6px',
+                            borderRadius: 999,
+                            fontWeight: 800
+                          }}>
+                            Nuevo
+                          </span>
+                        )}
+                      </div>
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         <MapPin size={12} /> {p.barrio ? `${p.barrio}, ${p.ciudad}` : (p.ciudad || 'Santa Marta')}
                       </span>
+                      {p.created_at && (
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 2 }}>
+                          <Clock size={11} /> {new Date(p.created_at).toLocaleDateString('es-CO', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--border)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(13, 124, 61, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.85rem' }}>
                         {p.host_nombre?.charAt(0) || 'U'}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>
                           {p.host_nombre} {p.host_apellido}
                         </span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          {p.host_email || 'Sin correo registrado'}
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <Mail size={11} /> {p.host_email || 'Sin correo'}
                         </span>
+                        {p.host_telefono && (
+                          <span style={{ fontSize: '0.73rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
+                            <Phone size={11} /> {p.host_telefono}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -560,7 +618,8 @@ export default function Alojamientos({ onActionFinished }) {
                     </div>
                   </td>
                 </tr>
-              ))
+              );
+            })
             )}
           </tbody>
         </table>

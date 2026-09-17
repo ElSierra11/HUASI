@@ -452,7 +452,31 @@ router.post('/', async (req, res) => {
       [req.user.id, String(titulo).trim(), String(descripcion).trim(), String(direccion).trim(), barrio ? String(barrio).trim() : null, ciudadFinal, tipoFinal, parseInt(capacidad, 10), amenidadesArr, reglas ? String(reglas).trim() : null, latitud || null, longitud || null, campus_cercano ? String(campus_cercano).trim() : null, duracion_maxima ? parseInt(duracion_maxima, 10) : null]
     );
 
-    res.status(201).json(result.rows[0]);
+    const nuevaPropiedad = result.rows[0];
+
+    // Registrar actividad para monitoreo y alertas del panel de administración
+    try {
+      await pool.query(
+        `INSERT INTO user_actividades (user_id, tipo_evento, descripcion, ruta, dispositivo, metadata)
+         VALUES ($1, 'propiedad_nueva', $2, $3, 'Web', $4)`,
+        [
+          req.user.id,
+          `Nuevo alojamiento registrado para revisión: "${nuevaPropiedad.titulo}" (${tipoFinal}) en ${ciudadFinal}`,
+          `/alojamientos?search=${encodeURIComponent(nuevaPropiedad.titulo)}&id=${nuevaPropiedad.id}`,
+          JSON.stringify({
+            propiedad_id: nuevaPropiedad.id,
+            titulo: nuevaPropiedad.titulo,
+            tipo: tipoFinal,
+            ciudad: ciudadFinal,
+            campus: campus_cercano || null
+          })
+        ]
+      );
+    } catch (actErr) {
+      console.warn('Aviso al registrar actividad de nueva propiedad:', actErr.message);
+    }
+
+    res.status(201).json(nuevaPropiedad);
   } catch (err) {
     console.error('Error creando propiedad:', err);
     res.status(500).json({ error: 'Error interno del servidor' });

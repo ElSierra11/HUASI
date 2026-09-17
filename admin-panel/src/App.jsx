@@ -14,6 +14,7 @@ import Reportes from './pages/Reportes';
 import Alojamientos from './pages/Alojamientos';
 import EstadisticasMensuales from './pages/EstadisticasMensuales';
 import MonitoreoActividad from './pages/MonitoreoActividad';
+import NotificationCenter from './components/NotificationCenter';
 import useActivityTracker from './hooks/useActivityTracker';
 
 function ProtectedRoute({ children }) {
@@ -140,6 +141,9 @@ function App() {
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>Servidor Activo</span>
             </div>
+
+            {/* Centro de Notificaciones y Alertas de Procesos */}
+            <NotificationCenter />
 
             {/* Perfil del Funcionario */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

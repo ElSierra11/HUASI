@@ -588,6 +588,23 @@ router.post('/register', async (req, res) => {
       [cleanEmail, password_hash, nombre, apellido, telefono || null, userRole, campus, tipo_documento || 'cedula', numero_documento || null, otp, otp_expires_at]
     );
 
+    const newUser = result.rows[0];
+
+    // Registrar evento de actividad para auditoría y alertas de administrador
+    try {
+      await pool.query(
+        `INSERT INTO user_actividades (user_id, tipo_evento, descripcion, ruta, dispositivo, metadata)
+         VALUES ($1, 'registro', $2, '/registro', 'Web', $3)`,
+        [
+          newUser.id,
+          `Nuevo usuario registrado: ${newUser.nombre} ${newUser.apellido} (${newUser.email}) - Sede ${newUser.campus}`,
+          JSON.stringify({ campus: newUser.campus, role: newUser.role, email: newUser.email, telefono: telefono || null })
+        ]
+      );
+    } catch (actErr) {
+      console.warn('Aviso al registrar actividad de nuevo usuario:', actErr.message);
+    }
+
     // Enviar OTP y esperar resultado
     const emailResult = await sendOtpEmailBackground(cleanEmail, nombre, otp);
 
@@ -675,7 +692,16 @@ router.post('/verify-otp', async (req, res) => {
       [cleanEmail]
     );
 
-
+    // Registrar evento de verificación de correo completada
+    try {
+      await pool.query(
+        `INSERT INTO user_actividades (user_id, tipo_evento, descripcion, ruta, dispositivo, metadata)
+         VALUES ($1, 'verificacion_email', $2, '/verificar-otp', 'Web', $3)`,
+        [user.id, `Usuario verificó su correo exitosamente: ${cleanEmail}`, JSON.stringify({ campus: user.campus, role: user.role })]
+      );
+    } catch (actErr) {
+      console.warn('Aviso al registrar actividad de verificación:', actErr.message);
+    }
 
     // Reutilizar el usuario ya cargado, actualizando los campos verificados en memoria
     user.email_verificado = true;
@@ -1057,6 +1083,182 @@ router.get('/admin/sidebar-counters', async (req, res) => {
   } catch (err) {
     console.error('Error obteniendo contadores de sidebar:', err);
     res.status(500).json({ error: 'Error obteniendo contadores' });
+  }
+});
+
+// ============ ADMIN: NOTIFICACIONES DE PROCESOS (NUEVOS ALOJAMIENTOS Y REGISTROS) ============
+router.get('/admin/notificaciones-procesos', async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+
+    // 1. Resumen de conteos
+    const [pendientesAlojRes, correccionAlojRes, nuevosRegistros24hRes, sinVerificarRes] = await Promise.all([
+      pool.query(`SELECT COUNT(*) as count FROM propiedades WHERE estado_aprobacion = 'pendiente_revision'`),
+      pool.query(`SELECT COUNT(*) as count FROM propiedades WHERE estado_aprobacion = 'en_correccion'`),
+      pool.query(`SELECT COUNT(*) as count FROM users WHERE created_at >= NOW() - INTERVAL '24 hours'`),
+      pool.query(`SELECT COUNT(*) as count FROM users WHERE (verificado = FALSE OR verificado IS NULL) AND role != 'admin'`)
+    ]);
+
+    const resumen = {
+      total_pendientes_alojamiento: parseInt(pendientesAlojRes.rows[0].count, 10) || 0,
+      total_en_correccion_alojamiento: parseInt(correccionAlojRes.rows[0].count, 10) || 0,
+      total_nuevos_registros_24h: parseInt(nuevosRegistros24hRes.rows[0].count, 10) || 0,
+      total_registros_sin_verificar: parseInt(sinVerificarRes.rows[0].count, 10) || 0,
+      total_alertas_activas: (parseInt(pendientesAlojRes.rows[0].count, 10) || 0) + (parseInt(nuevosRegistros24hRes.rows[0].count, 10) || 0)
+    };
+
+    // 2. Alojamientos en proceso (nuevas publicaciones y pendientes de dictamen)
+    const alojamientosRes = await pool.query(`
+      SELECT 
+        p.id as propiedad_id,
+        p.titulo,
+        p.tipo,
+        p.ciudad,
+        p.barrio,
+        p.campus_cercano,
+        p.capacidad,
+        p.estado_aprobacion,
+        p.activo,
+        p.created_at,
+        p.updated_at,
+        u.id as host_id,
+        u.nombre as host_nombre,
+        u.apellido as host_apellido,
+        u.email as host_email,
+        u.telefono as host_telefono,
+        u.foto_perfil as host_foto,
+        u.campus as host_campus,
+        u.verificado as host_verificado
+      FROM propiedades p
+      JOIN users u ON p.host_id = u.id
+      ORDER BY 
+        CASE 
+          WHEN p.estado_aprobacion = 'pendiente_revision' THEN 0 
+          WHEN p.estado_aprobacion = 'en_correccion' THEN 1 
+          ELSE 2 
+        END,
+        p.created_at DESC
+      LIMIT 30
+    `);
+
+    // 3. Usuarios registrados recientemente (últimos 14 días o pendientes)
+    const registrosRes = await pool.query(`
+      SELECT 
+        u.id as user_id,
+        u.nombre,
+        u.apellido,
+        u.email,
+        u.telefono,
+        u.role,
+        u.campus,
+        u.tipo_documento,
+        u.numero_documento,
+        u.verificado,
+        u.email_verificado,
+        u.foto_perfil,
+        u.created_at,
+        (u.ultimo_acceso >= NOW() - INTERVAL '15 minutes') as is_online
+      FROM users u
+      WHERE u.role != 'admin'
+      ORDER BY u.created_at DESC NULLS LAST
+      LIMIT 40
+    `);
+
+    // 4. Feed unificado cronológico
+    const notificaciones = [];
+
+    // Mapear alojamientos
+    alojamientosRes.rows.forEach(p => {
+      const esPendiente = p.estado_aprobacion === 'pendiente_revision';
+      const esCorreccion = p.estado_aprobacion === 'en_correccion';
+      notificaciones.push({
+        id: `aloj-${p.propiedad_id}`,
+        tipo: 'alojamiento',
+        subtipo: p.estado_aprobacion,
+        titulo: esPendiente ? 'Nueva oferta de alojamiento pendiente' : esCorreccion ? 'Alojamiento en subsanación' : 'Alojamiento ofertado',
+        subtitulo: `"${p.titulo}"`,
+        descripcion: `Anfitrión: ${p.host_nombre} ${p.host_apellido} (${p.host_email}) · Sede: ${p.campus_cercano || p.ciudad || 'No especificada'}`,
+        fecha: p.created_at,
+        estado: p.estado_aprobacion,
+        badgeColor: esPendiente ? 'amber' : esCorreccion ? 'blue' : 'emerald',
+        persona: {
+          id: p.host_id,
+          nombre: `${p.host_nombre} ${p.host_apellido}`,
+          email: p.host_email,
+          telefono: p.host_telefono,
+          campus: p.host_campus,
+          rol: 'Anfitrión / Arrendador',
+          verificado: p.host_verificado,
+          foto: p.host_foto
+        },
+        objeto: {
+          propiedad_id: p.propiedad_id,
+          titulo: p.titulo,
+          tipo: p.tipo,
+          ciudad: p.ciudad,
+          barrio: p.barrio,
+          campus_cercano: p.campus_cercano,
+          capacidad: p.capacidad,
+          estado_aprobacion: p.estado_aprobacion
+        },
+        accionUrl: `/alojamientos?search=${encodeURIComponent(p.titulo)}&id=${p.propiedad_id}`,
+        accionTexto: 'Revisar Alojamiento'
+      });
+    });
+
+    // Mapear usuarios registrados
+    registrosRes.rows.forEach(u => {
+      const estaVerificado = Boolean(u.verificado || u.email_verificado);
+      notificaciones.push({
+        id: `reg-${u.user_id}`,
+        tipo: 'registro',
+        subtipo: estaVerificado ? 'verificado' : 'pendiente_verificacion',
+        titulo: 'Nuevo usuario registrado en HUASI',
+        subtitulo: `${u.nombre} ${u.apellido}`,
+        descripcion: `Rol: ${u.role || 'Estudiante'} · Sede: ${u.campus || 'General'} · Tel: ${u.telefono || 'Sin registrar'}`,
+        fecha: u.created_at,
+        estado: estaVerificado ? 'verificado' : 'pendiente_otp',
+        badgeColor: estaVerificado ? 'emerald' : 'sky',
+        persona: {
+          id: u.user_id,
+          nombre: `${u.nombre} ${u.apellido}`,
+          email: u.email,
+          telefono: u.telefono,
+          campus: u.campus,
+          rol: u.role || 'estudiante',
+          verificado: u.verificado,
+          email_verificado: u.email_verificado,
+          tipo_documento: u.tipo_documento,
+          numero_documento: u.numero_documento,
+          foto: u.foto_perfil,
+          is_online: u.is_online
+        },
+        objeto: {
+          user_id: u.user_id,
+          email: u.email,
+          campus: u.campus,
+          documento: u.numero_documento ? `${u.tipo_documento || 'Doc'}: ${u.numero_documento}` : 'Sin documento'
+        },
+        accionUrl: `/usuarios?search=${encodeURIComponent(u.email)}`,
+        accionTexto: 'Ver Usuario'
+      });
+    });
+
+    // Ordenar cronológicamente descendente
+    notificaciones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+    res.json({
+      resumen,
+      total_notificaciones: notificaciones.length,
+      notificaciones: notificaciones.slice(0, 50),
+      alojamientos_en_proceso: alojamientosRes.rows,
+      registros_en_proceso: registrosRes.rows
+    });
+  } catch (err) {
+    console.error('Error obteniendo notificaciones de procesos admin:', err);
+    res.status(500).json({ error: 'Error obteniendo notificaciones de procesos' });
   }
 });
 

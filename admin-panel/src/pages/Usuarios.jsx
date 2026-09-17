@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   UserCheck, 
   ShieldAlert, 
@@ -16,7 +17,9 @@ import {
   KeyRound,
   Copy,
   CheckCheck,
-  Download
+  Download,
+  Sparkles,
+  Clock
 } from 'lucide-react';
 import api from '../api';
 import Modal from '../components/Modal';
@@ -27,7 +30,21 @@ export default function Usuarios({ onActionFinished }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [filtroRapido, setFiltroRapido] = useState('todos'); // 'todos' | 'recientes' | 'sin_verificar'
+  const [searchParams] = useSearchParams();
   const { showToast } = useToast();
+
+  // Sincronizar búsqueda si viene de una notificación
+  useEffect(() => {
+    const searchParam = searchParams.get('search');
+    const filtroParam = searchParams.get('filtro');
+    if (searchParam) {
+      setSearchTerm(searchParam);
+    }
+    if (filtroParam) {
+      setFiltroRapido(filtroParam);
+    }
+  }, [searchParams]);
 
   // Estados para Modal de Bloqueo
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
@@ -235,19 +252,45 @@ export default function Usuarios({ onActionFinished }) {
     showToast('Reporte exportado exitosamente', 'success');
   };
 
+  const countRecientes = usuarios.filter(u => {
+    if (!u.created_at) return false;
+    const diff = (Date.now() - new Date(u.created_at).getTime()) / (1000 * 60 * 60 * 24);
+    return diff <= 7;
+  }).length;
+
+  const countSinVerificar = usuarios.filter(u => !u.verificado && !u.email_verificado).length;
+
   const filteredUsuarios = usuarios.filter(u => {
-    const searchString = `${u.nombre} ${u.apellido} ${u.email} ${u.campus || ''}`.toLowerCase();
-    return searchString.includes(searchTerm.toLowerCase());
+    const searchString = `${u.nombre || ''} ${u.apellido || ''} ${u.email || ''} ${u.campus || ''} ${u.telefono || ''}`.toLowerCase();
+    const matchesSearch = searchString.includes(searchTerm.toLowerCase());
+    if (!matchesSearch) return false;
+
+    if (filtroRapido === 'recientes') {
+      if (!u.created_at) return false;
+      const diff = (Date.now() - new Date(u.created_at).getTime()) / (1000 * 60 * 60 * 24);
+      return diff <= 7;
+    }
+
+    if (filtroRapido === 'sin_verificar') {
+      return !u.verificado && !u.email_verificado;
+    }
+
+    return true;
   });
 
   if (loading) return <div className="loading"><div className="spinner"></div></div>;
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 12, letterSpacing: '-0.5px', margin: 0 }}>
-          <UserCheck size={30} color="var(--primary)" /> Gestión y Registro de Usuarios
-        </h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 12, letterSpacing: '-0.5px', margin: 0 }}>
+            <UserCheck size={30} color="var(--primary)" /> Gestión y Registro de Usuarios
+          </h2>
+          <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+            Control de cuentas, auditoría de altas recientes y seguimiento del estado de verificación institucional.
+          </p>
+        </div>
 
         {/* Buscador y Botón Exportar */}
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -258,7 +301,7 @@ export default function Usuarios({ onActionFinished }) {
             <input 
               type="text" 
               className="form-control" 
-              placeholder="Buscar por nombre, email o sede..." 
+              placeholder="Buscar por nombre, email, sede o tel..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ paddingLeft: 38, height: 38, fontSize: '0.85rem' }}
@@ -287,6 +330,49 @@ export default function Usuarios({ onActionFinished }) {
             <span>Exportar CSV</span>
           </button>
         </div>
+      </div>
+
+      {/* Pestañas de Filtrado Rápido */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+        {[
+          { id: 'todos', label: 'Todos los usuarios', count: usuarios.length },
+          { id: 'recientes', label: '✨ Nuevos registros (últimos 7 días)', count: countRecientes, highlight: countRecientes > 0 },
+          { id: 'sin_verificar', label: '⏳ Pendientes de verificación', count: countSinVerificar, warning: countSinVerificar > 0 }
+        ].map(tab => {
+          const isActive = filtroRapido === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setFiltroRapido(tab.id)}
+              style={{
+                background: isActive ? 'var(--primary)' : 'var(--card-bg, #ffffff)',
+                color: isActive ? '#ffffff' : 'var(--text)',
+                border: `1px solid ${isActive ? 'var(--primary)' : 'var(--border)'}`,
+                padding: '7px 14px',
+                borderRadius: '8px',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <span>{tab.label}</span>
+              <span style={{
+                background: isActive ? 'rgba(255,255,255,0.25)' : (tab.warning ? '#fee2e2' : tab.highlight ? 'rgba(13,124,61,0.1)' : 'var(--border)'),
+                color: isActive ? '#ffffff' : (tab.warning ? '#dc2626' : tab.highlight ? 'var(--primary)' : 'var(--text-muted)'),
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontSize: '0.72rem',
+                fontWeight: 700
+              }}>
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {error && (
@@ -344,15 +430,44 @@ export default function Usuarios({ onActionFinished }) {
                         </div>
                       )}
                       <div>
-                        <div style={{ fontWeight: 700, color: 'var(--text)' }}>{u.nombre} {u.apellido}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontWeight: 700, color: 'var(--text)' }}>{u.nombre} {u.apellido}</span>
+                          {u.created_at && (Date.now() - new Date(u.created_at).getTime() < 48 * 3600 * 1000) && (
+                            <span style={{
+                              fontSize: '0.66rem',
+                              background: 'rgba(13, 124, 61, 0.12)',
+                              color: 'var(--primary)',
+                              padding: '1px 6px',
+                              borderRadius: 999,
+                              fontWeight: 800,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 2
+                            }}>
+                              <Sparkles size={10} /> Nuevo
+                            </span>
+                          )}
+                        </div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                           <Mail size={12} /> {u.email}
                         </div>
-                        {u.telefono && (
-                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                            <Phone size={12} /> {u.telefono}
-                          </div>
-                        )}
+                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 2, fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                          {u.telefono && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Phone size={11} /> {u.telefono}
+                            </span>
+                          )}
+                          {u.numero_documento && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(0,0,0,0.03)', padding: '1px 5px', borderRadius: 4 }}>
+                              {u.tipo_documento ? u.tipo_documento.toUpperCase() : 'DOC'}: {u.numero_documento}
+                            </span>
+                          )}
+                          {u.created_at && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                              <Clock size={11} /> {new Date(u.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </td>
