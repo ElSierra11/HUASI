@@ -24,6 +24,21 @@ async function hasMediaCols() {
   return _hasMediaCols;
 }
 
+let _hasDeliveredCol = null;
+async function hasDeliveredCol() {
+  if (_hasDeliveredCol !== null) return _hasDeliveredCol;
+  try {
+    const res = await pool.query(`
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'mensajes' AND column_name = 'entregado' LIMIT 1
+    `);
+    _hasDeliveredCol = res.rows.length > 0;
+  } catch (_) {
+    _hasDeliveredCol = false;
+  }
+  return _hasDeliveredCol;
+}
+
 // ============ MULTER CONFIG ============
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'chat');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -31,7 +46,14 @@ if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
+    let ext = path.extname(file.originalname).toLowerCase();
+    if (!ext && file.mimetype) {
+      if (file.mimetype.includes('webm')) ext = '.webm';
+      else if (file.mimetype.includes('ogg')) ext = '.ogg';
+      else if (file.mimetype.includes('mp4') || file.mimetype.includes('m4a')) ext = '.m4a';
+      else if (file.mimetype.includes('mp3') || file.mimetype.includes('mpeg')) ext = '.mp3';
+      else ext = '.bin';
+    }
     cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
   }
 });
@@ -45,6 +67,18 @@ const upload = multer({
   }
 });
 
+const uploadAudio = multer({
+  storage,
+  limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (/audio|video\/webm|video\/mp4/.test(file.mimetype) || file.originalname.match(/\.(webm|ogg|wav|mp3|m4a|aac|mp4)$/i)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos de audio'));
+    }
+  }
+});
+
 function requireAuth(req, res, next) {
   if (!req.user) return res.status(401).json({ error: 'Autenticación requerida' });
   next();
@@ -52,6 +86,22 @@ function requireAuth(req, res, next) {
 
 // Servir uploads estáticos (accesibles como /uploads/chat/filename)
 router.use('/uploads/chat', express.static(UPLOADS_DIR));
+
+// ============ UPLOAD AUDIO / VOICE NOTE ============
+router.post('/upload-audio', requireAuth, uploadAudio.single('audio'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo de audio' });
+    const duration = parseFloat(req.body.duration || 0);
+    const urlPrefix = process.env.CHAT_PUBLIC_URL
+      ? `${process.env.CHAT_PUBLIC_URL}/uploads/chat/`
+      : `/api/chat/uploads/chat/`;
+    const url = `${urlPrefix}${req.file.filename}`;
+    res.json({ url, filename: req.file.filename, duration });
+  } catch (err) {
+    console.error('Error subiendo audio:', err);
+    res.status(500).json({ error: 'Error al subir nota de voz' });
+  }
+});
 
 // ============ UPLOAD IMAGE ============
 // Gateway rewrites: /api/chat/upload-image → /upload-image
@@ -153,10 +203,13 @@ router.get('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
 
     // Seleccionar columnas según esquema disponible
     let result;
+    const hasDeliv = await hasDeliveredCol();
+    const deliveredExpr = hasDeliv ? 'COALESCE(m.entregado, m.leido, FALSE) AS entregado' : 'm.leido AS entregado';
+
     if (await hasMediaCols()) {
       result = await pool.query(`
         SELECT m.id, m.conversacion_id, m.sender_id, m.contenido,
-               COALESCE(m.tipo, 'texto') AS tipo, m.metadata, m.leido, m.created_at,
+               COALESCE(m.tipo, 'texto') AS tipo, m.metadata, m.leido, ${deliveredExpr}, m.created_at,
                u.nombre AS sender_nombre, u.apellido AS sender_apellido
         FROM mensajes m
         JOIN users u ON m.sender_id = u.id
@@ -166,7 +219,7 @@ router.get('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
     } else {
       result = await pool.query(`
         SELECT m.id, m.conversacion_id, m.sender_id, m.contenido,
-               'texto' AS tipo, NULL AS metadata, m.leido, m.created_at,
+               'texto' AS tipo, NULL AS metadata, m.leido, ${deliveredExpr}, m.created_at,
                u.nombre AS sender_nombre, u.apellido AS sender_apellido
         FROM mensajes m
         JOIN users u ON m.sender_id = u.id

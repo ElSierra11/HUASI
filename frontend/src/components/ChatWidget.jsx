@@ -5,7 +5,8 @@ import { io } from 'socket.io-client';
 import {
   Send, MessageCircle, X, ArrowLeft, ChevronDown, Home, Eye,
   Phone, Video, Image, MapPin, Camera,
-  PhoneOff, VideoOff, Mic, MicOff, Search, Download
+  PhoneOff, VideoOff, Mic, MicOff, Search, Download,
+  Check, CheckCheck, Clock, Play, Pause, Trash2, Volume2
 } from 'lucide-react';
 import api from '../api';
 import { notifyChatMessage, notifyIncomingCall, startRingtone, stopRingtone } from '../utils/notifications';
@@ -39,13 +40,118 @@ async function loadLeaflet() {
   }
 }
 
-// ── WebRTC STUN servers ──
+// ── WebRTC STUN & TURN servers (Conexión 100% garantizada en 4G/5G y NAT móvil) ──
 const RTC_CONFIG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
-  ]
+    { urls: 'stun:stun1.l.google.com:19302' },
+    {
+      urls: [
+        'turn:openrelay.metered.ca:80',
+        'turn:openrelay.metered.ca:443',
+        'turn:openrelay.metered.ca:443?transport=tcp'
+      ],
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    }
+  ],
+  iceCandidatePoolSize: 10
 };
+
+// ── Audio message bubble — reproductor sobrio tipo WhatsApp con iconos SVG ──
+function AudioMessageBubble({ url, duration = 0, isMine }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(duration || 0);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    const audio = new Audio(url);
+    audioRef.current = audio;
+
+    const onLoaded = () => {
+      if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+        setAudioDuration(Math.round(audio.duration));
+      }
+    };
+    const onTime = () => setCurrentTime(audio.currentTime);
+    const onEnd = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+
+    audio.addEventListener('loadedmetadata', onLoaded);
+    audio.addEventListener('timeupdate', onTime);
+    audio.addEventListener('ended', onEnd);
+
+    return () => {
+      audio.pause();
+      audio.removeEventListener('loadedmetadata', onLoaded);
+      audio.removeEventListener('timeupdate', onTime);
+      audio.removeEventListener('ended', onEnd);
+    };
+  }, [url]);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      document.querySelectorAll('audio').forEach(a => a.pause());
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => console.warn('Error al reproducir audio:', err));
+    }
+  };
+
+  const handleSeek = (e) => {
+    const t = parseFloat(e.target.value);
+    setCurrentTime(t);
+    if (audioRef.current) audioRef.current.currentTime = t;
+  };
+
+  const formatSecs = (sec) => {
+    const s = Math.floor(sec || 0);
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return `${m}:${String(rem).padStart(2, '0')}`;
+  };
+
+  const maxVal = audioDuration > 0 ? audioDuration : (currentTime > 0 ? currentTime : 1);
+  const currentVal = Math.min(currentTime, maxVal);
+
+  return (
+    <div className={`chat-audio-player ${isMine ? 'mine' : 'other'}`}>
+      <button
+        type="button"
+        className="chat-audio-play-btn"
+        onClick={togglePlay}
+        title={isPlaying ? 'Pausar nota de voz' : 'Reproducir nota de voz'}
+      >
+        {isPlaying ? <Pause size={16} /> : <Play size={16} style={{ marginLeft: 2 }} />}
+      </button>
+
+      <div className="chat-audio-body">
+        <input
+          type="range"
+          min="0"
+          max={maxVal}
+          step="0.1"
+          value={currentVal}
+          onChange={handleSeek}
+          className="chat-audio-slider"
+        />
+        <div className="chat-audio-meta">
+          <span className="chat-audio-time">
+            {formatSecs(isPlaying || currentTime > 0 ? currentTime : audioDuration)}
+          </span>
+          <Volume2 size={12} className="chat-audio-vol-icon" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Location bubble — mini mapa estático sin dependencias ──
 function LocationBubble({ lat, lng }) {
@@ -63,18 +169,16 @@ function LocationBubble({ lat, lng }) {
         <div style={{ height: 130, width: 210, borderRadius: 8, overflow: 'hidden', marginBottom: 6 }}>
           <MapContainer
             center={[lat, lng]} zoom={15}
-            style={{ height: '100%', width: '100%' }}
-            zoomControl={false} dragging={false}
-            scrollWheelZoom={false} doubleClickZoom={false}
+            scrollWheelZoom={false} dragging={false} zoomControl={false}
             attributionControl={false}
+            style={{ height: '100%', width: '100%' }}
           >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <Marker position={[lat, lng]}><Popup>Mi ubicación</Popup></Marker>
+            <Marker position={[lat, lng]} />
           </MapContainer>
         </div>
       ) : (
-        /* fallback: imagen estática mientras Leaflet carga o si falla */
-        <a href={gmapsUrl} target="_blank" rel="noopener noreferrer">
+        <a href={gmapsUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
           <img
             src={osmStaticUrl}
             alt="Mapa de ubicación"
@@ -122,6 +226,14 @@ export default function ChatWidget({ isFullPage = false }) {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+
+  // ── Voice Recording State & Refs ──
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+  const recordingStreamRef = useRef(null);
 
   // ── Refs ──
   const socketRef = useRef(null);
@@ -173,6 +285,22 @@ export default function ChatWidget({ isFullPage = false }) {
   }, [callState]);
 
   const formatCallDuration = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  const formatRecordingTime = (sec) => {
+    const s = Math.floor(sec || 0);
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return `${m}:${String(rem).padStart(2, '0')}`;
+  };
+
+  // ── Limpieza de grabador de voz al desmontar ──
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      if (recordingStreamRef.current) {
+        recordingStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, []);
 
   // ── Auto-select conversation via URL search params (?user=id o ?conv=id) ──
   useEffect(() => {
@@ -348,6 +476,8 @@ export default function ChatWidget({ isFullPage = false }) {
       if (isActive) {
         socket.emit('mark_read', { conversacion_id: msg.conversacion_id });
         setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]);
+      } else if (msg.sender_id !== user.id) {
+        socket.emit('message_delivered', { messageId: msg.id, conversacion_id: msg.conversacion_id });
       }
 
       setConversaciones(prev => {
@@ -356,7 +486,7 @@ export default function ChatWidget({ isFullPage = false }) {
           api.get('/chat/conversaciones').then(r => setConversaciones(r.data)).catch(() => {});
           return prev;
         }
-        const preview = msg.tipo === 'imagen' ? 'Imagen' : msg.tipo === 'ubicacion' ? 'Ubicación compartida' : msg.contenido;
+        const preview = msg.tipo === 'imagen' ? 'Foto' : msg.tipo === 'audio' ? 'Nota de voz' : msg.tipo === 'ubicacion' ? 'Ubicación' : msg.contenido;
         return prev.map(c => c.id === msg.conversacion_id
           ? { ...c, ultimo_mensaje: preview, ultimo_mensaje_fecha: msg.created_at, no_leidos: (msg.sender_id !== user.id && !isActive) ? (c.no_leidos || 0) + 1 : c.no_leidos }
           : c
@@ -366,9 +496,28 @@ export default function ChatWidget({ isFullPage = false }) {
       if (msg.sender_id !== user.id && (!isActive || document.hidden)) {
         setUnreadTotal(p => p + 1);
         const senderName = msg.sender_nombre ? `${msg.sender_nombre} ${msg.sender_apellido || ''}`.trim() : 'Estudiante HUASI';
-        const preview = msg.tipo === 'imagen' ? 'Te envió una imagen' : msg.tipo === 'ubicacion' ? 'Compartió su ubicación' : msg.contenido;
+        const preview = msg.tipo === 'imagen' ? 'Te envió una foto' : msg.tipo === 'audio' ? 'Te envió una nota de voz' : msg.tipo === 'ubicacion' ? 'Compartió su ubicación' : msg.contenido;
         notifyChatMessage({ senderName, messageText: preview, conversacionId: msg.conversacion_id });
       }
+    });
+
+    // Confirmación de lectura (doble check verde en tiempo real)
+    socket.on('messages_read', ({ conversacion_id }) => {
+      setMessages(prev => prev.map(m =>
+        m.conversacion_id === conversacion_id ? { ...m, leido: true, entregado: true } : m
+      ));
+      setConversaciones(prev => prev.map(c =>
+        c.id === conversacion_id ? { ...c, no_leidos: 0 } : c
+      ));
+    });
+
+    // Confirmación de entrega (doble check gris en tiempo real)
+    socket.on('message_delivered', ({ messageId, conversacion_id }) => {
+      setMessages(prev => prev.map(m => {
+        if (messageId && m.id === messageId) return { ...m, entregado: true };
+        if (conversacion_id && m.conversacion_id === conversacion_id && !m.leido) return { ...m, entregado: true };
+        return m;
+      }));
     });
 
     socket.on('new_property_published', (d) => window.dispatchEvent(new CustomEvent('huasi:property-published', { detail: d })));
@@ -574,6 +723,131 @@ export default function ChatWidget({ isFullPage = false }) {
     );
   };
 
+  // ── Voice Recording handlers ──
+  const startVoiceRecording = async () => {
+    if (!activeConv) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStreamRef.current = stream;
+      audioChunksRef.current = [];
+
+      let options = {};
+      if (typeof MediaRecorder !== 'undefined') {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          options = { mimeType: 'audio/webm;codecs=opus' };
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          options = { mimeType: 'audio/mp4' };
+        } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+          options = { mimeType: 'audio/ogg;codecs=opus' };
+        }
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, options);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.start(200);
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error('Error accediendo al micrófono:', err);
+      alert('No se pudo acceder al micrófono. Por favor verifica los permisos en tu navegador.');
+    }
+  };
+
+  const cancelVoiceRecording = () => {
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try { mediaRecorderRef.current.stop(); } catch (_) {}
+    }
+    if (recordingStreamRef.current) {
+      recordingStreamRef.current.getTracks().forEach(t => t.stop());
+      recordingStreamRef.current = null;
+    }
+    audioChunksRef.current = [];
+    setIsRecording(false);
+    setRecordingDuration(0);
+  };
+
+  const stopAndSendVoiceRecording = () => {
+    if (!mediaRecorderRef.current || !activeConv) return;
+    const duration = recordingDuration;
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+
+    mediaRecorderRef.current.onstop = async () => {
+      try {
+        const mimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        if (recordingStreamRef.current) {
+          recordingStreamRef.current.getTracks().forEach(t => t.stop());
+          recordingStreamRef.current = null;
+        }
+
+        if (audioBlob.size < 500) {
+          setIsRecording(false);
+          setRecordingDuration(0);
+          return;
+        }
+
+        const ext = mimeType.includes('mp4') ? 'm4a' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+        const file = new File([audioBlob], `audio-${Date.now()}.${ext}`, { type: mimeType });
+
+        const fd = new FormData();
+        fd.append('audio', file);
+        fd.append('duration', String(duration));
+
+        const res = await api.post('/chat/upload-audio', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        let url = res.data.url;
+        if (url && url.includes('/uploads/chat/')) {
+          url = `/api/chat${url.substring(url.lastIndexOf('/uploads/chat/'))}`;
+        }
+
+        const contenido = `[audio]${url}`;
+        const metadata = { url, duration };
+
+        if (socketRef.current?.connected) {
+          socketRef.current.emit('send_message', {
+            conversacion_id: activeConv.id,
+            contenido,
+            tipo: 'audio',
+            metadata
+          });
+        } else {
+          const postRes = await api.post(`/chat/conversaciones/${activeConv.id}/mensajes`, {
+            contenido,
+            tipo: 'audio',
+            metadata
+          });
+          setMessages(p => p.some(m => m.id === postRes.data.id) ? p : [...p, postRes.data]);
+        }
+      } catch (err) {
+        console.error('Error enviando nota de voz:', err);
+        alert('No se pudo enviar la nota de voz.');
+      } finally {
+        setIsRecording(false);
+        setRecordingDuration(0);
+      }
+    };
+
+    try {
+      mediaRecorderRef.current.stop();
+    } catch (_) {
+      cancelVoiceRecording();
+    }
+  };
+
   // ── Typing ──
   const handleTyping = (e) => {
     setNewMsg(e.target.value);
@@ -715,9 +989,24 @@ export default function ChatWidget({ isFullPage = false }) {
     let tipo = msg.tipo || 'texto';
     if (tipo === 'texto' && contenido.startsWith('[imagen]')) tipo = 'imagen';
     if (tipo === 'texto' && contenido.startsWith('[ubicacion]')) tipo = 'ubicacion';
+    if (tipo === 'texto' && contenido.startsWith('[audio]')) tipo = 'audio';
 
     let meta = msg.metadata;
     if (typeof meta === 'string') { try { meta = JSON.parse(meta); } catch (_) { meta = null; } }
+
+    const isMine = msg.sender_id === user?.id;
+
+    if (tipo === 'audio') {
+      let rawUrl = meta?.url || msg.contenido.replace('[audio]', '').trim();
+      let url = rawUrl;
+      if (url.includes('/uploads/chat/')) {
+        const sub = url.substring(url.lastIndexOf('/uploads/chat/'));
+        url = `/api/chat${sub}`;
+      } else if (!url.startsWith('http') && !url.startsWith('/')) {
+        url = `/api/chat/uploads/chat/${url}`;
+      }
+      return <AudioMessageBubble url={url} duration={meta?.duration || 0} isMine={isMine} />;
+    }
 
     if (tipo === 'imagen') {
       let rawUrl = meta?.url || msg.contenido.replace('[imagen]', '').trim();
@@ -747,7 +1036,7 @@ export default function ChatWidget({ isFullPage = false }) {
               if (parent && !parent.querySelector('.chat-img-fallback')) {
                 const fb = document.createElement('span');
                 fb.className = 'chat-img-fallback';
-                fb.innerText = '🖼️ Ver imagen';
+                fb.innerText = 'Ver imagen';
                 fb.style.cssText = 'display:inline-block;padding:6px 10px;font-size:0.8rem;color:#ffffff;text-decoration:underline;';
                 parent.appendChild(fb);
               }
@@ -761,11 +1050,26 @@ export default function ChatWidget({ isFullPage = false }) {
       const parts = msg.contenido.replace('[ubicacion]', '').split(',');
       const lat = meta?.lat ?? parseFloat(parts[0] || 0);
       const lng = meta?.lng ?? parseFloat(parts[1] || 0);
-      if (!lat || !lng) return <p>📍 Ubicación compartida</p>;
+      if (!lat || !lng) return <p>Ubicación compartida</p>;
       return <LocationBubble lat={lat} lng={lng} />;
     }
 
     return <p>{msg.contenido}</p>;
+  };
+
+  // ── Render message status (Doble check con iconos SVG profesionales) ──
+  const renderMessageStatus = (msg) => {
+    if (msg.sender_id !== user?.id) return null;
+    if (msg._pending) {
+      return <Clock size={12} className="chat-status-icon pending" title="Enviando" />;
+    }
+    if (msg.leido) {
+      return <CheckCheck size={14} className="chat-status-icon read" title="Leído" />;
+    }
+    if (msg.entregado) {
+      return <CheckCheck size={14} className="chat-status-icon delivered" title="Entregado" />;
+    }
+    return <Check size={14} className="chat-status-icon sent" title="Enviado" />;
   };
 
   // ── RENDER PANTALLA COMPLETA DE LLAMADA ──
@@ -1044,6 +1348,7 @@ export default function ChatWidget({ isFullPage = false }) {
                   {renderMessageContent(msg)}
                   <span className="chat-w-time">
                     {new Date(msg.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                    {renderMessageStatus(msg)}
                   </span>
                 </div>
               );
@@ -1052,56 +1357,85 @@ export default function ChatWidget({ isFullPage = false }) {
           </div>
         )}
 
-        {/* INPUT BAR */}
+        {/* INPUT BAR O GRABADOR DE NOTA DE VOZ */}
         {!showBookingModal && (
-          <div className="chat-w-input-bar">
-            {/* Hidden file inputs: MULTIPLE IMAGES & CAMERA */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              style={{ display: 'none' }}
-              onChange={e => {
-                if (e.target.files && e.target.files.length > 0) {
-                  handleImageUpload(e.target.files);
-                  e.target.value = '';
-                }
-              }}
-            />
-            <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              style={{ display: 'none' }}
-              onChange={e => {
-                if (e.target.files && e.target.files.length > 0) {
-                  handleImageUpload(e.target.files);
-                  e.target.value = '';
-                }
-              }}
-            />
-
-            <div className="chat-input-actions">
-              <button type="button" className="chat-input-icon-btn" onClick={() => fileInputRef.current?.click()} title="Enviar fotos (permite varias)"><Image size={18} /></button>
-              <button type="button" className="chat-input-icon-btn" onClick={() => cameraInputRef.current?.click()} title="Tomar foto con cámara"><Camera size={18} /></button>
-              <button type="button" className="chat-input-icon-btn" onClick={handleSendLocation} title="Compartir ubicación"><MapPin size={18} /></button>
+          isRecording ? (
+            <div className="chat-rec-bar">
+              <div className="chat-rec-indicator">
+                <span className="chat-rec-dot" />
+                <span className="chat-rec-time">{formatRecordingTime(recordingDuration)}</span>
+                <span className="chat-rec-label">Grabando nota de voz...</span>
+              </div>
+              <div className="chat-rec-controls">
+                <button
+                  type="button"
+                  className="chat-rec-cancel-btn"
+                  onClick={cancelVoiceRecording}
+                  title="Descartar nota de voz"
+                >
+                  <Trash2 size={18} />
+                </button>
+                <button
+                  type="button"
+                  className="chat-rec-send-btn"
+                  onClick={stopAndSendVoiceRecording}
+                  title="Enviar nota de voz"
+                >
+                  <Send size={18} />
+                </button>
+              </div>
             </div>
-
-            {/* Texto + enviar */}
-            <form onSubmit={handleSend} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+          ) : (
+            <div className="chat-w-input-bar">
+              {/* Hidden file inputs: MULTIPLE IMAGES & CAMERA */}
               <input
-                type="text"
-                className="chat-text-input"
-                placeholder="Escribe un mensaje..."
-                value={newMsg}
-                onChange={handleTyping}
-                autoFocus
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: 'none' }}
+                onChange={e => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    handleImageUpload(e.target.files);
+                    e.target.value = '';
+                  }
+                }}
               />
-              <button type="submit" className="chat-send-btn" disabled={!newMsg.trim()}><Send size={18} /></button>
-            </form>
-          </div>
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                style={{ display: 'none' }}
+                onChange={e => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    handleImageUpload(e.target.files);
+                    e.target.value = '';
+                  }
+                }}
+              />
+
+              <div className="chat-input-actions">
+                <button type="button" className="chat-input-icon-btn" onClick={() => fileInputRef.current?.click()} title="Enviar fotos (permite varias)"><Image size={18} /></button>
+                <button type="button" className="chat-input-icon-btn" onClick={() => cameraInputRef.current?.click()} title="Tomar foto con cámara"><Camera size={18} /></button>
+                <button type="button" className="chat-input-icon-btn" onClick={handleSendLocation} title="Compartir ubicación"><MapPin size={18} /></button>
+                <button type="button" className="chat-input-icon-btn" onClick={startVoiceRecording} title="Grabar nota de voz"><Mic size={18} /></button>
+              </div>
+
+              {/* Texto + enviar */}
+              <form onSubmit={handleSend} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="text"
+                  className="chat-text-input"
+                  placeholder="Escribe un mensaje..."
+                  value={newMsg}
+                  onChange={handleTyping}
+                  autoFocus
+                />
+                <button type="submit" className="chat-send-btn" disabled={!newMsg.trim()}><Send size={18} /></button>
+              </form>
+            </div>
+          )
         )}
       </>
     );

@@ -64,11 +64,12 @@ const io = new Server(server, {
 app.set('io', io);
 
 // ──────────────────────────────────────────
-// Schema checker — detecta si la migración
-// de media (tipo/metadata) ya fue ejecutada.
-// Se evalúa una sola vez en el arranque.
+// Schema checker & Auto-migración
+// Garantiza que tipo, metadata y entregado existan
 // ──────────────────────────────────────────
 let _hasMediaCols = null;
+let _hasDeliveredCols = null;
+
 async function hasMediaCols() {
   if (_hasMediaCols !== null) return _hasMediaCols;
   try {
@@ -77,15 +78,44 @@ async function hasMediaCols() {
       WHERE table_name = 'mensajes' AND column_name = 'tipo' LIMIT 1
     `);
     _hasMediaCols = res.rows.length > 0;
-    if (!_hasMediaCols) {
-      console.warn('⚠️  [Chat] Columnas tipo/metadata NO encontradas en mensajes. Ejecuta: node migrate_chat_media.js');
-    } else {
-      console.log('✓  [Chat] Columnas tipo/metadata detectadas en mensajes.');
-    }
   } catch (_) {
     _hasMediaCols = false;
   }
   return _hasMediaCols;
+}
+
+async function hasDeliveredCols() {
+  if (_hasDeliveredCols !== null) return _hasDeliveredCols;
+  try {
+    const res = await pool.query(`
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'mensajes' AND column_name = 'entregado' LIMIT 1
+    `);
+    _hasDeliveredCols = res.rows.length > 0;
+  } catch (_) {
+    _hasDeliveredCols = false;
+  }
+  return _hasDeliveredCols;
+}
+
+async function initChatSchema() {
+  try {
+    await pool.query(`
+      ALTER TABLE mensajes
+        ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) DEFAULT 'texto' NOT NULL,
+        ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT NULL,
+        ADD COLUMN IF NOT EXISTS entregado BOOLEAN DEFAULT FALSE;
+      CREATE INDEX IF NOT EXISTS idx_mensajes_tipo ON mensajes(tipo);
+      CREATE INDEX IF NOT EXISTS idx_mensajes_entregado ON mensajes(entregado);
+    `);
+    _hasMediaCols = true;
+    _hasDeliveredCols = true;
+    console.log('✓  [Chat DB] Esquema verificado/actualizado (tipo, metadata, entregado).');
+  } catch (err) {
+    console.warn('⚠️  [Chat DB] Verificación pasiva de esquema iniciada:', err.message);
+    await hasMediaCols();
+    await hasDeliveredCols();
+  }
 }
 
 // Map userId → Set<socketId>
@@ -122,6 +152,31 @@ io.on('connection', (socket) => {
   onlineUsers.get(userId).add(socket.id);
   socket.join(`user_${userId}`);
 
+  // Entregar mensajes pendientes al usuario que se acaba de conectar
+  (async () => {
+    try {
+      if (await hasDeliveredCols()) {
+        const pending = await pool.query(`
+          UPDATE mensajes m
+          SET entregado = TRUE
+          FROM conversaciones c
+          WHERE m.conversacion_id = c.id
+            AND (c.user1_id = $1 OR c.user2_id = $1)
+            AND m.sender_id != $1
+            AND m.entregado = FALSE
+          RETURNING m.id, m.conversacion_id, m.sender_id
+        `, [userId]);
+
+        for (const row of pending.rows) {
+          io.to(`user_${row.sender_id}`).emit('message_delivered', {
+            messageId: row.id,
+            conversacion_id: row.conversacion_id
+          });
+        }
+      }
+    } catch (_) {}
+  })();
+
   // ============ CHAT MESSAGES ============
   socket.on('send_message', async (data) => {
     const { conversacion_id, contenido, tipo = 'texto', metadata = null } = data;
@@ -136,17 +191,29 @@ io.on('connection', (socket) => {
 
       const conversation = conv.rows[0];
       const receiverId = conversation.user1_id === userId ? conversation.user2_id : conversation.user1_id;
+      const isReceiverOnline = onlineUsers.has(receiverId) && (onlineUsers.get(receiverId)?.size > 0);
+      const isDelivCol = await hasDeliveredCols();
 
       // ── INSERT compatible con esquema viejo o nuevo ──
       let message;
       if (await hasMediaCols()) {
-        const result = await pool.query(
-          `INSERT INTO mensajes (conversacion_id, sender_id, contenido, tipo, metadata)
-           VALUES ($1, $2, $3, $4, $5)
-           RETURNING id, conversacion_id, sender_id, contenido, tipo, metadata, leido, created_at`,
-          [conversacion_id, userId, contenido.trim(), tipo, metadata ? JSON.stringify(metadata) : null]
-        );
-        message = result.rows[0];
+        if (isDelivCol) {
+          const result = await pool.query(
+            `INSERT INTO mensajes (conversacion_id, sender_id, contenido, tipo, metadata, entregado)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING id, conversacion_id, sender_id, contenido, tipo, metadata, leido, entregado, created_at`,
+            [conversacion_id, userId, contenido.trim(), tipo, metadata ? JSON.stringify(metadata) : null, isReceiverOnline]
+          );
+          message = result.rows[0];
+        } else {
+          const result = await pool.query(
+            `INSERT INTO mensajes (conversacion_id, sender_id, contenido, tipo, metadata)
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING id, conversacion_id, sender_id, contenido, tipo, metadata, leido, created_at`,
+            [conversacion_id, userId, contenido.trim(), tipo, metadata ? JSON.stringify(metadata) : null]
+          );
+          message = { ...result.rows[0], entregado: isReceiverOnline };
+        }
       } else {
         const result = await pool.query(
           `INSERT INTO mensajes (conversacion_id, sender_id, contenido)
@@ -154,7 +221,7 @@ io.on('connection', (socket) => {
            RETURNING id, conversacion_id, sender_id, contenido, leido, created_at`,
           [conversacion_id, userId, contenido.trim()]
         );
-        message = { ...result.rows[0], tipo: 'texto', metadata: null };
+        message = { ...result.rows[0], tipo: 'texto', metadata: null, entregado: isReceiverOnline };
       }
 
       await pool.query('UPDATE conversaciones SET updated_at = NOW() WHERE id = $1', [conversacion_id]);
@@ -165,6 +232,7 @@ io.on('connection', (socket) => {
       const sender = senderQuery.rows[0] || {};
       const fullMessage = {
         ...message,
+        entregado: message.entregado || isReceiverOnline,
         sender_nombre: sender.nombre || 'Estudiante',
         sender_apellido: sender.apellido || '',
         sender_foto: sender.foto_perfil || null
@@ -226,14 +294,36 @@ io.on('connection', (socket) => {
     io.emit('new_property_published', propertyData);
   });
 
+  // ============ MESSAGE DELIVERED CONFIRMATION ============
+  socket.on('message_delivered', async (data) => {
+    const { messageId, conversacion_id } = data || {};
+    if (!messageId) return;
+    try {
+      if (await hasDeliveredCols()) {
+        await pool.query('UPDATE mensajes SET entregado = TRUE WHERE id = $1', [messageId]);
+      }
+      const m = await pool.query('SELECT sender_id FROM mensajes WHERE id = $1', [messageId]);
+      if (m.rows.length > 0) {
+        io.to(`user_${m.rows[0].sender_id}`).emit('message_delivered', { messageId, conversacion_id });
+      }
+    } catch (_) {}
+  });
+
   // ============ MARK AS READ ============
   socket.on('mark_read', async (data) => {
     const { conversacion_id } = data;
     try {
-      await pool.query(
-        'UPDATE mensajes SET leido = TRUE WHERE conversacion_id = $1 AND sender_id != $2 AND leido = FALSE',
-        [conversacion_id, userId]
-      );
+      if (await hasDeliveredCols()) {
+        await pool.query(
+          'UPDATE mensajes SET leido = TRUE, entregado = TRUE WHERE conversacion_id = $1 AND sender_id != $2 AND (leido = FALSE OR entregado = FALSE)',
+          [conversacion_id, userId]
+        );
+      } else {
+        await pool.query(
+          'UPDATE mensajes SET leido = TRUE WHERE conversacion_id = $1 AND sender_id != $2 AND leido = FALSE',
+          [conversacion_id, userId]
+        );
+      }
       const conv = await pool.query('SELECT * FROM conversaciones WHERE id = $1', [conversacion_id]);
       if (conv.rows.length > 0) {
         const c = conv.rows[0];
@@ -265,6 +355,6 @@ io.on('connection', (socket) => {
 
 server.listen(PORT, () => {
   console.log(`💬 Chat Service corriendo en puerto ${PORT}`);
-  // Calentar el schema checker al arrancar
-  hasMediaCols().catch(() => {});
+  // Iniciar y verificar esquema de chat automáticamente
+  initChatSchema().catch(() => {});
 });
