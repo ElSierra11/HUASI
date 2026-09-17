@@ -1,13 +1,56 @@
 const express = require('express');
 const pool = require('../db');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const router = express.Router();
+
+// ============ MULTER CONFIG — Chat image uploads ============
+const UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'chat');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB máx
+  fileFilter: (_req, file, cb) => {
+    const allowed = /jpeg|jpg|png|gif|webp|heic/;
+    if (allowed.test(file.mimetype)) cb(null, true);
+    else cb(new Error('Solo se permiten imágenes (JPG, PNG, GIF, WEBP)'));
+  }
+});
 
 // Middleware to require auth
 function requireAuth(req, res, next) {
   if (!req.user) return res.status(401).json({ error: 'Autenticación requerida' });
   next();
 }
+
+// ============ SERVE STATIC CHAT UPLOADS ============
+router.use('/uploads/chat', express.static(UPLOADS_DIR));
+
+// ============ POST — UPLOAD IMAGE ============
+router.post('/chat/upload-image', requireAuth, upload.single('imagen'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo' });
+
+    const baseUrl = process.env.CHAT_PUBLIC_URL || `http://localhost:${process.env.CHAT_PORT || 4004}`;
+    const url = `${baseUrl}/uploads/chat/${req.file.filename}`;
+
+    res.json({ url, filename: req.file.filename });
+  } catch (err) {
+    console.error('Error subiendo imagen:', err);
+    res.status(500).json({ error: 'Error al subir imagen' });
+  }
+});
 
 // ============ GET CONVERSATIONS ============
 router.get('/conversaciones', requireAuth, async (req, res) => {
@@ -57,7 +100,6 @@ router.post('/conversaciones', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'No puedes chatear contigo mismo' });
     }
 
-    // Check if conversation already exists
     const existing = await pool.query(`
       SELECT id FROM conversaciones 
       WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1)
@@ -67,7 +109,6 @@ router.post('/conversaciones', requireAuth, async (req, res) => {
       return res.json({ conversacion_id: existing.rows[0].id });
     }
 
-    // Create new conversation
     const result = await pool.query(
       'INSERT INTO conversaciones (user1_id, user2_id) VALUES ($1, $2) RETURNING id',
       [userId, otro_usuario_id]
@@ -86,7 +127,6 @@ router.get('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
     const userId = req.user.id;
     const convId = req.params.id;
 
-    // Verify user is part of conversation
     const conv = await pool.query(
       'SELECT * FROM conversaciones WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)',
       [convId, userId]
@@ -97,7 +137,7 @@ router.get('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
     }
 
     const result = await pool.query(`
-      SELECT m.id, m.conversacion_id, m.sender_id, m.contenido, m.leido, m.created_at,
+      SELECT m.id, m.conversacion_id, m.sender_id, m.contenido, m.tipo, m.metadata, m.leido, m.created_at,
              u.nombre AS sender_nombre, u.apellido AS sender_apellido
       FROM mensajes m
       JOIN users u ON m.sender_id = u.id
@@ -117,7 +157,7 @@ router.post('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     const convId = req.params.id;
-    const { contenido } = req.body;
+    const { contenido, tipo = 'texto', metadata = null } = req.body;
 
     if (!contenido || !contenido.trim()) {
       return res.status(400).json({ error: 'El contenido del mensaje es requerido' });
@@ -133,17 +173,16 @@ router.post('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
     }
 
     const insertResult = await pool.query(
-      `INSERT INTO mensajes (conversacion_id, sender_id, contenido)
-       VALUES ($1, $2, $3)
-       RETURNING id, conversacion_id, sender_id, contenido, leido, created_at`,
-      [convId, userId, contenido.trim()]
+      `INSERT INTO mensajes (conversacion_id, sender_id, contenido, tipo, metadata)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, conversacion_id, sender_id, contenido, tipo, metadata, leido, created_at`,
+      [convId, userId, contenido.trim(), tipo, metadata ? JSON.stringify(metadata) : null]
     );
 
     await pool.query('UPDATE conversaciones SET updated_at = NOW() WHERE id = $1', [convId]);
 
     const msg = insertResult.rows[0];
 
-    // Emitir por Socket.IO para que el destinatario reciba la notificación en tiempo real
     const io = req.app.get('io');
     if (io) {
       try {
@@ -198,7 +237,6 @@ router.get('/conversaciones/:id/reserva', requireAuth, async (req, res) => {
     const userId = req.user.id;
     const convId = req.params.id;
 
-    // Verify user belongs to this conversation
     const conv = await pool.query(
       'SELECT * FROM conversaciones WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)',
       [convId, userId]
@@ -210,7 +248,6 @@ router.get('/conversaciones/:id/reserva', requireAuth, async (req, res) => {
     const c = conv.rows[0];
     const otherUserId = c.user1_id === userId ? c.user2_id : c.user1_id;
 
-    // Find the most recent reservation between these two users
     const result = await pool.query(`
       SELECT r.id AS reserva_id, r.estado, r.fecha_inicio, r.fecha_fin, r.mensaje, r.evento,
              p.id AS propiedad_id, p.titulo, p.tipo, p.direccion, p.barrio, p.ciudad,

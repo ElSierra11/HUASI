@@ -1949,6 +1949,301 @@ textarea.form-control {
   cursor: not-allowed;
 }
 
+/* ── Header call action buttons ── */
+.chat-w-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  margin-right: 6px;
+}
+
+.chat-w-action-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(13, 124, 61, 0.08);
+  color: var(--ucc-green, #0d7c3d);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.chat-w-action-btn:hover {
+  background: rgba(13, 124, 61, 0.18);
+  transform: scale(1.08);
+}
+
+/* ── Input bar container (wraps action icons + form) ── */
+.chat-w-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px 10px;
+  border-top: 1px solid rgba(200, 221, 210, 0.5);
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.chat-input-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.chat-input-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+
+.chat-input-icon-btn:hover {
+  background: rgba(13, 124, 61, 0.1);
+  color: var(--ucc-green, #0d7c3d);
+  transform: scale(1.1);
+}
+
+.chat-input-icon-btn:active {
+  transform: scale(0.95);
+}
+
+/* ── Location bubble ── */
+.chat-location-bubble {
+  width: 210px;
+}
+
+.chat-location-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ucc-green, #0d7c3d);
+  text-decoration: none;
+  padding: 3px 0;
+}
+
+.chat-location-link:hover {
+  text-decoration: underline;
+}
+
+/* Imagen bubble adjustment */
+.chat-w-bubble.bubble-imagen,
+.chat-w-bubble.bubble-ubicacion {
+  padding: 6px;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.chat-w-bubble.mine.bubble-imagen,
+.chat-w-bubble.mine.bubble-ubicacion {
+  background: transparent !important;
+}
+
+.chat-w-bubble.bubble-imagen .chat-w-time,
+.chat-w-bubble.bubble-ubicacion .chat-w-time {
+  padding: 0 2px;
+}
+
+/* ── CALL OVERLAY ── */
+@keyframes call-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(13, 124, 61, 0.4); }
+  50% { box-shadow: 0 0 0 16px rgba(13, 124, 61, 0); }
+}
+
+@keyframes call-slide-up {
+  from { opacity: 0; transform: translateY(40px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.chat-call-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 30, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-call-modal {
+  background: linear-gradient(160deg, #0d1f14 0%, #0a2d1a 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  padding: 32px 28px;
+  width: 320px;
+  max-width: 92vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  animation: call-slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
+
+/* Audio call avatar ring */
+.chat-call-audio-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-call-avatar-ring {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0d7c3d 0%, #0a9e50 100%);
+  color: white;
+  font-size: 2rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -1px;
+  animation: call-pulse 2s infinite;
+}
+
+/* Video containers */
+.chat-call-video-area {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+}
+
+.chat-call-remote-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chat-call-local-video {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 72px;
+  height: 96px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+/* Call info text */
+.chat-call-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-call-name {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.chat-call-status {
+  color: rgba(255,255,255,0.55);
+  font-size: 0.82rem;
+  font-family: var(--font-body);
+}
+
+/* Call control buttons */
+.chat-call-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.chat-call-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  color: white;
+}
+
+.chat-call-btn:hover {
+  transform: scale(1.12);
+}
+
+.chat-call-btn:active {
+  transform: scale(0.95);
+}
+
+.chat-call-btn-accept {
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.45);
+}
+
+.chat-call-btn-reject {
+  background: linear-gradient(135deg, #dc2626 0%, #f87171 100%);
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.45);
+}
+
+.chat-call-btn-mute,
+.chat-call-btn-video {
+  background: rgba(255,255,255,0.12);
+  width: 48px;
+  height: 48px;
+}
+
+.chat-call-btn-mute.active,
+.chat-call-btn-video.active {
+  background: rgba(220, 38, 38, 0.5);
+}
+
+.chat-call-btn-mute:hover,
+.chat-call-btn-video:hover {
+  background: rgba(255,255,255,0.22);
+}
+
+/* Dark mode overrides for call overlay */
+[data-theme='dark'] .chat-w-input-bar,
+[data-theme='dark'] .chat-w-input {
+  background: #1e293b;
+  border-top-color: rgba(255,255,255,0.06);
+}
+
+[data-theme='dark'] .chat-input-icon-btn {
+  color: #94a3b8;
+}
+
+[data-theme='dark'] .chat-input-icon-btn:hover {
+  background: rgba(13, 124, 61, 0.2);
+  color: #4ade80;
+}
+
+[data-theme='dark'] .chat-w-action-btn {
+  background: rgba(13, 124, 61, 0.15);
+  color: #4ade80;
+}
+
 /* ============ TABS STYLES ============ */
 .tabs {
   display: inline-flex;
