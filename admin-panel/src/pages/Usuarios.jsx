@@ -335,9 +335,9 @@ export default function Usuarios({ onActionFinished }) {
       {/* Pestañas de Filtrado Rápido */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { id: 'todos', label: 'Todos los usuarios', count: usuarios.length },
-          { id: 'recientes', label: '✨ Nuevos registros (últimos 7 días)', count: countRecientes, highlight: countRecientes > 0 },
-          { id: 'sin_verificar', label: '⏳ Pendientes de verificación', count: countSinVerificar, warning: countSinVerificar > 0 }
+          { id: 'todos', label: 'Todos los usuarios', count: usuarios.length, icon: <Users size={14} /> },
+          { id: 'recientes', label: 'Nuevos registros (últimos 7 días)', count: countRecientes, highlight: countRecientes > 0, icon: <UserPlus size={14} /> },
+          { id: 'sin_verificar', label: 'Pendientes de verificación', count: countSinVerificar, warning: countSinVerificar > 0, icon: <Clock size={14} /> }
         ].map(tab => {
           const isActive = filtroRapido === tab.id;
           return (
@@ -359,7 +359,10 @@ export default function Usuarios({ onActionFinished }) {
                 transition: 'all 0.2s ease'
               }}
             >
-              <span>{tab.label}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {tab.icon}
+                {tab.label}
+              </span>
               <span style={{
                 background: isActive ? 'rgba(255,255,255,0.25)' : (tab.warning ? '#fee2e2' : tab.highlight ? 'rgba(13,124,61,0.1)' : 'var(--border)'),
                 color: isActive ? '#ffffff' : (tab.warning ? '#dc2626' : tab.highlight ? 'var(--primary)' : 'var(--text-muted)'),
@@ -714,7 +717,7 @@ export default function Usuarios({ onActionFinished }) {
               onClick={handleDeleteConfirm}
               disabled={submittingDelete}
             >
-              {submittingDelete ? 'Eliminando...' : '🗑️ Sí, eliminar definitivamente'}
+              {submittingDelete ? 'Eliminando...' : 'Sí, eliminar definitivamente'}
             </button>
           </>
         }
@@ -762,7 +765,7 @@ export default function Usuarios({ onActionFinished }) {
                 disabled={submittingReset}
                 style={{ background: '#f59e0b', color: 'white', border: 'none' }}
               >
-                {submittingReset ? 'Generando...' : '🔑 Generar contraseña temporal'}
+                {submittingReset ? 'Generando...' : 'Generar contraseña temporal'}
               </button>
             </>
           )
@@ -779,7 +782,9 @@ export default function Usuarios({ onActionFinished }) {
             </div>
 
             <div>
-              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}>🔑 Nueva contraseña temporal:</label>
+              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <KeyRound size={14} color="var(--primary)" /> Nueva contraseña temporal:
+              </label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ flex: 1, background: 'var(--bg)', border: '2px solid var(--border)', borderRadius: 8, padding: '12px 16px', fontFamily: 'monospace', fontSize: '1.1rem', fontWeight: 700, letterSpacing: '3px', color: 'var(--primary)', userSelect: 'all' }}>
                   {resetResult.nueva_password}
@@ -795,8 +800,9 @@ export default function Usuarios({ onActionFinished }) {
               </div>
             </div>
 
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, padding: '10px 14px', background: 'rgba(245, 158, 11, 0.06)', borderRadius: 8, border: '1px solid rgba(245,158,11,0.15)' }}>
-              ⚠️ <strong>Importante:</strong> Comunica esta contraseña al usuario por un canal seguro. El usuario debería cambiarla al iniciar sesión.
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, padding: '10px 14px', background: 'rgba(245, 158, 11, 0.06)', borderRadius: 8, border: '1px solid rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertTriangle size={15} color="#d97706" style={{ flexShrink: 0 }} />
+              <span><strong>Importante:</strong> Comunica esta contraseña al usuario por un canal seguro. El usuario debería cambiarla al iniciar sesión.</span>
             </p>
           </div>
         ) : (

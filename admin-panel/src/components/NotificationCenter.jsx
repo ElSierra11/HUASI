@@ -15,7 +15,10 @@ import {
   ShieldCheck, 
   Sparkles,
   Filter,
-  X
+  X,
+  Smartphone,
+  ArrowRight,
+  UserPlus
 } from 'lucide-react';
 import api from '../api';
 
@@ -56,8 +59,62 @@ export default function NotificationCenter({ onCountChange }) {
     }
   });
 
+  const [devicePerm, setDevicePerm] = useState(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      return Notification.permission;
+    }
+    return 'unsupported';
+  });
+
   const dropdownRef = useRef(null);
+  const prevIdsRef = useRef(null);
   const navigate = useNavigate();
+
+  // Enviar notificación al sistema / teléfono móvil
+  const triggerSystemNotification = (item) => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+
+    const title = item.titulo || 'HUASI UCC - Novedad en Plataforma';
+    const body = item.descripcion || `${item.persona?.nombre || 'Usuario'} se encuentra en proceso`;
+    const url = item.accionUrl || '/';
+
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then((reg) => {
+        reg.showNotification(title, {
+          body,
+          icon: '/huasi-monograma.png',
+          badge: '/huasi-monograma.png',
+          vibrate: [200, 100, 200],
+          data: { url }
+        });
+      }).catch(() => {
+        new Notification(title, { body, icon: '/huasi-monograma.png' });
+      });
+    } else {
+      new Notification(title, { body, icon: '/huasi-monograma.png' });
+    }
+  };
+
+  // Solicitar permiso de notificaciones para el dispositivo
+  const requestDevicePermission = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      alert('Tu navegador no soporta notificaciones de sistema.');
+      return;
+    }
+    try {
+      const result = await Notification.requestPermission();
+      setDevicePerm(result);
+      if (result === 'granted') {
+        triggerSystemNotification({
+          titulo: 'Notificaciones HUASI Activas',
+          descripcion: 'Recibirás avisos directos en este dispositivo ante nuevos registros y alojamientos.'
+        });
+      }
+    } catch (e) {
+      console.warn('Error solicitando permisos de notificación:', e);
+    }
+  };
 
   // Cargar notificaciones desde el backend
   const fetchNotificaciones = async (silent = false) => {
@@ -67,8 +124,18 @@ export default function NotificationCenter({ onCountChange }) {
         api.get('/admin/notificaciones-procesos')
       );
       if (res?.data) {
-        setNotificaciones(res.data.notificaciones || []);
+        const incoming = res.data.notificaciones || [];
+        setNotificaciones(incoming);
         setResumen(res.data.resumen || {});
+
+        // Comprobar si hay nuevas alertas desde el último sondeo para notificar al teléfono/dispositivo
+        if (prevIdsRef.current !== null) {
+          const newItems = incoming.filter(item => !prevIdsRef.current.has(item.id));
+          if (newItems.length > 0) {
+            newItems.slice(0, 3).forEach(item => triggerSystemNotification(item));
+          }
+        }
+        prevIdsRef.current = new Set(incoming.map(x => x.id));
       }
     } catch (err) {
       console.warn('Error cargando notificaciones de procesos:', err.message);
@@ -204,9 +271,9 @@ export default function NotificationCenter({ onCountChange }) {
             position: 'absolute',
             top: 48,
             right: 0,
-            width: '420px',
+            width: '430px',
             maxWidth: 'calc(100vw - 24px)',
-            maxHeight: '620px',
+            maxHeight: '640px',
             background: 'var(--bg-surface, #ffffff)',
             borderRadius: 16,
             border: '1px solid var(--border, #e2e8f0)',
@@ -301,6 +368,45 @@ export default function NotificationCenter({ onCountChange }) {
               </div>
             </div>
 
+            {/* Banner de Notificaciones al Dispositivo Móvil / PC */}
+            <div style={{
+              background: devicePerm === 'granted' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(13, 124, 61, 0.05)',
+              border: devicePerm === 'granted' ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(13, 124, 61, 0.15)',
+              borderRadius: 8,
+              padding: '6px 10px',
+              marginBottom: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: '0.74rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: devicePerm === 'granted' ? '#065f46' : 'var(--text)' }}>
+                <Smartphone size={14} color="var(--primary)" />
+                <span>
+                  {devicePerm === 'granted'
+                    ? 'Alertas del sistema activas en este dispositivo'
+                    : 'Recibir avisos en pantalla/móvil'}
+                </span>
+              </div>
+              {devicePerm !== 'granted' && (
+                <button
+                  onClick={requestDevicePermission}
+                  style={{
+                    background: 'var(--primary)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 5,
+                    padding: '3px 8px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Activar
+                </button>
+              )}
+            </div>
+
             {/* Pestañas de Filtrado */}
             <div style={{
               display: 'flex',
@@ -322,10 +428,15 @@ export default function NotificationCenter({ onCountChange }) {
                   background: activeTab === 'todos' ? 'var(--bg-surface, #ffffff)' : 'transparent',
                   color: activeTab === 'todos' ? 'var(--primary)' : 'var(--text-muted)',
                   boxShadow: activeTab === 'todos' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 4
                 }}
               >
-                Todos ({notificaciones.length})
+                <Filter size={13} />
+                <span>Todos ({notificaciones.length})</span>
               </button>
               <button
                 onClick={() => setActiveTab('alojamientos')}
@@ -340,10 +451,15 @@ export default function NotificationCenter({ onCountChange }) {
                   background: activeTab === 'alojamientos' ? 'var(--bg-surface, #ffffff)' : 'transparent',
                   color: activeTab === 'alojamientos' ? '#b45309' : 'var(--text-muted)',
                   boxShadow: activeTab === 'alojamientos' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 4
                 }}
               >
-                🏠 Alojamientos ({alojamientosCount})
+                <Home size={13} />
+                <span>Alojamientos ({alojamientosCount})</span>
               </button>
               <button
                 onClick={() => setActiveTab('registros')}
@@ -358,10 +474,15 @@ export default function NotificationCenter({ onCountChange }) {
                   background: activeTab === 'registros' ? 'var(--bg-surface, #ffffff)' : 'transparent',
                   color: activeTab === 'registros' ? '#0369a1' : 'var(--text-muted)',
                   boxShadow: activeTab === 'registros' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 4
                 }}
               >
-                👤 Registros ({registrosCount})
+                <User size={13} />
+                <span>Registros ({registrosCount})</span>
               </button>
             </div>
           </div>
@@ -394,7 +515,7 @@ export default function NotificationCenter({ onCountChange }) {
                   justifyContent: 'center',
                   margin: '0 auto 12px'
                 }}>
-                  <Sparkles size={24} />
+                  <ShieldCheck size={24} />
                 </div>
                 <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)' }}>
                   No hay procesos pendientes
@@ -591,9 +712,17 @@ export default function NotificationCenter({ onCountChange }) {
             fontSize: '0.74rem',
             color: 'var(--text-muted)'
           }}>
-            <span>
-              🏠 <strong>{resumen.total_pendientes_alojamiento || 0}</strong> por auditar · 👤 <strong>{resumen.total_nuevos_registros_24h || 0}</strong> hoy
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <Home size={13} color="#d97706" />
+                <strong>{resumen.total_pendientes_alojamiento || 0}</strong> por auditar
+              </span>
+              <span>·</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <User size={13} color="#0284c7" />
+                <strong>{resumen.total_nuevos_registros_24h || 0}</strong> hoy
+              </span>
+            </div>
             <button
               onClick={() => {
                 setOpen(false);
@@ -605,10 +734,14 @@ export default function NotificationCenter({ onCountChange }) {
                 color: 'var(--primary)',
                 fontWeight: 700,
                 cursor: 'pointer',
-                fontSize: '0.74rem'
+                fontSize: '0.74rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4
               }}
             >
-              Ver Auditoría &rarr;
+              <span>Ver Auditoría</span>
+              <ArrowRight size={13} />
             </button>
           </div>
         </div>

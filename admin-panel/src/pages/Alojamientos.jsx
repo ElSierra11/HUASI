@@ -906,7 +906,7 @@ export default function Alojamientos({ onActionFinished }) {
               color: '#991b1b',
               lineHeight: 1.5
             }}>
-              ⚠️ <strong>Advertencia:</strong> Esta acción es irreversible. Se eliminarán permanentemente el registro del alojamiento, su disponibilidad, reservas asociadas y reseñas vinculadas.
+              <AlertTriangle size={14} color="#dc2626" style={{ display: 'inline', marginRight: 5, verticalAlign: -2 }} /> <strong>Advertencia:</strong> Esta acción es irreversible. Se eliminarán permanentemente el registro del alojamiento, su disponibilidad, reservas asociadas y reseñas vinculadas.
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
