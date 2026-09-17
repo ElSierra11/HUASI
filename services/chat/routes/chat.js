@@ -3,6 +3,9 @@ const pool = require('../db');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
 
 const router = express.Router();
 
@@ -80,8 +83,30 @@ const uploadAudio = multer({
 });
 
 function requireAuth(req, res, next) {
-  if (!req.user) return res.status(401).json({ error: 'Autenticación requerida' });
-  next();
+  if (req.user) return next();
+
+  if (req.headers['x-user-id']) {
+    req.user = {
+      id: parseInt(req.headers['x-user-id']),
+      email: req.headers['x-user-email'],
+      role: req.headers['x-user-role']
+    };
+    return next();
+  }
+
+  const authHeader = req.headers['authorization'];
+  const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+  const token = req.cookies?.stayu_token || req.cookies?.stayu_admin_token || bearerToken;
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      req.user = decoded;
+      return next();
+    } catch (_) {}
+  }
+
+  return res.status(401).json({ error: 'Autenticación requerida' });
 }
 
 // Servir uploads estáticos (accesibles como /uploads/chat/filename)
@@ -193,13 +218,36 @@ router.post('/conversaciones', requireAuth, async (req, res) => {
 router.get('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
-    const convId = req.params.id;
+    const convId = parseInt(req.params.id);
+    if (isNaN(convId)) return res.status(400).json({ error: 'ID de conversación inválido' });
 
     const conv = await pool.query(
       'SELECT * FROM conversaciones WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)',
       [convId, userId]
     );
     if (conv.rows.length === 0) return res.status(403).json({ error: 'No tienes acceso a esta conversación' });
+
+    // Marcar como leídos los mensajes que no son míos
+    try {
+      const hasDeliv = await hasDeliveredCol();
+      if (hasDeliv) {
+        await pool.query(
+          'UPDATE mensajes SET leido = TRUE, entregado = TRUE WHERE conversacion_id = $1 AND sender_id != $2 AND (leido = FALSE OR entregado = FALSE)',
+          [convId, userId]
+        );
+      } else {
+        await pool.query(
+          'UPDATE mensajes SET leido = TRUE WHERE conversacion_id = $1 AND sender_id != $2 AND leido = FALSE',
+          [convId, userId]
+        );
+      }
+      const c = conv.rows[0];
+      const otherId = c.user1_id === userId ? c.user2_id : c.user1_id;
+      const io = req.app.get('io');
+      if (io) io.to(`user_${otherId}`).emit('messages_read', { conversacion_id: convId });
+    } catch (readErr) {
+      console.warn('Error auto-marcando como leído en GET mensajes:', readErr.message);
+    }
 
     // Seleccionar columnas según esquema disponible
     let result;
@@ -231,6 +279,43 @@ router.get('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error('Error obteniendo mensajes:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ============ MARK MESSAGES AS READ (REST ENDPOINT) ============
+router.put('/conversaciones/:id/leer', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const convId = parseInt(req.params.id);
+    if (isNaN(convId)) return res.status(400).json({ error: 'ID de conversación inválido' });
+
+    const conv = await pool.query(
+      'SELECT * FROM conversaciones WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)',
+      [convId, userId]
+    );
+    if (conv.rows.length === 0) return res.status(403).json({ error: 'No tienes acceso a esta conversación' });
+
+    if (await hasDeliveredCol()) {
+      await pool.query(
+        'UPDATE mensajes SET leido = TRUE, entregado = TRUE WHERE conversacion_id = $1 AND sender_id != $2 AND (leido = FALSE OR entregado = FALSE)',
+        [convId, userId]
+      );
+    } else {
+      await pool.query(
+        'UPDATE mensajes SET leido = TRUE WHERE conversacion_id = $1 AND sender_id != $2 AND leido = FALSE',
+        [convId, userId]
+      );
+    }
+
+    const c = conv.rows[0];
+    const otherId = c.user1_id === userId ? c.user2_id : c.user1_id;
+    const io = req.app.get('io');
+    if (io) io.to(`user_${otherId}`).emit('messages_read', { conversacion_id: convId });
+
+    res.json({ success: true, conversacion_id: convId });
+  } catch (err) {
+    console.error('Error marcando lectura vía REST:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

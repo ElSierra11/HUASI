@@ -29,7 +29,7 @@ function authMiddleware(req, res, next) {
       req.headers['x-user-id'] = decoded.id.toString();
       req.headers['x-user-email'] = decoded.email;
       req.headers['x-user-role'] = decoded.role;
-      req.headers['x-user-verificado'] = decoded.verificado.toString();
+      req.headers['x-user-verificado'] = String(Boolean(decoded.verificado));
     } catch (err) {
       // Token inválido — no bloquear, dejar que el servicio decida
     }

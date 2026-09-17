@@ -26,9 +26,6 @@ app.use(cookieParser());
 
 // Auth middleware
 app.use((req, res, next) => {
-  const token = req.cookies?.stayu_token || req.cookies?.stayu_admin_token ||
-    (req.headers['x-user-id'] ? null : null);
-
   if (req.headers['x-user-id']) {
     req.user = {
       id: parseInt(req.headers['x-user-id']),
@@ -37,6 +34,10 @@ app.use((req, res, next) => {
     };
     return next();
   }
+
+  const authHeader = req.headers['authorization'];
+  const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+  const token = req.cookies?.stayu_token || req.cookies?.stayu_admin_token || bearerToken;
 
   if (token) {
     try {
@@ -164,6 +165,7 @@ io.on('connection', (socket) => {
             AND (c.user1_id = $1 OR c.user2_id = $1)
             AND m.sender_id != $1
             AND m.entregado = FALSE
+            AND m.leido = FALSE
           RETURNING m.id, m.conversacion_id, m.sender_id
         `, [userId]);
 
@@ -250,6 +252,17 @@ io.on('connection', (socket) => {
   socket.on('call_request', async (data) => {
     const { receiverId } = data;
     console.log(`📞 Llamada de usuario ${userId} a ${receiverId}`);
+
+    const isReceiverOnline = onlineUsers.has(receiverId) && (onlineUsers.get(receiverId)?.size > 0);
+    if (!isReceiverOnline) {
+      socket.emit('call_rejected', {
+        receiverId,
+        reason: 'offline',
+        message: 'El usuario no se encuentra en línea en este momento.'
+      });
+      return;
+    }
+
     let callerName = data.callerName;
     if (!callerName) {
       try {
@@ -311,24 +324,28 @@ io.on('connection', (socket) => {
 
   // ============ MARK AS READ ============
   socket.on('mark_read', async (data) => {
-    const { conversacion_id } = data;
+    const { conversacion_id } = data || {};
+    if (!conversacion_id) return;
     try {
+      const convId = parseInt(conversacion_id);
+      if (isNaN(convId)) return;
+
       if (await hasDeliveredCols()) {
         await pool.query(
           'UPDATE mensajes SET leido = TRUE, entregado = TRUE WHERE conversacion_id = $1 AND sender_id != $2 AND (leido = FALSE OR entregado = FALSE)',
-          [conversacion_id, userId]
+          [convId, userId]
         );
       } else {
         await pool.query(
           'UPDATE mensajes SET leido = TRUE WHERE conversacion_id = $1 AND sender_id != $2 AND leido = FALSE',
-          [conversacion_id, userId]
+          [convId, userId]
         );
       }
-      const conv = await pool.query('SELECT * FROM conversaciones WHERE id = $1', [conversacion_id]);
+      const conv = await pool.query('SELECT * FROM conversaciones WHERE id = $1', [convId]);
       if (conv.rows.length > 0) {
         const c = conv.rows[0];
         const otherId = c.user1_id === userId ? c.user2_id : c.user1_id;
-        io.to(`user_${otherId}`).emit('messages_read', { conversacion_id });
+        io.to(`user_${otherId}`).emit('messages_read', { conversacion_id: convId });
       }
     } catch (err) {
       console.error('Error marking read:', err);

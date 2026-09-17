@@ -292,13 +292,16 @@ export default function ChatWidget({ isFullPage = false }) {
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
   const callTimerRef = useRef(null);
+  const callTimeoutRef = useRef(null);
   // ── Refs para evitar stale closures en handlers de socket ──
   const callTypeRef = useRef('audio');
   const callDataRef = useRef(null);
+  const callStateRef = useRef(null);
 
   useEffect(() => { activeConvRef.current = activeConv; }, [activeConv]);
   useEffect(() => { callTypeRef.current = callType; }, [callType]);
   useEffect(() => { callDataRef.current = callData; }, [callData]);
+  useEffect(() => { callStateRef.current = callState; }, [callState]);
 
 
 
@@ -401,6 +404,10 @@ export default function ChatWidget({ isFullPage = false }) {
   // ── WebRTC helpers ──
   const endCall = useCallback(() => {
     stopRingtone();
+    if (callTimeoutRef.current) {
+      clearTimeout(callTimeoutRef.current);
+      callTimeoutRef.current = null;
+    }
     peerConnectionRef.current?.close();
     peerConnectionRef.current = null;
     localStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -413,6 +420,7 @@ export default function ChatWidget({ isFullPage = false }) {
     if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
     setCallState(null);
     setCallData(null);
+    setCallDuration(0);
     setIsMuted(false);
     setIsVideoOff(false);
   }, []);
@@ -472,7 +480,7 @@ export default function ChatWidget({ isFullPage = false }) {
     return pc;
   }, [endCall]);
 
-  // Sincronizar stream remoto con los elementos de audio/video cuando cambie el estado o tipo de llamada
+  // Sincronizar streams remotos y locales con los elementos de audio/video cuando cambie el estado o tipo de llamada
   useEffect(() => {
     if (remoteStreamRef.current) {
       if (callType === 'audio' && remoteAudioRef.current) {
@@ -483,6 +491,9 @@ export default function ChatWidget({ isFullPage = false }) {
         remoteVideoRef.current.srcObject = remoteStreamRef.current;
         remoteVideoRef.current.play?.().catch(() => {});
       }
+    }
+    if (callType === 'video' && localStreamRef.current && localVideoRef.current) {
+      localVideoRef.current.srcObject = localStreamRef.current;
     }
   }, [callState, callType]);
 
@@ -506,23 +517,26 @@ export default function ChatWidget({ isFullPage = false }) {
     // ── Chat messages ──
     socket.on('new_message', (msg) => {
       const currentConv = activeConvRef.current;
-      const isActive = currentConv && currentConv.id === msg.conversacion_id;
+      const isActive = currentConv && String(currentConv.id) === String(msg.conversacion_id);
 
       if (isActive) {
-        socket.emit('mark_read', { conversacion_id: msg.conversacion_id });
-        setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]);
+        if (msg.sender_id !== user.id) {
+          socket.emit('mark_read', { conversacion_id: msg.conversacion_id });
+          api.put(`/chat/conversaciones/${msg.conversacion_id}/leer`).catch(() => {});
+        }
+        setMessages(prev => prev.some(m => String(m.id) === String(msg.id)) ? prev : [...prev, msg]);
       } else if (msg.sender_id !== user.id) {
         socket.emit('message_delivered', { messageId: msg.id, conversacion_id: msg.conversacion_id });
       }
 
       setConversaciones(prev => {
-        const exists = prev.some(c => c.id === msg.conversacion_id);
+        const exists = prev.some(c => String(c.id) === String(msg.conversacion_id));
         if (!exists) {
           api.get('/chat/conversaciones').then(r => setConversaciones(r.data)).catch(() => {});
           return prev;
         }
         const preview = msg.tipo === 'imagen' ? 'Foto' : msg.tipo === 'audio' ? 'Nota de voz' : msg.tipo === 'ubicacion' ? 'Ubicación' : msg.contenido;
-        return prev.map(c => c.id === msg.conversacion_id
+        return prev.map(c => String(c.id) === String(msg.conversacion_id)
           ? { ...c, ultimo_mensaje: preview, ultimo_mensaje_fecha: msg.created_at, no_leidos: (msg.sender_id !== user.id && !isActive) ? (c.no_leidos || 0) + 1 : c.no_leidos }
           : c
         ).sort((a, b) => new Date(b.ultimo_mensaje_fecha || b.updated_at) - new Date(a.ultimo_mensaje_fecha || a.updated_at));
@@ -539,18 +553,19 @@ export default function ChatWidget({ isFullPage = false }) {
     // Confirmación de lectura (doble check verde en tiempo real)
     socket.on('messages_read', ({ conversacion_id }) => {
       setMessages(prev => prev.map(m =>
-        m.conversacion_id === conversacion_id ? { ...m, leido: true, entregado: true } : m
+        String(m.conversacion_id) === String(conversacion_id) ? { ...m, leido: true, entregado: true } : m
       ));
       setConversaciones(prev => prev.map(c =>
-        c.id === conversacion_id ? { ...c, no_leidos: 0 } : c
+        String(c.id) === String(conversacion_id) ? { ...c, no_leidos: 0 } : c
       ));
+      api.get('/chat/no-leidos').then(r => setUnreadTotal(r.data.no_leidos)).catch(() => {});
     });
 
     // Confirmación de entrega (doble check gris en tiempo real)
     socket.on('message_delivered', ({ messageId, conversacion_id }) => {
       setMessages(prev => prev.map(m => {
-        if (messageId && m.id === messageId) return { ...m, entregado: true };
-        if (conversacion_id && m.conversacion_id === conversacion_id && !m.leido) return { ...m, entregado: true };
+        if (messageId && String(m.id) === String(messageId)) return { ...m, entregado: true };
+        if (conversacion_id && String(m.conversacion_id) === String(conversacion_id) && !m.leido) return { ...m, entregado: true };
         return m;
       }));
     });
@@ -558,7 +573,7 @@ export default function ChatWidget({ isFullPage = false }) {
     socket.on('new_property_published', (d) => window.dispatchEvent(new CustomEvent('huasi:property-published', { detail: d })));
     socket.on('user_typing', (d) => setTyping(d.conversacion_id));
     socket.on('user_stop_typing', (d) => {
-      if (d?.conversacion_id) setTyping(p => p === d.conversacion_id ? false : p);
+      if (d?.conversacion_id) setTyping(p => String(p) === String(d.conversacion_id) ? false : p);
       else setTyping(false);
     });
 
@@ -575,6 +590,10 @@ export default function ChatWidget({ isFullPage = false }) {
 
     socket.on('call_accepted', async (data) => {
       stopRingtone();
+      if (callTimeoutRef.current) {
+        clearTimeout(callTimeoutRef.current);
+        callTimeoutRef.current = null;
+      }
       const peerId = data.receiverId;
       const cType = callTypeRef.current;
       try {
@@ -591,8 +610,25 @@ export default function ChatWidget({ isFullPage = false }) {
       }
     });
 
-    socket.on('call_rejected', () => { stopRingtone(); endCall(); });
-    socket.on('call_ended', () => { stopRingtone(); endCall(); });
+    socket.on('call_rejected', (data) => {
+      stopRingtone();
+      if (callTimeoutRef.current) {
+        clearTimeout(callTimeoutRef.current);
+        callTimeoutRef.current = null;
+      }
+      if (data?.reason === 'offline') {
+        alert(data.message || 'El usuario no se encuentra en línea en este momento.');
+      }
+      endCall();
+    });
+    socket.on('call_ended', () => {
+      stopRingtone();
+      if (callTimeoutRef.current) {
+        clearTimeout(callTimeoutRef.current);
+        callTimeoutRef.current = null;
+      }
+      endCall();
+    });
 
     socket.on('webrtc_offer', async (data) => {
       const { offer, fromId } = data;
@@ -691,6 +727,9 @@ export default function ChatWidget({ isFullPage = false }) {
     }
 
     if (socketRef.current) socketRef.current.emit('mark_read', { conversacion_id: activeConv.id });
+    api.put(`/chat/conversaciones/${activeConv.id}/leer`).then(() => {
+      api.get('/chat/no-leidos').then(r => setUnreadTotal(r.data.no_leidos)).catch(() => {});
+    }).catch(() => {});
 
     return () => {
       clearInterval(iv);
@@ -936,6 +975,16 @@ export default function ChatWidget({ isFullPage = false }) {
     });
     startRingtone();
 
+    // Timeout de 35 segundos para llamadas salientes sin respuesta
+    if (callTimeoutRef.current) clearTimeout(callTimeoutRef.current);
+    callTimeoutRef.current = setTimeout(() => {
+      if (callStateRef.current === 'outgoing') {
+        stopRingtone();
+        alert('El usuario no respondió la llamada.');
+        endCall();
+      }
+    }, 35000);
+
     if (socketRef.current) {
       socketRef.current.emit('call_request', {
         conversacion_id: activeConv.id,
@@ -948,6 +997,10 @@ export default function ChatWidget({ isFullPage = false }) {
 
   const acceptCall = () => {
     stopRingtone();
+    if (callTimeoutRef.current) {
+      clearTimeout(callTimeoutRef.current);
+      callTimeoutRef.current = null;
+    }
     const cd = callDataRef.current;
     if (!cd || !socketRef.current) return;
     socketRef.current.emit('call_accept', { callerId: cd.callerId, conversacion_id: cd.conversacion_id, callType: cd.callType });
@@ -955,6 +1008,10 @@ export default function ChatWidget({ isFullPage = false }) {
 
   const rejectCall = () => {
     stopRingtone();
+    if (callTimeoutRef.current) {
+      clearTimeout(callTimeoutRef.current);
+      callTimeoutRef.current = null;
+    }
     const cd = callDataRef.current;
     if (!cd || !socketRef.current) return;
     socketRef.current.emit('call_reject', { callerId: cd.callerId });
@@ -963,6 +1020,10 @@ export default function ChatWidget({ isFullPage = false }) {
 
   const hangUp = () => {
     stopRingtone();
+    if (callTimeoutRef.current) {
+      clearTimeout(callTimeoutRef.current);
+      callTimeoutRef.current = null;
+    }
     const cd = callDataRef.current;
     if (socketRef.current) {
       const peerId = cd?.callerId || cd?.peerId || (activeConvRef.current ? getOtherUserId(activeConvRef.current) : null);
@@ -972,13 +1033,15 @@ export default function ChatWidget({ isFullPage = false }) {
   };
 
   const toggleMute = () => {
-    localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = !t.enabled; });
-    setIsMuted(p => !p);
+    const nextMuted = !isMuted;
+    localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = !nextMuted; });
+    setIsMuted(nextMuted);
   };
 
   const toggleVideo = () => {
-    localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = !t.enabled; });
-    setIsVideoOff(p => !p);
+    const nextVideoOff = !isVideoOff;
+    localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = !nextVideoOff; });
+    setIsVideoOff(nextVideoOff);
   };
 
   // ── Reservation actions ──
@@ -987,12 +1050,14 @@ export default function ChatWidget({ isFullPage = false }) {
     try {
       await api.post('/reservas/chat/command', { reservationId: reservaInfo.reserva_id, action });
       try { await refreshUser(); } catch (refreshErr) { console.debug(refreshErr); }
-      if (socketRef.current) {
-        const msgs = { aceptar: 'Reserva aceptada por el anfitrión.', rechazar: 'Reserva rechazada por el anfitrión.', archivar: 'Publicación archivada por el anfitrión.' };
-        if (msgs[action]) socketRef.current.emit('send_message', { conversacion_id: activeConv.id, contenido: msgs[action], tipo: 'texto' });
-      }
-      const res = await api.get(`/chat/conversaciones/${activeConv.id}/reserva`);
+      // Nota: /reservas/chat/command ya inserta el mensaje de auditoría en la base de datos.
+      // Recargamos la información de la reserva y los mensajes para mostrarlos inmediatamente sin duplicar.
+      const [res, msgRes] = await Promise.all([
+        api.get(`/chat/conversaciones/${activeConv.id}/reserva`),
+        api.get(`/chat/conversaciones/${activeConv.id}/mensajes`)
+      ]);
       setReservaInfo(res.data);
+      setMessages(msgRes.data);
       setShowMoreOptions(false);
     } catch (err) { console.error('Error en acción de reserva:', err); }
   };

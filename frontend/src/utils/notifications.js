@@ -65,7 +65,7 @@ export async function showPushNotification({
     const notif = new Notification(title, notificationOptions);
     notif.onclick = () => {
       window.focus();
-      if (url && window.location.pathname !== url) {
+      if (url && url !== '/' && window.location.pathname !== url) {
         window.location.href = url;
       }
       notif.close();
@@ -119,13 +119,14 @@ export function playNotificationSound() {
 export async function notifyChatMessage({ senderName = 'Usuario', messageText = '', conversacionId = null }) {
   playNotificationSound();
   const shortText = messageText.length > 80 ? messageText.substring(0, 80) + '...' : messageText;
+  const url = conversacionId ? `/chat?conv=${conversacionId}` : '/chat';
   return showPushNotification({
     title: `Mensaje de ${senderName}`,
     body: shortText || 'Te ha escrito un nuevo mensaje en HUASI.',
     icon: '/huasi-monograma.png',
-    url: conversacionId ? `/chat` : '/chat',
+    url,
     tag: `chat-${conversacionId || 'msg'}`,
-    data: { conversacionId, url: '/chat' }
+    data: { conversacionId, url }
   });
 }
 
@@ -223,6 +224,12 @@ export function startRingtone() {
 
 export function stopRingtone() {
   if (_ringtoneInterval) { clearInterval(_ringtoneInterval); _ringtoneInterval = null; }
+  if (_ringtoneCtx && _ringtoneCtx.state !== 'closed') {
+    try {
+      _ringtoneCtx.close();
+    } catch (_) {}
+    _ringtoneCtx = null;
+  }
 }
 
 // Notificación especializada: Llamada entrante
@@ -242,8 +249,8 @@ export async function notifyIncomingCall({ callerName = 'Un usuario', callType =
     title: `Llamada entrante — ${callerName}`,
     body: `${callerName} te está haciendo una ${typeLabel}. Toca aquí para contestar.`,
     icon: '/huasi-monograma.png',
-    url: '/',
+    url: null, // No forzar recarga para no destruir la conexión WebRTC
     tag: 'call-incoming',
-    data: { url: '/', callerName, callType }
+    data: { callerName, callType }
   });
 }

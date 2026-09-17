@@ -138,7 +138,10 @@ CREATE TABLE IF NOT EXISTS mensajes (
     conversacion_id INTEGER REFERENCES conversaciones(id) ON DELETE CASCADE,
     sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     contenido TEXT NOT NULL,
+    tipo VARCHAR(20) DEFAULT 'texto' NOT NULL,
+    metadata JSONB DEFAULT NULL,
     leido BOOLEAN DEFAULT FALSE,
+    entregado BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -147,6 +150,8 @@ CREATE INDEX IF NOT EXISTS idx_conversaciones_user2 ON conversaciones(user2_id);
 CREATE INDEX IF NOT EXISTS idx_mensajes_conversacion ON mensajes(conversacion_id);
 CREATE INDEX IF NOT EXISTS idx_mensajes_sender ON mensajes(sender_id);
 CREATE INDEX IF NOT EXISTS idx_mensajes_leido ON mensajes(leido);
+CREATE INDEX IF NOT EXISTS idx_mensajes_tipo ON mensajes(tipo);
+CREATE INDEX IF NOT EXISTS idx_mensajes_entregado ON mensajes(entregado);
 
 -- Insertar usuario admin por defecto
 INSERT INTO users (email, password_hash, nombre, apellido, role, verificado, email_verificado)
