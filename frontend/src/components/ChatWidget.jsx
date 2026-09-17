@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import {
   Send, MessageCircle, X, ArrowLeft, ChevronDown, Home, Eye,
-  Calendar, Phone, Video, Image, MapPin, Camera,
-  PhoneOff, VideoOff, Mic, MicOff
+  Phone, Video, Image, MapPin, Camera,
+  PhoneOff, VideoOff, Mic, MicOff, Search
 } from 'lucide-react';
 import api from '../api';
 import { notifyChatMessage, notifyIncomingCall, startRingtone, stopRingtone } from '../utils/notifications';
@@ -91,18 +91,20 @@ function LocationBubble({ lat, lng }) {
   );
 }
 
-export default function ChatWidget() {
+export default function ChatWidget({ isFullPage = false }) {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // ── Chat state ──
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(isFullPage);
   const [conversaciones, setConversaciones] = useState([]);
   const [activeConv, setActiveConv] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMsg, setNewMsg] = useState('');
   const [typing, setTyping] = useState(false);
   const [unreadTotal, setUnreadTotal] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   const [reservaInfo, setReservaInfo] = useState(null);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -144,6 +146,11 @@ export default function ChatWidget() {
   useEffect(() => { callTypeRef.current = callType; }, [callType]);
   useEffect(() => { callDataRef.current = callData; }, [callData]);
 
+  // Si se monta como página completa, siempre debe estar abierto
+  useEffect(() => {
+    if (isFullPage) setOpen(true);
+  }, [isFullPage]);
+
   // ── Call timer ──
   useEffect(() => {
     if (callState === 'active') {
@@ -156,6 +163,37 @@ export default function ChatWidget() {
   }, [callState]);
 
   const formatCallDuration = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
+  // ── Auto-select conversation via URL search params (?user=id o ?conv=id) ──
+  useEffect(() => {
+    if (!user) return;
+    const targetUserId = searchParams?.get('user');
+    const targetConvId = searchParams?.get('conv') || searchParams?.get('conversacion');
+    if (targetUserId) {
+      api.post('/chat/conversaciones', { otro_usuario_id: parseInt(targetUserId) })
+        .then(res => {
+          const convId = res.data.conversacion_id;
+          return api.get('/chat/conversaciones').then(r => {
+            setConversaciones(r.data);
+            const found = r.data.find(c => c.id === convId);
+            if (found) {
+              setActiveConv(found);
+              setOpen(true);
+            }
+          });
+        })
+        .catch(err => console.error('Error opening target chat by user:', err));
+    } else if (targetConvId) {
+      api.get('/chat/conversaciones').then(r => {
+        setConversaciones(r.data);
+        const found = r.data.find(c => String(c.id) === String(targetConvId));
+        if (found) {
+          setActiveConv(found);
+          setOpen(true);
+        }
+      }).catch(() => {});
+    }
+  }, [user, searchParams]);
 
   // ── Listen for external open-chat events ──
   useEffect(() => {
@@ -189,7 +227,7 @@ export default function ChatWidget() {
 
   // ── WebRTC helpers ──
   const endCall = useCallback(() => {
-    stopRingtone(); // detener tono de llamada si estaba sonando
+    stopRingtone();
     peerConnectionRef.current?.close();
     peerConnectionRef.current = null;
     localStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -331,23 +369,20 @@ export default function ChatWidget() {
     });
 
     // ── WebRTC signaling ──
-    // Usamos refs (callTypeRef, callDataRef) para evitar stale closures
     socket.on('call_incoming', (data) => {
       setCallData(data);
       setCallType(data.callType || 'audio');
       setCallState('incoming');
-      // Ringtone + push notification aunque la app esté en background
       notifyIncomingCall({
-        callerName: data.callerName || 'Un usuario',
+        callerName: data.callerName || 'Usuario HUASI',
         callType: data.callType || 'audio'
       });
     });
 
     socket.on('call_accepted', async (data) => {
       stopRingtone();
-      // User A recibió aceptación → crea offer
       const peerId = data.receiverId;
-      const cType = callTypeRef.current; // ← ref, nunca stale
+      const cType = callTypeRef.current;
       try {
         const stream = await getLocalStream(cType);
         const pc = createPeerConnection(peerId);
@@ -367,7 +402,7 @@ export default function ChatWidget() {
 
     socket.on('webrtc_offer', async (data) => {
       const { offer, fromId } = data;
-      const cType = callTypeRef.current; // ← ref
+      const cType = callTypeRef.current;
       try {
         const stream = await getLocalStream(cType);
         const pc = createPeerConnection(fromId);
@@ -408,16 +443,21 @@ export default function ChatWidget() {
     return () => socket.disconnect();
   }, [user, createPeerConnection, endCall]);
 
-  // ── Load conversations when widget opens ──
+  // ── Load conversations when widget or page opens ──
   useEffect(() => {
-    if (!user || !open) return;
+    if (!user || (!open && !isFullPage)) return;
     api.get('/chat/conversaciones')
       .then(res => {
         setConversaciones(res.data);
-        if (res.data.length > 0 && !activeConvRef.current) setActiveConv(res.data[0]);
+        if (res.data.length > 0 && !activeConvRef.current && !searchParams?.get('user') && !searchParams?.get('conv')) {
+          // En escritorio en página completa seleccionamos la primera conversación
+          if (isFullPage && window.innerWidth >= 768) {
+            setActiveConv(res.data[0]);
+          }
+        }
       })
       .catch(err => console.error('Error loading chats:', err));
-  }, [user, open]);
+  }, [user, open, isFullPage, searchParams]);
 
   // ── Unread count polling ──
   useEffect(() => {
@@ -474,22 +514,30 @@ export default function ChatWidget() {
     }
   };
 
-  // ── Send image ──
-  const handleImageUpload = async (file) => {
-    if (!file || !activeConv) return;
-    try {
-      const fd = new FormData();
-      fd.append('imagen', file);
-      const uploadRes = await api.post('/chat/upload-image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      const url = uploadRes.data.url;
-      const contenido = `[imagen]${url}`;
-      if (socketRef.current?.connected) {
-        socketRef.current.emit('send_message', { conversacion_id: activeConv.id, contenido, tipo: 'imagen', metadata: { url, nombre: file.name } });
-      } else {
-        const res = await api.post(`/chat/conversaciones/${activeConv.id}/mensajes`, { contenido, tipo: 'imagen', metadata: { url, nombre: file.name } });
-        setMessages(p => p.some(m => m.id === res.data.id) ? p : [...p, res.data]);
+  // ── Send multiple image(s) ──
+  const handleImageUpload = async (fileList) => {
+    if (!fileList || !activeConv) return;
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
+
+    for (const file of files) {
+      try {
+        const fd = new FormData();
+        fd.append('imagen', file);
+        const uploadRes = await api.post('/chat/upload-image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const url = uploadRes.data.url;
+        const contenido = `[imagen]${url}`;
+        if (socketRef.current?.connected) {
+          socketRef.current.emit('send_message', { conversacion_id: activeConv.id, contenido, tipo: 'imagen', metadata: { url, nombre: file.name } });
+        } else {
+          const res = await api.post(`/chat/conversaciones/${activeConv.id}/mensajes`, { contenido, tipo: 'imagen', metadata: { url, nombre: file.name } });
+          setMessages(p => p.some(m => m.id === res.data.id) ? p : [...p, res.data]);
+        }
+      } catch (err) {
+        console.error('Error subiendo imagen:', err);
+        alert(`No se pudo enviar la imagen "${file.name}".`);
       }
-    } catch (err) { console.error('Error subiendo imagen:', err); alert('No se pudo enviar la imagen.'); }
+    }
   };
 
   // ── Send location ──
@@ -526,14 +574,31 @@ export default function ChatWidget() {
 
   // ── Call actions ──
   const initiateCall = (type) => {
-    if (!activeConv || !socketRef.current) return;
+    if (!activeConv) return;
     const peerId = getOtherUserId(activeConv);
-    const callerName = `${user.nombre} ${user.apellido}`;
+    const receiverName = getOtherUserName(activeConv);
+    const callerName = user ? `${user.nombre || ''} ${user.apellido || ''}`.trim() || 'Usuario HUASI' : 'Usuario HUASI';
+
     setCallType(type);
     setCallState('outgoing');
-    setCallData({ peerId, callerName, conversacion_id: activeConv.id, callType: type });
+    setCallData({
+      peerId,
+      callerId: user?.id,
+      callerName,
+      receiverName,
+      conversacion_id: activeConv.id,
+      callType: type
+    });
     startRingtone();
-    socketRef.current.emit('call_request', { conversacion_id: activeConv.id, receiverId: peerId, callType: type, callerName });
+
+    if (socketRef.current) {
+      socketRef.current.emit('call_request', {
+        conversacion_id: activeConv.id,
+        receiverId: peerId,
+        callType: type,
+        callerName
+      });
+    }
   };
 
   const acceptCall = () => {
@@ -634,7 +699,6 @@ export default function ChatWidget() {
   // ── Render bubble content ──
   const renderMessageContent = (msg) => {
     const contenido = msg.contenido || '';
-    // Detectar tipo por contenido cuando la migración aún no ha corrido (tipo='texto' por defecto)
     let tipo = msg.tipo || 'texto';
     if (tipo === 'texto' && contenido.startsWith('[imagen]')) tipo = 'imagen';
     if (tipo === 'texto' && contenido.startsWith('[ubicacion]')) tipo = 'ubicacion';
@@ -646,7 +710,7 @@ export default function ChatWidget() {
       const url = meta?.url || msg.contenido.replace('[imagen]', '');
       return (
         <a href={url} target="_blank" rel="noopener noreferrer">
-          <img src={url} alt="Imagen enviada" style={{ maxWidth: 200, maxHeight: 180, borderRadius: 8, objectFit: 'cover', display: 'block', cursor: 'pointer' }} onError={e => { e.target.style.display = 'none'; }} />
+          <img src={url} alt="Imagen enviada" style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, objectFit: 'cover', display: 'block', cursor: 'pointer' }} onError={e => { e.target.style.display = 'none'; }} />
         </a>
       );
     }
@@ -662,259 +726,378 @@ export default function ChatWidget() {
     return <p>{msg.contenido}</p>;
   };
 
+  // ── RENDER PANTALLA COMPLETA DE LLAMADA ──
+  const renderCallOverlay = () => {
+    const isIncoming = callState === 'incoming';
+    const isOutgoing = callState === 'outgoing';
+    const displayName = isIncoming
+      ? (callData?.callerName || 'Usuario HUASI')
+      : (callData?.receiverName || (activeConv ? getOtherUserName(activeConv) : 'Usuario HUASI'));
+
+    const displayInitials = isIncoming
+      ? (callData?.callerName ? callData.callerName.slice(0, 2).toUpperCase() : (activeConv ? getInitials(activeConv) : '??'))
+      : (callData?.receiverName ? callData.receiverName.slice(0, 2).toUpperCase() : (activeConv ? getInitials(activeConv) : '??'));
+
+    return (
+      <div className="chat-call-overlay">
+        <div className="chat-call-modal">
+          {callType === 'video' ? (
+            <div className="chat-call-video-area">
+              <video ref={remoteVideoRef} autoPlay playsInline className="chat-call-remote-video" />
+              <video ref={localVideoRef} autoPlay playsInline muted className="chat-call-local-video" />
+            </div>
+          ) : (
+            <div className="chat-call-audio-avatar">
+              <div className="chat-call-avatar-ring">
+                {displayInitials}
+              </div>
+            </div>
+          )}
+
+          <div className="chat-call-info">
+            <span className="chat-call-badge">
+              {callType === 'video' ? 'Videollamada HUASI' : 'Llamada de voz HUASI'}
+            </span>
+            <span className="chat-call-name">
+              {displayName}
+            </span>
+            <span className="chat-call-status">
+              {isIncoming && 'Llamada entrante...'}
+              {isOutgoing && `Llamando...`}
+              {callState === 'active' && formatCallDuration(callDuration)}
+            </span>
+          </div>
+
+          <div className="chat-call-controls">
+            {isIncoming && (
+              <>
+                <button className="chat-call-btn chat-call-btn-accept" onClick={acceptCall} title="Aceptar llamada">
+                  <Phone size={24} />
+                  <span className="chat-call-btn-label">Aceptar</span>
+                </button>
+                <button className="chat-call-btn chat-call-btn-reject" onClick={rejectCall} title="Rechazar llamada">
+                  <PhoneOff size={24} />
+                  <span className="chat-call-btn-label">Rechazar</span>
+                </button>
+              </>
+            )}
+
+            {(isOutgoing || callState === 'active') && (
+              <>
+                {callState === 'active' && (
+                  <button className={`chat-call-btn chat-call-btn-mute${isMuted ? ' active' : ''}`} onClick={toggleMute} title={isMuted ? 'Activar micrófono' : 'Silenciar'}>
+                    {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
+                    <span className="chat-call-btn-label">{isMuted ? 'Mudo' : 'Silenciar'}</span>
+                  </button>
+                )}
+                {callState === 'active' && callType === 'video' && (
+                  <button className={`chat-call-btn chat-call-btn-video${isVideoOff ? ' active' : ''}`} onClick={toggleVideo} title={isVideoOff ? 'Activar cámara' : 'Apagar cámara'}>
+                    {isVideoOff ? <VideoOff size={22} /> : <Video size={22} />}
+                    <span className="chat-call-btn-label">Cámara</span>
+                  </button>
+                )}
+                <button className="chat-call-btn chat-call-btn-reject" onClick={hangUp} title="Colgar llamada">
+                  <PhoneOff size={24} />
+                  <span className="chat-call-btn-label">Colgar</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── RENDER LISTA DE CONVERSACIONES ──
+  const renderConversationList = () => {
+    const filteredConvs = conversaciones.filter(c => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      const name = getOtherUserName(c).toLowerCase();
+      const last = (c.ultimo_mensaje || '').toLowerCase();
+      return name.includes(q) || last.includes(q);
+    });
+
+    return (
+      <>
+        <div className="chat-search-bar">
+          <Search size={16} color="#94a3b8" />
+          <input
+            type="text"
+            className="chat-search-input"
+            placeholder="Buscar por nombre o mensaje..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="chat-w-list" style={{ flex: 1 }}>
+          {filteredConvs.length === 0 ? (
+            <div className="chat-w-empty">
+              <MessageCircle size={40} strokeWidth={1} />
+              <p>Sin conversaciones</p>
+              <span>Reserva un alojamiento para iniciar un chat.</span>
+            </div>
+          ) : (
+            filteredConvs.map(conv => (
+              <div key={conv.id} className={`chat-w-list-item ${activeConv?.id === conv.id ? 'active' : ''}`} onClick={() => setActiveConv(conv)}>
+                <div className="chat-w-avatar">{getInitials(conv)}</div>
+                <div className="chat-w-list-info">
+                  <div className="chat-w-list-top">
+                    <span className="chat-w-list-name">{getOtherUserName(conv)}</span>
+                    <span className="chat-w-list-time">{formatTime(conv.ultimo_mensaje_fecha)}</span>
+                  </div>
+                  <div className="chat-w-list-bottom">
+                    <span className="chat-w-list-preview">{conv.ultimo_mensaje || 'Sin mensajes'}</span>
+                    {conv.no_leidos > 0 && <span className="chat-w-unread">{conv.no_leidos}</span>}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </>
+    );
+  };
+
+  // ── RENDER CONVERSACIÓN ACTIVA ──
+  const renderActiveConversation = (isFull) => {
+    return (
+      <>
+        {/* HEADER */}
+        <div className="chat-w-header">
+          <button className="chat-w-back" onClick={() => { setActiveConv(null); setReservaInfo(null); setShowMoreOptions(false); }} title="Volver">
+            <ArrowLeft size={18} />
+          </button>
+          <div className="chat-w-avatar-sm">{getInitials(activeConv)}</div>
+          <div className="chat-w-header-info">
+            <span className="chat-w-header-name">{getOtherUserName(activeConv)}</span>
+            {typing === activeConv.id && <span className="chat-w-typing">Escribiendo...</span>}
+          </div>
+          <div className="chat-w-header-actions">
+            <button className="chat-w-action-btn" onClick={() => initiateCall('audio')} title="Llamada de voz"><Phone size={17} /></button>
+            <button className="chat-w-action-btn" onClick={() => initiateCall('video')} title="Videollamada"><Video size={17} /></button>
+          </div>
+          {!isFull && (
+            <button className="chat-w-close" onClick={() => setOpen(false)} title="Cerrar"><X size={18} /></button>
+          )}
+        </div>
+
+        {/* MARKETPLACE BAR */}
+        {reservaInfo ? (
+          <div className="chat-marketplace-bar">
+            <div className="chat-mp-icon"><Home size={18} /></div>
+            <div className="chat-mp-info">
+              <span className="chat-mp-label">HUASI</span>
+              <span className="chat-mp-title">
+                {(() => { const b = getEstadoBadge(reservaInfo.estado); return <><span className={`chat-mp-status ${b.cls}`}>{b.label}</span>{' - '}{reservaInfo.titulo}</>; })()}
+              </span>
+            </div>
+            <div className="chat-mp-actions" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              {isHost && reservaInfo.estado === 'pendiente' ? (
+                <>
+                  <button className="chat-mp-btn" onClick={() => handleReservationAction('aceptar')} style={{ background: '#10b981', color: 'white', border: 'none', padding: '6px 10px', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: 8, cursor: 'pointer' }}>Aceptar</button>
+                  <button className="chat-mp-btn" onClick={() => handleReservationAction('rechazar')} style={{ background: '#ef4444', color: 'white', border: 'none', padding: '6px 10px', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: 8, cursor: 'pointer' }}>Rechazar</button>
+                </>
+              ) : (
+                <button className="chat-mp-btn chat-mp-btn-detail" onClick={() => navigate(`/propiedad/${reservaInfo.propiedad_id}`)}>Ver detalles</button>
+              )}
+              <div className="chat-mp-more-wrap" ref={moreOptionsRef}>
+                <button className="chat-mp-btn chat-mp-btn-more" onClick={() => setShowMoreOptions(!showMoreOptions)}>Más</button>
+                {showMoreOptions && (
+                  <div className="chat-mp-dropdown">
+                    <button className="chat-mp-drop-item detail" onClick={() => { navigate(`/propiedad/${reservaInfo.propiedad_id}`); setShowMoreOptions(false); }}><Eye size={15} /> Ver publicación</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          otherUserProperties.length > 0 && (
+            <div className="chat-marketplace-bar">
+              <div className="chat-mp-icon"><Home size={18} /></div>
+              <div className="chat-mp-info">
+                <span className="chat-mp-label">Alojamiento disponible</span>
+                <span className="chat-mp-title" style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{otherUserProperties[0].titulo}</span>
+              </div>
+              <div className="chat-mp-actions">
+                <button className="chat-mp-btn" style={{ background: '#0d7c3d', color: 'white' }} onClick={() => setShowBookingModal(true)}>Solicitar reserva</button>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* MODAL RESERVA INLINE */}
+        {showBookingModal ? (
+          <div style={{ flex: 1, padding: 16, overflowY: 'auto', background: '#f8fafc' }}>
+            <h4 style={{ margin: '0 0 12px', fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>Solicitar Reserva</h4>
+            <form onSubmit={handleCreateReservation} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Alojamiento</label>
+                <select className="form-control" style={{ padding: '8px 12px', fontSize: '0.85rem' }} value={bookingForm.propiedad_id} onChange={e => setBookingForm(p => ({ ...p, propiedad_id: e.target.value }))}>
+                  {otherUserProperties.map(p => <option key={p.id} value={p.id}>{p.titulo}</option>)}
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Llegada</label>
+                  <input type="date" className="form-control" style={{ padding: '8px 10px', fontSize: '0.8rem' }} value={bookingForm.fecha_inicio} onChange={e => setBookingForm(p => ({ ...p, fecha_inicio: e.target.value }))} required />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Salida</label>
+                  <input type="date" className="form-control" style={{ padding: '8px 10px', fontSize: '0.8rem' }} value={bookingForm.fecha_fin} onChange={e => setBookingForm(p => ({ ...p, fecha_fin: e.target.value }))} required />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Mensaje para el anfitrión</label>
+                <textarea className="form-control" rows="2" style={{ padding: '8px 12px', fontSize: '0.82rem', minHeight: 60 }} value={bookingForm.mensaje} onChange={e => setBookingForm(p => ({ ...p, mensaje: e.target.value }))} />
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 10 }}>
+                <button type="button" className="btn btn-secondary" style={{ flex: 1, padding: '8px 12px', fontSize: '0.85rem', borderRadius: 8 }} onClick={() => setShowBookingModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, padding: '8px 12px', fontSize: '0.85rem', borderRadius: 8, background: 'var(--ucc-green)' }}>Enviar</button>
+              </div>
+            </form>
+          </div>
+        ) : (
+          <div className="chat-w-messages">
+            {messages.map(msg => {
+              const isSys = isSystemMessage(msg.contenido);
+              const isMine = msg.sender_id === user.id;
+              const tipo = msg.tipo || 'texto';
+              return (
+                <div key={msg.id} className={`chat-w-bubble ${isSys ? 'system' : isMine ? 'mine' : 'other'}${tipo !== 'texto' ? ` bubble-${tipo}` : ''}`}>
+                  {renderMessageContent(msg)}
+                  <span className="chat-w-time">
+                    {new Date(msg.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+
+        {/* INPUT BAR */}
+        {!showBookingModal && (
+          <div className="chat-w-input-bar">
+            {/* Hidden file inputs: MULTIPLE IMAGES & CAMERA */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: 'none' }}
+              onChange={e => {
+                if (e.target.files && e.target.files.length > 0) {
+                  handleImageUpload(e.target.files);
+                  e.target.value = '';
+                }
+              }}
+            />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: 'none' }}
+              onChange={e => {
+                if (e.target.files && e.target.files.length > 0) {
+                  handleImageUpload(e.target.files);
+                  e.target.value = '';
+                }
+              }}
+            />
+
+            <div className="chat-input-actions">
+              <button type="button" className="chat-input-icon-btn" onClick={() => fileInputRef.current?.click()} title="Enviar fotos (permite varias)"><Image size={18} /></button>
+              <button type="button" className="chat-input-icon-btn" onClick={() => cameraInputRef.current?.click()} title="Tomar foto con cámara"><Camera size={18} /></button>
+              <button type="button" className="chat-input-icon-btn" onClick={handleSendLocation} title="Compartir ubicación"><MapPin size={18} /></button>
+            </div>
+
+            {/* Texto + enviar */}
+            <form onSubmit={handleSend} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="text"
+                className="chat-text-input"
+                placeholder="Escribe un mensaje..."
+                value={newMsg}
+                onChange={handleTyping}
+                autoFocus
+              />
+              <button type="submit" className="chat-send-btn" disabled={!newMsg.trim()}><Send size={18} /></button>
+            </form>
+          </div>
+        )}
+      </>
+    );
+  };
+
+  // ── RENDER PLACEHOLDER EN MODO ESCRITORIO (FULLPAGE) ──
+  const renderPlaceholder = () => (
+    <div className="chat-fp-placeholder">
+      <div className="chat-fp-placeholder-icon">
+        <MessageCircle size={52} strokeWidth={1.2} />
+      </div>
+      <h3>Tus conversaciones HUASI</h3>
+      <p>Selecciona un chat de la lista izquierda para enviar mensajes, fotos, compartir ubicación o realizar llamadas de voz y video en tiempo real.</p>
+    </div>
+  );
+
   const isHost = reservaInfo && reservaInfo.host_id === user?.id;
   if (!user) return null;
 
+  // ── MODO 1: PÁGINA COMPLETA (/chat en Android o Escritorio) ──
+  if (isFullPage) {
+    return (
+      <div className="chat-fullpage-container">
+        {/* Remote audio stream */}
+        <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
+
+        {/* Full-screen call overlay */}
+        {callState && renderCallOverlay()}
+
+        {/* SIDEBAR: Lista de conversaciones */}
+        <div className={`chat-fp-sidebar ${activeConv ? 'hidden-mobile' : ''}`}>
+          <div className="chat-w-header">
+            <MessageCircle size={22} />
+            <span className="chat-w-header-name" style={{ flex: 1 }}>Mensajes</span>
+          </div>
+          {renderConversationList()}
+        </div>
+
+        {/* MAIN: Chat activo o placeholder */}
+        <div className={`chat-fp-main ${!activeConv ? 'hidden-mobile' : ''}`}>
+          {activeConv ? renderActiveConversation(true) : renderPlaceholder()}
+        </div>
+      </div>
+    );
+  }
+
+  // ── MODO 2: WIDGET FLOTANTE (Messenger style en otras páginas) ──
   return (
     <>
-      {/* ── ELEMENTO DE AUDIO REMOTO PARA LLAMADAS DE VOZ ── */}
+      {/* Remote audio stream */}
       <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
 
-      {/* ── CALL OVERLAY ── */}
-      {callState && (
-        <div className="chat-call-overlay">
-          <div className="chat-call-modal">
-            {callType === 'video' && (
-              <div className="chat-call-video-area">
-                <video ref={remoteVideoRef} autoPlay playsInline className="chat-call-remote-video" />
-                <video ref={localVideoRef} autoPlay playsInline muted className="chat-call-local-video" />
-              </div>
-            )}
-            {callType === 'audio' && (
-              <div className="chat-call-audio-avatar">
-                <div className="chat-call-avatar-ring">
-                  {callData && activeConv ? getInitials(activeConv) : callData?.callerName?.slice(0, 2).toUpperCase() || '??'}
-                </div>
-              </div>
-            )}
-            <div className="chat-call-info">
-              <span className="chat-call-name">
-                {callState === 'incoming' ? callData?.callerName || 'Usuario' : (activeConv ? getOtherUserName(activeConv) : '')}
-              </span>
-              <span className="chat-call-status">
-                {callState === 'incoming' && `Llamada de ${callType === 'video' ? 'video' : 'voz'} entrante`}
-                {callState === 'outgoing' && 'Llamando...'}
-                {callState === 'active' && formatCallDuration(callDuration)}
-              </span>
-            </div>
-            <div className="chat-call-controls">
-              {callState === 'incoming' && (
-                <>
-                  <button className="chat-call-btn chat-call-btn-accept" onClick={acceptCall} title="Aceptar"><Phone size={22} /></button>
-                  <button className="chat-call-btn chat-call-btn-reject" onClick={rejectCall} title="Rechazar"><PhoneOff size={22} /></button>
-                </>
-              )}
-              {(callState === 'outgoing' || callState === 'active') && (
-                <>
-                  {callState === 'active' && (
-                    <button className={`chat-call-btn chat-call-btn-mute${isMuted ? ' active' : ''}`} onClick={toggleMute} title={isMuted ? 'Activar mic' : 'Silenciar'}>
-                      {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
-                    </button>
-                  )}
-                  {callState === 'active' && callType === 'video' && (
-                    <button className={`chat-call-btn chat-call-btn-video${isVideoOff ? ' active' : ''}`} onClick={toggleVideo} title={isVideoOff ? 'Activar cámara' : 'Apagar cámara'}>
-                      {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
-                    </button>
-                  )}
-                  <button className="chat-call-btn chat-call-btn-reject" onClick={hangUp} title="Colgar"><PhoneOff size={22} /></button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Call overlay */}
+      {callState && renderCallOverlay()}
 
-      {/* ── FLOATING BUBBLE ── */}
+      {/* FLOATING BUBBLE */}
       <button className="chat-fab" onClick={() => { setOpen(!open); if (!open) setActiveConv(null); }} title="Mensajes">
         {open ? <ChevronDown size={26} /> : <MessageCircle size={26} />}
         {!open && unreadTotal > 0 && <span className="chat-fab-badge">{unreadTotal > 9 ? '9+' : unreadTotal}</span>}
       </button>
 
-      {/* ── CHAT WINDOW ── */}
+      {/* FLOATING CHAT WINDOW */}
       {open && (
         <div className="chat-widget">
-          {activeConv ? (
-            <>
-              {/* HEADER */}
-              <div className="chat-w-header">
-                <button className="chat-w-back" onClick={() => { setActiveConv(null); setReservaInfo(null); setShowMoreOptions(false); }}><ArrowLeft size={18} /></button>
-                <div className="chat-w-avatar-sm">{getInitials(activeConv)}</div>
-                <div className="chat-w-header-info">
-                  <span className="chat-w-header-name">{getOtherUserName(activeConv)}</span>
-                  {typing === activeConv.id && <span className="chat-w-typing">Escribiendo...</span>}
-                </div>
-                <div className="chat-w-header-actions">
-                  <button className="chat-w-action-btn" onClick={() => initiateCall('audio')} title="Llamada de voz"><Phone size={17} /></button>
-                  <button className="chat-w-action-btn" onClick={() => initiateCall('video')} title="Videollamada"><Video size={17} /></button>
-                </div>
-                <button className="chat-w-close" onClick={() => setOpen(false)}><X size={18} /></button>
-              </div>
-
-              {/* MARKETPLACE BAR */}
-              {reservaInfo ? (
-                <div className="chat-marketplace-bar">
-                  <div className="chat-mp-icon"><Home size={18} /></div>
-                  <div className="chat-mp-info">
-                    <span className="chat-mp-label">HUASI</span>
-                    <span className="chat-mp-title">
-                      {(() => { const b = getEstadoBadge(reservaInfo.estado); return <><span className={`chat-mp-status ${b.cls}`}>{b.label}</span>{' - '}{reservaInfo.titulo}</>; })()}
-                    </span>
-                  </div>
-                  <div className="chat-mp-actions" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    {isHost && reservaInfo.estado === 'pendiente' ? (
-                      <>
-                        <button className="chat-mp-btn" onClick={() => handleReservationAction('aceptar')} style={{ background: '#10b981', color: 'white', border: 'none', padding: '6px 10px', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: 8, cursor: 'pointer' }}>Aceptar</button>
-                        <button className="chat-mp-btn" onClick={() => handleReservationAction('rechazar')} style={{ background: '#ef4444', color: 'white', border: 'none', padding: '6px 10px', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: 8, cursor: 'pointer' }}>Rechazar</button>
-                      </>
-                    ) : (
-                      <button className="chat-mp-btn chat-mp-btn-detail" onClick={() => navigate(`/propiedad/${reservaInfo.propiedad_id}`)}>Ver detalles</button>
-                    )}
-                    <div className="chat-mp-more-wrap" ref={moreOptionsRef}>
-                      <button className="chat-mp-btn chat-mp-btn-more" onClick={() => setShowMoreOptions(!showMoreOptions)}>Más</button>
-                      {showMoreOptions && (
-                        <div className="chat-mp-dropdown">
-                          <button className="chat-mp-drop-item detail" onClick={() => { navigate(`/propiedad/${reservaInfo.propiedad_id}`); setShowMoreOptions(false); }}><Eye size={15} /> Ver publicación</button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                otherUserProperties.length > 0 && (
-                  <div className="chat-marketplace-bar">
-                    <div className="chat-mp-icon"><Home size={18} /></div>
-                    <div className="chat-mp-info">
-                      <span className="chat-mp-label">Alojamiento disponible</span>
-                      <span className="chat-mp-title" style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{otherUserProperties[0].titulo}</span>
-                    </div>
-                    <div className="chat-mp-actions">
-                      <button className="chat-mp-btn" style={{ background: 'var(--ucc-green)', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.75rem', fontWeight: 'bold', borderRadius: 8, cursor: 'pointer' }} onClick={() => setShowBookingModal(true)}>Solicitar Reserva</button>
-                    </div>
-                  </div>
-                )
-              )}
-
-              {/* MESSAGES / BOOKING */}
-              {showBookingModal ? (
-                <div className="chat-w-messages" style={{ background: 'var(--bg-card)', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <h4 style={{ fontFamily: 'var(--font-heading)', fontWeight: 'bold', fontSize: '1rem', color: 'var(--primary)', borderBottom: '1px solid var(--border)', paddingBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Calendar size={18} /><span>Solicitar Reserva</span>
-                  </h4>
-                  <form onSubmit={handleCreateReservation} style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, overflowY: 'auto' }}>
-                    {otherUserProperties.length > 1 ? (
-                      <div className="form-group" style={{ marginBottom: 8 }}>
-                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Alojamiento</label>
-                        <select className="form-control" style={{ padding: '8px 12px', fontSize: '0.85rem' }} value={bookingForm.propiedad_id} onChange={e => setBookingForm(p => ({ ...p, propiedad_id: e.target.value }))} required>
-                          {otherUserProperties.map(p => <option key={p.id} value={p.id}>{p.titulo}</option>)}
-                        </select>
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: '0.82rem', color: 'var(--primary)', marginBottom: 8, background: 'var(--bg)', padding: 10, borderRadius: 8 }}><strong>Alojamiento:</strong> {otherUserProperties[0]?.titulo}</div>
-                    )}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Llegada</label>
-                        <input type="date" className="form-control" min={new Date().toISOString().split('T')[0]} style={{ padding: '8px 12px', fontSize: '0.82rem' }} value={bookingForm.fecha_inicio} onChange={e => setBookingForm(p => ({ ...p, fecha_inicio: e.target.value }))} required />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Salida</label>
-                        <input type="date" className="form-control" min={bookingForm.fecha_inicio || new Date().toISOString().split('T')[0]} style={{ padding: '8px 12px', fontSize: '0.82rem' }} value={bookingForm.fecha_fin} onChange={e => setBookingForm(p => ({ ...p, fecha_fin: e.target.value }))} required />
-                      </div>
-                    </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Huéspedes</label>
-                      <input type="number" className="form-control" min="1" max={otherUserProperties.find(p => p.id === parseInt(bookingForm.propiedad_id))?.capacidad || 4} style={{ padding: '8px 12px', fontSize: '0.82rem' }} value={bookingForm.num_huespedes} onChange={e => setBookingForm(p => ({ ...p, num_huespedes: parseInt(e.target.value) || 1 }))} required />
-                    </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Mensaje</label>
-                      <textarea className="form-control" rows="2" style={{ padding: '8px 12px', fontSize: '0.82rem', minHeight: 60 }} value={bookingForm.mensaje} onChange={e => setBookingForm(p => ({ ...p, mensaje: e.target.value }))} />
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 10 }}>
-                      <button type="button" className="btn btn-secondary" style={{ flex: 1, padding: '8px 12px', fontSize: '0.85rem', borderRadius: 8 }} onClick={() => setShowBookingModal(false)}>Cancelar</button>
-                      <button type="submit" className="btn btn-primary" style={{ flex: 1, padding: '8px 12px', fontSize: '0.85rem', borderRadius: 8, background: 'var(--ucc-green)' }}>Enviar</button>
-                    </div>
-                  </form>
-                </div>
-              ) : (
-                <div className="chat-w-messages">
-                  {messages.map(msg => {
-                    const isSys = isSystemMessage(msg.contenido);
-                    const isMine = msg.sender_id === user.id;
-                    const tipo = msg.tipo || 'texto';
-                    return (
-                      <div key={msg.id} className={`chat-w-bubble ${isSys ? 'system' : isMine ? 'mine' : 'other'}${tipo !== 'texto' ? ` bubble-${tipo}` : ''}`}>
-                        {renderMessageContent(msg)}
-                        <span className="chat-w-time">
-                          {new Date(msg.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
-
-              {/* INPUT BAR */}
-              {!showBookingModal && (
-                <div className="chat-w-input-bar">
-                  {/* Hidden file inputs */}
-                  <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) { handleImageUpload(e.target.files[0]); e.target.value = ''; } }} />
-                  <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) { handleImageUpload(e.target.files[0]); e.target.value = ''; } }} />
-
-                  <div className="chat-input-actions">
-                    <button type="button" className="chat-input-icon-btn" onClick={() => fileInputRef.current?.click()} title="Enviar imagen"><Image size={18} /></button>
-                    <button type="button" className="chat-input-icon-btn" onClick={() => cameraInputRef.current?.click()} title="Tomar foto"><Camera size={18} /></button>
-                    <button type="button" className="chat-input-icon-btn" onClick={handleSendLocation} title="Compartir ubicación"><MapPin size={18} /></button>
-                  </div>
-
-                  {/* Texto + enviar */}
-                  <form onSubmit={handleSend} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input
-                      type="text"
-                      className="chat-text-input"
-                      placeholder="Escribe un mensaje..."
-                      value={newMsg}
-                      onChange={handleTyping}
-                      autoFocus
-                    />
-                    <button type="submit" className="chat-send-btn" disabled={!newMsg.trim()}><Send size={18} /></button>
-                  </form>
-                </div>
-              )}
-            </>
-          ) : (
-            /* CONVERSATION LIST */
+          {activeConv ? renderActiveConversation(false) : (
             <>
               <div className="chat-w-header">
                 <MessageCircle size={20} />
                 <span className="chat-w-header-name" style={{ flex: 1 }}>Mensajes</span>
-                <button className="chat-w-close" onClick={() => setOpen(false)}><X size={18} /></button>
+                <button className="chat-w-close" onClick={() => setOpen(false)} title="Cerrar"><X size={18} /></button>
               </div>
-              <div className="chat-w-list">
-                {conversaciones.length === 0 ? (
-                  <div className="chat-w-empty">
-                    <MessageCircle size={40} strokeWidth={1} />
-                    <p>Sin conversaciones</p>
-                    <span>Reserva un alojamiento para iniciar un chat.</span>
-                  </div>
-                ) : (
-                  conversaciones.map(conv => (
-                    <div key={conv.id} className="chat-w-list-item" onClick={() => setActiveConv(conv)}>
-                      <div className="chat-w-avatar">{getInitials(conv)}</div>
-                      <div className="chat-w-list-info">
-                        <div className="chat-w-list-top">
-                          <span className="chat-w-list-name">{getOtherUserName(conv)}</span>
-                          <span className="chat-w-list-time">{formatTime(conv.ultimo_mensaje_fecha)}</span>
-                        </div>
-                        <div className="chat-w-list-bottom">
-                          <span className="chat-w-list-preview">{conv.ultimo_mensaje || 'Sin mensajes'}</span>
-                          {conv.no_leidos > 0 && <span className="chat-w-unread">{conv.no_leidos}</span>}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+              {renderConversationList()}
             </>
           )}
         </div>

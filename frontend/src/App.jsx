@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import SplashScreen from './components/SplashScreen';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -29,6 +29,8 @@ import useActivityTracker from './hooks/useActivityTracker';
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const location = useLocation();
+  const isChatRoute = location.pathname.startsWith('/chat');
   useActivityTracker();
 
   return (
@@ -67,8 +69,8 @@ function App() {
       </main>
       <Footer />
       <NotificationManager />
-      <ChatWidget />
-      <PqrButton />
+      {!isChatRoute && <ChatWidget />}
+      {!isChatRoute && <PqrButton />}
       <PwaInstallBanner />
       <BottomNavBar />
     </div>

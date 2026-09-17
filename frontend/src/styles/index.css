@@ -2135,28 +2135,54 @@ textarea.form-control {
 .chat-call-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 15, 30, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  z-index: 9999;
+  background: rgba(6, 17, 11, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 99999 !important;
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: fadeIn 0.25s ease-out;
 }
 
 .chat-call-modal {
-  background: linear-gradient(160deg, #0d1f14 0%, #0a2d1a 100%);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 24px;
-  padding: 32px 28px;
-  width: 320px;
+  background: radial-gradient(circle at 50% 25%, #103b22 0%, #06190e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  padding: 44px 32px;
+  width: 380px;
   max-width: 92vw;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  animation: call-slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  gap: 22px;
+  animation: call-slide-up 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.7);
+}
+
+@media (max-width: 640px) {
+  .chat-call-modal {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-width: 100vw;
+    border-radius: 0;
+    border: none;
+    padding: 70px 24px 50px;
+    justify-content: space-between;
+  }
+}
+
+.chat-call-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(52, 211, 153, 0.25);
 }
 
 /* Audio call avatar ring */
@@ -2164,31 +2190,49 @@ textarea.form-control {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 10px 0;
 }
 
 .chat-call-avatar-ring {
-  width: 90px;
-  height: 90px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
   background: linear-gradient(135deg, #0d7c3d 0%, #0a9e50 100%);
   color: white;
-  font-size: 2rem;
+  font-size: 2.3rem;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   letter-spacing: -1px;
   animation: call-pulse 2s infinite;
+  box-shadow: 0 0 0 12px rgba(13, 124, 61, 0.25), 0 0 0 24px rgba(13, 124, 61, 0.1);
+}
+
+@media (max-width: 640px) {
+  .chat-call-avatar-ring {
+    width: 130px;
+    height: 130px;
+    font-size: 3rem;
+    box-shadow: 0 0 0 16px rgba(13, 124, 61, 0.25), 0 0 0 32px rgba(13, 124, 61, 0.1);
+  }
 }
 
 /* Video containers */
 .chat-call-video-area {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 240px;
   border-radius: 16px;
   overflow: hidden;
   background: #000;
+}
+
+@media (max-width: 640px) {
+  .chat-call-video-area {
+    height: calc(100vh - 240px);
+    border-radius: 20px;
+  }
 }
 
 .chat-call-remote-video {
@@ -2199,13 +2243,14 @@ textarea.form-control {
 
 .chat-call-local-video {
   position: absolute;
-  bottom: 10px;
-  right: 10px;
-  width: 72px;
-  height: 96px;
-  border-radius: 10px;
+  bottom: 12px;
+  right: 12px;
+  width: 80px;
+  height: 110px;
+  border-radius: 12px;
   object-fit: cover;
-  border: 2px solid rgba(255,255,255,0.3);
+  border: 2px solid rgba(255,255,255,0.4);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 
 /* Call info text */
@@ -2213,19 +2258,21 @@ textarea.form-control {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  text-align: center;
 }
 
 .chat-call-name {
   color: #ffffff;
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: -0.2px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  font-family: var(--font-heading);
 }
 
 .chat-call-status {
-  color: rgba(255,255,255,0.55);
-  font-size: 0.82rem;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.95rem;
   font-family: var(--font-body);
 }
 
@@ -2233,25 +2280,28 @@ textarea.form-control {
 .chat-call-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-top: 4px;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 10px;
 }
 
 .chat-call-btn {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   border: none;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   color: white;
+  position: relative;
 }
 
 .chat-call-btn:hover {
-  transform: scale(1.12);
+  transform: scale(1.1);
 }
 
 .chat-call-btn:active {
@@ -2260,29 +2310,183 @@ textarea.form-control {
 
 .chat-call-btn-accept {
   background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
-  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.45);
+  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.5);
 }
 
 .chat-call-btn-reject {
   background: linear-gradient(135deg, #dc2626 0%, #f87171 100%);
-  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.45);
+  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.5);
 }
 
 .chat-call-btn-mute,
 .chat-call-btn-video {
-  background: rgba(255,255,255,0.12);
-  width: 48px;
-  height: 48px;
+  background: rgba(255,255,255,0.14);
+  width: 54px;
+  height: 54px;
 }
 
 .chat-call-btn-mute.active,
 .chat-call-btn-video.active {
-  background: rgba(220, 38, 38, 0.5);
+  background: rgba(220, 38, 38, 0.55);
 }
 
 .chat-call-btn-mute:hover,
 .chat-call-btn-video:hover {
-  background: rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.25);
+}
+
+.chat-call-btn-label {
+  display: block;
+  font-size: 0.72rem;
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+/* ============ FULL-PAGE CHAT (/chat) ============ */
+.chat-page-wrapper {
+  width: 100%;
+  height: calc(100vh - 64px);
+  max-height: calc(100vh - 64px);
+  background: #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .chat-page-wrapper {
+    height: calc(100dvh - 64px - 60px);
+    max-height: calc(100dvh - 64px - 60px);
+    padding: 0;
+  }
+}
+
+.chat-fullpage-container {
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  background: #ffffff;
+  box-shadow: 0 12px 40px rgba(13, 124, 61, 0.08), 0 2px 10px rgba(0, 0, 0, 0.04);
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(200, 221, 210, 0.6);
+}
+
+@media (max-width: 768px) {
+  .chat-fullpage-container {
+    height: 100%;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+}
+
+.chat-fp-sidebar {
+  width: 380px;
+  border-right: 1px solid rgba(200, 221, 210, 0.5);
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chat-fp-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  position: relative;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .chat-fp-sidebar {
+    width: 100%;
+    border-right: none;
+  }
+  .chat-fp-sidebar.hidden-mobile {
+    display: none !important;
+  }
+  .chat-fp-main.hidden-mobile {
+    display: none !important;
+  }
+  .chat-fp-main {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.chat-fp-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  color: #64748b;
+  gap: 16px;
+  background: #f8fafc;
+}
+
+.chat-fp-placeholder-icon {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #e8f5ed;
+  color: var(--ucc-green, #0d7c3d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.chat-fp-placeholder h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.chat-fp-placeholder p {
+  font-size: 0.92rem;
+  max-width: 380px;
+  line-height: 1.5;
+  color: #64748b;
+  margin: 0;
+}
+
+.chat-search-bar {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(200, 221, 210, 0.4);
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-search-input {
+  flex: 1;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  outline: none;
+  transition: all 0.2s;
+  background: #f8fafc;
+}
+
+.chat-search-input:focus {
+  border-color: var(--ucc-green, #0d7c3d);
+  background: #ffffff;
 }
 
 /* Dark mode overrides for call overlay */
