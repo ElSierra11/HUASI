@@ -227,9 +227,16 @@ export function stopRingtone() {
 export async function notifyIncomingCall({ callerName = 'Un usuario', callType = 'audio' }) {
   startRingtone();
   const typeLabel = callType === 'video' ? 'videollamada' : 'llamada de voz';
+  
+  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+    try {
+      await Notification.requestPermission();
+    } catch (_) {}
+  }
+
   return showPushNotification({
-    title: `Llamada entrante — ${callerName}`,
-    body: `${callerName} te está haciendo una ${typeLabel}. Abre HUASI para responder.`,
+    title: `📞 Llamada entrante — ${callerName}`,
+    body: `${callerName} te está haciendo una ${typeLabel}. Toca aquí para contestar.`,
     icon: '/huasi-monograma.png',
     url: '/',
     tag: 'call-incoming',

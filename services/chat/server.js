@@ -173,10 +173,21 @@ io.on('connection', (socket) => {
   });
 
   // ============ WEBRTC SIGNALING ============
-  socket.on('call_request', (data) => {
+  socket.on('call_request', async (data) => {
     const { receiverId } = data;
     console.log(`📞 Llamada de usuario ${userId} a ${receiverId}`);
-    io.to(`user_${receiverId}`).emit('call_incoming', { ...data, callerId: userId });
+    let callerName = data.callerName;
+    if (!callerName) {
+      try {
+        const u = await pool.query('SELECT nombre, apellido FROM users WHERE id = $1', [userId]);
+        if (u.rows.length > 0) callerName = `${u.rows[0].nombre} ${u.rows[0].apellido || ''}`.trim();
+      } catch (_) {}
+    }
+    io.to(`user_${receiverId}`).emit('call_incoming', {
+      ...data,
+      callerId: userId,
+      callerName: callerName || 'Un usuario'
+    });
   });
 
   socket.on('call_accept', (data) => {

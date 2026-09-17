@@ -8,7 +8,7 @@ import {
   PhoneOff, VideoOff, Mic, MicOff
 } from 'lucide-react';
 import api from '../api';
-import { notifyChatMessage, notifyIncomingCall, stopRingtone } from '../utils/notifications';
+import { notifyChatMessage, notifyIncomingCall, startRingtone, stopRingtone } from '../utils/notifications';
 
 // ── Leaflet (lazy — sólo se carga si hay mensajes de ubicación) ──
 let LeafletLoaded = false;
@@ -130,6 +130,9 @@ export default function ChatWidget() {
   const cameraInputRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const remoteAudioRef = useRef(null);
+  const remoteStreamRef = useRef(null);
+  const pendingCandidatesRef = useRef([]);
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
   const callTimerRef = useRef(null);
@@ -191,8 +194,12 @@ export default function ChatWidget() {
     peerConnectionRef.current = null;
     localStreamRef.current?.getTracks().forEach(t => t.stop());
     localStreamRef.current = null;
+    remoteStreamRef.current?.getTracks().forEach(t => t.stop());
+    remoteStreamRef.current = null;
+    pendingCandidatesRef.current = [];
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
     setCallState(null);
     setCallData(null);
     setIsMuted(false);
@@ -201,12 +208,27 @@ export default function ChatWidget() {
 
   const getLocalStream = async (type) => {
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      },
       video: type === 'video' ? { facingMode: 'user', width: 640, height: 480 } : false
     });
     localStreamRef.current = stream;
-    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+    if (localVideoRef.current && type === 'video') localVideoRef.current.srcObject = stream;
     return stream;
+  };
+
+  const flushCandidates = async (pc) => {
+    while (pendingCandidatesRef.current && pendingCandidatesRef.current.length > 0) {
+      const cand = pendingCandidatesRef.current.shift();
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(cand));
+      } catch (err) {
+        console.warn('Error aplicando candidato ICE en cola:', err);
+      }
+    }
   };
 
   const createPeerConnection = useCallback((peerId) => {
@@ -219,13 +241,39 @@ export default function ChatWidget() {
       }
     };
     pc.ontrack = (e) => {
-      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0];
+      const stream = (e.streams && e.streams[0]) ? e.streams[0] : new MediaStream([e.track]);
+      remoteStreamRef.current = stream;
+      if (callTypeRef.current === 'audio') {
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = stream;
+          remoteAudioRef.current.play?.().catch(() => {});
+        }
+      } else {
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = stream;
+          remoteVideoRef.current.play?.().catch(() => {});
+        }
+      }
     };
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') endCall();
     };
     return pc;
   }, [endCall]);
+
+  // Sincronizar stream remoto con los elementos de audio/video cuando cambie el estado o tipo de llamada
+  useEffect(() => {
+    if (remoteStreamRef.current) {
+      if (callType === 'audio' && remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = remoteStreamRef.current;
+        remoteAudioRef.current.play?.().catch(() => {});
+      }
+      if (callType === 'video' && remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStreamRef.current;
+        remoteVideoRef.current.play?.().catch(() => {});
+      }
+    }
+  }, [callState, callType]);
 
   // ── Socket.IO ──
   useEffect(() => {
@@ -296,6 +344,7 @@ export default function ChatWidget() {
     });
 
     socket.on('call_accepted', async (data) => {
+      stopRingtone();
       // User A recibió aceptación → crea offer
       const peerId = data.receiverId;
       const cType = callTypeRef.current; // ← ref, nunca stale
@@ -313,8 +362,8 @@ export default function ChatWidget() {
       }
     });
 
-    socket.on('call_rejected', () => endCall());
-    socket.on('call_ended', () => endCall());
+    socket.on('call_rejected', () => { stopRingtone(); endCall(); });
+    socket.on('call_ended', () => { stopRingtone(); endCall(); });
 
     socket.on('webrtc_offer', async (data) => {
       const { offer, fromId } = data;
@@ -324,6 +373,7 @@ export default function ChatWidget() {
         const pc = createPeerConnection(fromId);
         stream.getTracks().forEach(t => pc.addTrack(t, stream));
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        await flushCandidates(pc);
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
         socket.emit('webrtc_answer', { peerId: fromId, answer });
@@ -336,13 +386,22 @@ export default function ChatWidget() {
 
     socket.on('webrtc_answer', async ({ answer }) => {
       try {
-        if (peerConnectionRef.current) await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+        if (peerConnectionRef.current) {
+          await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+          await flushCandidates(peerConnectionRef.current);
+        }
       } catch (err) { console.error('webrtc_answer error:', err); }
     });
 
     socket.on('webrtc_ice_candidate', async ({ candidate }) => {
       try {
-        if (peerConnectionRef.current && candidate) await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        if (peerConnectionRef.current && candidate) {
+          if (peerConnectionRef.current.remoteDescription) {
+            await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+          } else {
+            pendingCandidatesRef.current.push(candidate);
+          }
+        }
       } catch (err) { console.error('ICE candidate error:', err); }
     });
 
@@ -473,16 +532,19 @@ export default function ChatWidget() {
     setCallType(type);
     setCallState('outgoing');
     setCallData({ peerId, callerName, conversacion_id: activeConv.id, callType: type });
+    startRingtone();
     socketRef.current.emit('call_request', { conversacion_id: activeConv.id, receiverId: peerId, callType: type, callerName });
   };
 
   const acceptCall = () => {
+    stopRingtone();
     const cd = callDataRef.current;
     if (!cd || !socketRef.current) return;
     socketRef.current.emit('call_accept', { callerId: cd.callerId, conversacion_id: cd.conversacion_id, callType: cd.callType });
   };
 
   const rejectCall = () => {
+    stopRingtone();
     const cd = callDataRef.current;
     if (!cd || !socketRef.current) return;
     socketRef.current.emit('call_reject', { callerId: cd.callerId });
@@ -490,6 +552,7 @@ export default function ChatWidget() {
   };
 
   const hangUp = () => {
+    stopRingtone();
     const cd = callDataRef.current;
     if (socketRef.current) {
       const peerId = cd?.callerId || cd?.peerId || (activeConvRef.current ? getOtherUserId(activeConvRef.current) : null);
@@ -604,6 +667,9 @@ export default function ChatWidget() {
 
   return (
     <>
+      {/* ── ELEMENTO DE AUDIO REMOTO PARA LLAMADAS DE VOZ ── */}
+      <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
+
       {/* ── CALL OVERLAY ── */}
       {callState && (
         <div className="chat-call-overlay">
