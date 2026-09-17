@@ -58,11 +58,10 @@ router.use('/uploads/chat', express.static(UPLOADS_DIR));
 router.post('/upload-image', requireAuth, upload.single('imagen'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo' });
-    // La URL de la imagen pasa por el gateway (/api/chat/uploads/chat/...) o por CHAT_PUBLIC_URL
-    const baseUrl = process.env.CHAT_PUBLIC_URL
-      || (process.env.GATEWAY_PUBLIC_URL ? `${process.env.GATEWAY_PUBLIC_URL}/api/chat` : null)
-      || `http://localhost:${process.env.CHAT_PORT || 4004}`;
-    const url = `${baseUrl}/uploads/chat/${req.file.filename}`;
+    // URL accesible a través del gateway
+    const url = process.env.CHAT_PUBLIC_URL
+      ? `${process.env.CHAT_PUBLIC_URL}/uploads/chat/${req.file.filename}`
+      : `/api/chat/uploads/chat/${req.file.filename}`;
     res.json({ url, filename: req.file.filename });
   } catch (err) {
     console.error('Error subiendo imagen:', err);
@@ -74,11 +73,11 @@ router.post('/upload-image', requireAuth, upload.single('imagen'), async (req, r
 router.post('/upload-images', requireAuth, upload.array('imagenes', 15), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'No se recibieron archivos' });
-    const baseUrl = process.env.CHAT_PUBLIC_URL
-      || (process.env.GATEWAY_PUBLIC_URL ? `${process.env.GATEWAY_PUBLIC_URL}/api/chat` : null)
-      || `http://localhost:${process.env.CHAT_PORT || 4004}`;
+    const urlPrefix = process.env.CHAT_PUBLIC_URL
+      ? `${process.env.CHAT_PUBLIC_URL}/uploads/chat/`
+      : `/api/chat/uploads/chat/`;
     const files = req.files.map(f => ({
-      url: `${baseUrl}/uploads/chat/${f.filename}`,
+      url: `${urlPrefix}${f.filename}`,
       filename: f.filename,
       nombre: f.originalname
     }));

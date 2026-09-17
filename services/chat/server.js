@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 const pool = require('./db');
@@ -45,6 +46,11 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+const UPLOADS_DIR = path.join(__dirname, 'uploads', 'chat');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+app.use('/uploads/chat', express.static(UPLOADS_DIR));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/', chatRoutes);
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'chat' }));

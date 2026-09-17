@@ -525,7 +525,10 @@ export default function ChatWidget({ isFullPage = false }) {
         const fd = new FormData();
         fd.append('imagen', file);
         const uploadRes = await api.post('/chat/upload-image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-        const url = uploadRes.data.url;
+        let url = uploadRes.data.url;
+        if (url && url.includes('/uploads/chat/')) {
+          url = `/api/chat${url.substring(url.lastIndexOf('/uploads/chat/'))}`;
+        }
         const contenido = `[imagen]${url}`;
         if (socketRef.current?.connected) {
           socketRef.current.emit('send_message', { conversacion_id: activeConv.id, contenido, tipo: 'imagen', metadata: { url, nombre: file.name } });
@@ -707,10 +710,33 @@ export default function ChatWidget({ isFullPage = false }) {
     if (typeof meta === 'string') { try { meta = JSON.parse(meta); } catch (_) { meta = null; } }
 
     if (tipo === 'imagen') {
-      const url = meta?.url || msg.contenido.replace('[imagen]', '');
+      let rawUrl = meta?.url || msg.contenido.replace('[imagen]', '').trim();
+      let url = rawUrl;
+      if (url.includes('/uploads/chat/')) {
+        const sub = url.substring(url.lastIndexOf('/uploads/chat/'));
+        url = `/api/chat${sub}`;
+      } else if (!url.startsWith('http') && !url.startsWith('/')) {
+        url = `/api/chat/uploads/chat/${url}`;
+      }
+
       return (
-        <a href={url} target="_blank" rel="noopener noreferrer">
-          <img src={url} alt="Imagen enviada" style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, objectFit: 'cover', display: 'block', cursor: 'pointer' }} onError={e => { e.target.style.display = 'none'; }} />
+        <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block' }}>
+          <img
+            src={url}
+            alt="Imagen enviada"
+            style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, objectFit: 'cover', display: 'block', cursor: 'pointer' }}
+            onError={e => {
+              e.target.style.display = 'none';
+              const parent = e.target.parentElement;
+              if (parent && !parent.querySelector('.chat-img-fallback')) {
+                const fb = document.createElement('span');
+                fb.className = 'chat-img-fallback';
+                fb.innerText = '🖼️ Ver imagen';
+                fb.style.cssText = 'display:inline-block;padding:6px 10px;font-size:0.8rem;color:#ffffff;text-decoration:underline;';
+                parent.appendChild(fb);
+              }
+            }}
+          />
         </a>
       );
     }
