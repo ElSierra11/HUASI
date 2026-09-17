@@ -110,7 +110,7 @@ export function playNotificationSound() {
     gain2.connect(ctx.destination);
     osc2.start(ctx.currentTime + 0.08);
     osc2.stop(ctx.currentTime + 0.5);
-  } catch (err) {
+  } catch {
     // Si el navegador requiere interacción de usuario previa
   }
 }
@@ -120,7 +120,7 @@ export async function notifyChatMessage({ senderName = 'Usuario', messageText = 
   playNotificationSound();
   const shortText = messageText.length > 80 ? messageText.substring(0, 80) + '...' : messageText;
   return showPushNotification({
-    title: `💬 Mensaje de ${senderName}`,
+    title: `Mensaje de ${senderName}`,
     body: shortText || 'Te ha escrito un nuevo mensaje en HUASI.',
     icon: '/huasi-monograma.png',
     url: conversacionId ? `/chat` : '/chat',
@@ -134,8 +134,8 @@ export async function notifyNewProperty({ propertyId, propertyTitle = 'Alojamien
   playNotificationSound();
   const ubicacion = barrio ? `${barrio}, ${ciudad}` : ciudad;
   return showPushNotification({
-    title: '🏠 ¡Nuevo alojamiento en HUASI!',
-    body: `"${propertyTitle}" (${tipo}) está disponible en ${ubicacion}. ¡Toca para ver detalles y reservar!`,
+    title: 'Nuevo alojamiento en HUASI',
+    body: `"${propertyTitle}" (${tipo}) está disponible en ${ubicacion}. Toca para ver detalles y reservar.`,
     icon: '/huasi-monograma.png',
     url: propertyId ? `/propiedad/${propertyId}` : '/',
     tag: `propiedad-nueva-${propertyId || Date.now()}`,
@@ -150,14 +150,14 @@ export async function notifyBookingStatusChange({ estado, propertyTitle = 'Aloja
   let body = `Tu solicitud para "${propertyTitle}" ha sido actualizada.`;
 
   if (estado === 'aceptada') {
-    title = '🎉 ¡Tu reserva fue confirmada!';
-    body = `El anfitrión ${hostName ? `${hostName} ` : ''}ha ACEPTADO tu solicitud de hospedaje en "${propertyTitle}".`;
+    title = 'Reserva confirmada';
+    body = `El anfitrión ${hostName ? `${hostName} ` : ''}ha aceptado tu solicitud de hospedaje en "${propertyTitle}".`;
   } else if (estado === 'rechazada') {
-    title = '❌ Solicitud no aceptada';
-    body = `El anfitrión no pudo aceptar tu solicitud para "${propertyTitle}". ¡Explora otros alojamientos disponibles!`;
+    title = 'Solicitud no aceptada';
+    body = `El anfitrión no pudo aceptar tu solicitud para "${propertyTitle}". Explora otros alojamientos disponibles.`;
   } else if (estado === 'completada') {
-    title = '✨ Hospedaje completado';
-    body = `Tu estancia en "${propertyTitle}" ha finalizado. ¡No olvides calificar tu experiencia!`;
+    title = 'Hospedaje completado';
+    body = `Tu estancia en "${propertyTitle}" ha finalizado. No olvides calificar tu experiencia.`;
   }
 
   return showPushNotification({
@@ -174,7 +174,7 @@ export async function notifyBookingStatusChange({ estado, propertyTitle = 'Aloja
 export async function notifyNewBookingRequest({ guestName = 'Un estudiante', propertyTitle = 'tu alojamiento' }) {
   playNotificationSound();
   return showPushNotification({
-    title: '🛎️ ¡Nueva solicitud de hospedaje!',
+    title: 'Nueva solicitud de hospedaje',
     body: `${guestName} ha solicitado reservar "${propertyTitle}". Revisa y responde en tu panel.`,
     icon: '/huasi-monograma.png',
     url: '/host/reservas',
@@ -210,7 +210,9 @@ function _playRingStep() {
       osc.start(now + t);
       osc.stop(now + t + 0.16);
     });
-  } catch (_) {}
+  } catch {
+    // Silenciar error si el contexto de audio no se puede inicializar
+  }
 }
 
 export function startRingtone() {
@@ -231,11 +233,13 @@ export async function notifyIncomingCall({ callerName = 'Un usuario', callType =
   if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
     try {
       await Notification.requestPermission();
-    } catch (_) {}
+    } catch {
+      // Permiso cancelado o bloqueado
+    }
   }
 
   return showPushNotification({
-    title: `📞 Llamada entrante — ${callerName}`,
+    title: `Llamada entrante — ${callerName}`,
     body: `${callerName} te está haciendo una ${typeLabel}. Toca aquí para contestar.`,
     icon: '/huasi-monograma.png',
     url: '/',

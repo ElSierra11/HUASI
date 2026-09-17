@@ -13,7 +13,7 @@ import { notifyChatMessage, notifyIncomingCall, startRingtone, stopRingtone } fr
 
 // ── Leaflet (lazy — sólo se carga si hay mensajes de ubicación) ──
 let LeafletLoaded = false;
-let MapContainer, TileLayer, Marker, Popup, L;
+let MapContainer, TileLayer, Marker, L;
 
 async function loadLeaflet() {
   if (LeafletLoaded) return true;
@@ -22,7 +22,6 @@ async function loadLeaflet() {
     MapContainer = rl.MapContainer;
     TileLayer = rl.TileLayer;
     Marker = rl.Marker;
-    Popup = rl.Popup;
     const leaflet = await import('leaflet');
     await import('leaflet/dist/leaflet.css');
     L = leaflet.default;
@@ -58,6 +57,9 @@ const RTC_CONFIG = {
   iceCandidatePoolSize: 10
 };
 
+// ── Control de reproducción concurrente de notas de voz ──
+let globalActiveAudio = null;
+
 // ── Audio message bubble — reproductor sobrio tipo WhatsApp con iconos SVG ──
 function AudioMessageBubble({ url, duration = 0, isMine }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -70,7 +72,7 @@ function AudioMessageBubble({ url, duration = 0, isMine }) {
     audioRef.current = audio;
 
     const onLoaded = () => {
-      if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+      if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration) && audio.duration > 0) {
         setAudioDuration(Math.round(audio.duration));
       }
     };
@@ -78,17 +80,25 @@ function AudioMessageBubble({ url, duration = 0, isMine }) {
     const onEnd = () => {
       setIsPlaying(false);
       setCurrentTime(0);
+      if (globalActiveAudio === audio) globalActiveAudio = null;
+    };
+    const onPause = () => {
+      setIsPlaying(false);
+      if (globalActiveAudio === audio) globalActiveAudio = null;
     };
 
     audio.addEventListener('loadedmetadata', onLoaded);
     audio.addEventListener('timeupdate', onTime);
     audio.addEventListener('ended', onEnd);
+    audio.addEventListener('pause', onPause);
 
     return () => {
       audio.pause();
+      if (globalActiveAudio === audio) globalActiveAudio = null;
       audio.removeEventListener('loadedmetadata', onLoaded);
       audio.removeEventListener('timeupdate', onTime);
       audio.removeEventListener('ended', onEnd);
+      audio.removeEventListener('pause', onPause);
     };
   }, [url]);
 
@@ -98,7 +108,12 @@ function AudioMessageBubble({ url, duration = 0, isMine }) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      document.querySelectorAll('audio').forEach(a => a.pause());
+      if (globalActiveAudio && globalActiveAudio !== audioRef.current) {
+        try { globalActiveAudio.pause(); } catch {
+          // Audio ya pausado o desvinculado
+        }
+      }
+      globalActiveAudio = audioRef.current;
       audioRef.current.play().then(() => {
         setIsPlaying(true);
       }).catch(err => console.warn('Error al reproducir audio:', err));
@@ -108,7 +123,7 @@ function AudioMessageBubble({ url, duration = 0, isMine }) {
   const handleSeek = (e) => {
     const t = parseFloat(e.target.value);
     setCurrentTime(t);
-    if (audioRef.current) audioRef.current.currentTime = t;
+    if (audioRef.current && !isNaN(t)) audioRef.current.currentTime = t;
   };
 
   const formatSecs = (sec) => {
@@ -200,6 +215,32 @@ export default function ChatWidget({ isFullPage = false }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  // ── Helpers ──
+  const getOtherUserId = useCallback((conv) => {
+    if (!conv || !user) return null;
+    return conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
+  }, [user]);
+
+  const getOtherUserName = useCallback((conv) => {
+    if (!conv || !user) return '';
+    return conv.user1_id === user.id ? `${conv.user2_nombre} ${conv.user2_apellido}` : `${conv.user1_nombre} ${conv.user1_apellido}`;
+  }, [user]);
+
+  const getInitials = useCallback((conv) => {
+    if (!conv || !user) return '';
+    return conv.user1_id === user.id ? `${conv.user2_nombre?.[0] || ''}${conv.user2_apellido?.[0] || ''}` : `${conv.user1_nombre?.[0] || ''}${conv.user1_apellido?.[0] || ''}`;
+  }, [user]);
+
+  const formatTime = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr), now = new Date();
+    const diff = Math.floor((now - d) / 86400000);
+    if (diff === 0) return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    if (diff === 1) return 'Ayer';
+    if (diff < 7) return d.toLocaleDateString('es-CO', { weekday: 'short' });
+    return d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' });
+  };
+
   // ── Chat state ──
   const [open, setOpen] = useState(isFullPage);
   const [conversaciones, setConversaciones] = useState([]);
@@ -259,10 +300,7 @@ export default function ChatWidget({ isFullPage = false }) {
   useEffect(() => { callTypeRef.current = callType; }, [callType]);
   useEffect(() => { callDataRef.current = callData; }, [callData]);
 
-  // Si se monta como página completa, siempre debe estar abierto
-  useEffect(() => {
-    if (isFullPage) setOpen(true);
-  }, [isFullPage]);
+
 
   // Cerrar visor de imagen con tecla Escape
   useEffect(() => {
@@ -277,11 +315,8 @@ export default function ChatWidget({ isFullPage = false }) {
   useEffect(() => {
     if (callState === 'active') {
       callTimerRef.current = setInterval(() => setCallDuration(p => p + 1), 1000);
-    } else {
-      clearInterval(callTimerRef.current);
-      setCallDuration(0);
+      return () => clearInterval(callTimerRef.current);
     }
-    return () => clearInterval(callTimerRef.current);
   }, [callState]);
 
   const formatCallDuration = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -629,28 +664,41 @@ export default function ChatWidget({ isFullPage = false }) {
 
   // ── Load messages on conversation select ──
   useEffect(() => {
-    if (!activeConv) { setReservaInfo(null); setOtherUserProperties([]); setShowBookingModal(false); return; }
+    if (!activeConv) return;
 
-    const fetchMsgs = () => api.get(`/chat/conversaciones/${activeConv.id}/mensajes`).then(r => setMessages(r.data)).catch(() => {});
+    const fetchMsgs = () => {
+      api.get(`/chat/conversaciones/${activeConv.id}/mensajes`)
+        .then(r => {
+          setMessages(r.data);
+          setConversaciones(p => p.map(c => c.id === activeConv.id ? { ...c, no_leidos: 0 } : c));
+        })
+        .catch(() => {});
+    };
     fetchMsgs();
     const iv = setInterval(fetchMsgs, 2500);
 
     api.get(`/chat/conversaciones/${activeConv.id}/reserva`).then(r => setReservaInfo(r.data)).catch(() => setReservaInfo(null));
 
     const otherId = getOtherUserId(activeConv);
-    api.get(`/propiedades?host_id=${otherId}`)
-      .then(r => {
-        const props = r.data.propiedades || [];
-        setOtherUserProperties(props);
-        if (props.length > 0) setBookingForm(p => ({ ...p, propiedad_id: props[0].id }));
-      })
-      .catch(() => setOtherUserProperties([]));
+    if (otherId) {
+      api.get(`/propiedades?host_id=${otherId}`)
+        .then(r => {
+          const props = r.data.propiedades || [];
+          setOtherUserProperties(props);
+          if (props.length > 0) setBookingForm(p => ({ ...p, propiedad_id: props[0].id }));
+        })
+        .catch(() => setOtherUserProperties([]));
+    }
 
     if (socketRef.current) socketRef.current.emit('mark_read', { conversacion_id: activeConv.id });
-    setConversaciones(p => p.map(c => c.id === activeConv.id ? { ...c, no_leidos: 0 } : c));
 
-    return () => clearInterval(iv);
-  }, [activeConv?.id]);
+    return () => {
+      clearInterval(iv);
+      setReservaInfo(null);
+      setOtherUserProperties([]);
+      setShowBookingModal(false);
+    };
+  }, [activeConv, getOtherUserId]);
 
   // ── Auto scroll ──
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -726,13 +774,17 @@ export default function ChatWidget({ isFullPage = false }) {
   // ── Voice Recording handlers ──
   const startVoiceRecording = async () => {
     if (!activeConv) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      alert('Tu navegador no permite la grabación de audio o no estás en una conexión segura (HTTPS).');
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       recordingStreamRef.current = stream;
       audioChunksRef.current = [];
 
       let options = {};
-      if (typeof MediaRecorder !== 'undefined') {
+      if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
         if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
           options = { mimeType: 'audio/webm;codecs=opus' };
         } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
@@ -767,7 +819,12 @@ export default function ChatWidget({ isFullPage = false }) {
   const cancelVoiceRecording = () => {
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      try { mediaRecorderRef.current.stop(); } catch (_) {}
+      try {
+        mediaRecorderRef.current.onstop = null;
+        mediaRecorderRef.current.stop();
+      } catch (err) {
+        console.warn('Error cancelando grabación:', err);
+      }
     }
     if (recordingStreamRef.current) {
       recordingStreamRef.current.getTracks().forEach(t => t.stop());
@@ -843,7 +900,8 @@ export default function ChatWidget({ isFullPage = false }) {
 
     try {
       mediaRecorderRef.current.stop();
-    } catch (_) {
+    } catch (err) {
+      console.warn('Error al detener grabador:', err);
       cancelVoiceRecording();
     }
   };
@@ -928,7 +986,7 @@ export default function ChatWidget({ isFullPage = false }) {
     if (!reservaInfo || !activeConv) return;
     try {
       await api.post('/reservas/chat/command', { reservationId: reservaInfo.reserva_id, action });
-      try { await refreshUser(); } catch (_) {}
+      try { await refreshUser(); } catch (refreshErr) { console.debug(refreshErr); }
       if (socketRef.current) {
         const msgs = { aceptar: 'Reserva aceptada por el anfitrión.', rechazar: 'Reserva rechazada por el anfitrión.', archivar: 'Publicación archivada por el anfitrión.' };
         if (msgs[action]) socketRef.current.emit('send_message', { conversacion_id: activeConv.id, contenido: msgs[action], tipo: 'texto' });
@@ -958,21 +1016,6 @@ export default function ChatWidget({ isFullPage = false }) {
     } catch (err) { alert(err.response?.data?.error || 'Error al solicitar la reserva'); }
   };
 
-  // ── Helpers ──
-  const getOtherUserId = (conv) => conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
-  const getOtherUserName = (conv) => conv.user1_id === user.id ? `${conv.user2_nombre} ${conv.user2_apellido}` : `${conv.user1_nombre} ${conv.user1_apellido}`;
-  const getInitials = (conv) => conv.user1_id === user.id ? `${conv.user2_nombre?.[0] || ''}${conv.user2_apellido?.[0] || ''}` : `${conv.user1_nombre?.[0] || ''}${conv.user1_apellido?.[0] || ''}`;
-
-  const formatTime = (dateStr) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr), now = new Date();
-    const diff = Math.floor((now - d) / 86400000);
-    if (diff === 0) return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-    if (diff === 1) return 'Ayer';
-    if (diff < 7) return d.toLocaleDateString('es-CO', { weekday: 'short' });
-    return d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' });
-  };
-
   const getEstadoBadge = (estado) => {
     const map = { pendiente: { label: 'Pendiente', cls: 'chat-badge-pending' }, aceptada: { label: 'Aceptada', cls: 'chat-badge-accepted' }, rechazada: { label: 'Rechazada', cls: 'chat-badge-rejected' }, cancelada: { label: 'Cancelada', cls: 'chat-badge-cancelled' }, completada: { label: 'Completada', cls: 'chat-badge-completed' } };
     return map[estado] || { label: estado, cls: '' };
@@ -992,7 +1035,9 @@ export default function ChatWidget({ isFullPage = false }) {
     if (tipo === 'texto' && contenido.startsWith('[audio]')) tipo = 'audio';
 
     let meta = msg.metadata;
-    if (typeof meta === 'string') { try { meta = JSON.parse(meta); } catch (_) { meta = null; } }
+    if (typeof meta === 'string') {
+      try { meta = JSON.parse(meta); } catch { meta = null; }
+    }
 
     const isMine = msg.sender_id === user?.id;
 

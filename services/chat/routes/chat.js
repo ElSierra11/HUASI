@@ -251,14 +251,25 @@ router.post('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
     if (conv.rows.length === 0) return res.status(403).json({ error: 'No tienes acceso a esta conversación' });
 
     let msg;
+    const hasDeliv = await hasDeliveredCol();
     if (await hasMediaCols()) {
-      const r = await pool.query(
-        `INSERT INTO mensajes (conversacion_id, sender_id, contenido, tipo, metadata)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, conversacion_id, sender_id, contenido, tipo, metadata, leido, created_at`,
-        [convId, userId, contenido.trim(), tipo, metadata ? JSON.stringify(metadata) : null]
-      );
-      msg = r.rows[0];
+      if (hasDeliv) {
+        const r = await pool.query(
+          `INSERT INTO mensajes (conversacion_id, sender_id, contenido, tipo, metadata, entregado)
+           VALUES ($1, $2, $3, $4, $5, FALSE)
+           RETURNING id, conversacion_id, sender_id, contenido, tipo, metadata, leido, entregado, created_at`,
+          [convId, userId, contenido.trim(), tipo, metadata ? JSON.stringify(metadata) : null]
+        );
+        msg = r.rows[0];
+      } else {
+        const r = await pool.query(
+          `INSERT INTO mensajes (conversacion_id, sender_id, contenido, tipo, metadata)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id, conversacion_id, sender_id, contenido, tipo, metadata, leido, created_at`,
+          [convId, userId, contenido.trim(), tipo, metadata ? JSON.stringify(metadata) : null]
+        );
+        msg = { ...r.rows[0], entregado: false };
+      }
     } else {
       const r = await pool.query(
         `INSERT INTO mensajes (conversacion_id, sender_id, contenido)
@@ -266,7 +277,7 @@ router.post('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
          RETURNING id, conversacion_id, sender_id, contenido, leido, created_at`,
         [convId, userId, contenido.trim()]
       );
-      msg = { ...r.rows[0], tipo: 'texto', metadata: null };
+      msg = { ...r.rows[0], tipo: 'texto', metadata: null, entregado: false };
     }
 
     await pool.query('UPDATE conversaciones SET updated_at = NOW() WHERE id = $1', [convId]);

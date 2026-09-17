@@ -107,6 +107,7 @@ export const HuasiAlert = {
       title,
       text,
       showCancelButton: true,
+      confirmButtonColor,
       confirmButtonText: confirmText,
       cancelButtonText: cancelText,
       reverseButtons: true,
