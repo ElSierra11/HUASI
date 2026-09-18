@@ -331,27 +331,31 @@ export default function Alojamientos({ onActionFinished }) {
     switch (est) {
       case 'aprobado':
         return (
-          <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px' }}>
-            <ShieldCheck size={13} /> Aprobado UCC
+          <span className="badge badge-success">
+            <ShieldCheck size={13} />
+            <span>Aprobado UCC</span>
           </span>
         );
       case 'en_correccion':
         return (
-          <span className="badge badge-warning" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'rgba(245, 158, 11, 0.12)', color: '#b45309', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-            <AlertTriangle size={13} /> En Corrección
+          <span className="badge badge-warning">
+            <AlertTriangle size={13} />
+            <span>En Corrección</span>
           </span>
         );
       case 'rechazado':
         return (
-          <span className="badge badge-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px' }}>
-            <XCircle size={13} /> No Aprobado
+          <span className="badge badge-danger">
+            <XCircle size={13} />
+            <span>No Aprobado</span>
           </span>
         );
       case 'pendiente_revision':
       default:
         return (
-          <span className="badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'rgba(2, 132, 199, 0.1)', color: '#0284c7', border: '1px solid rgba(2, 132, 199, 0.25)' }}>
-            <Clock size={13} /> Pendiente Revisión
+          <span className="badge badge-info">
+            <Clock size={13} />
+            <span>Pendiente Revisión</span>
           </span>
         );
     }
@@ -483,15 +487,15 @@ export default function Alojamientos({ onActionFinished }) {
 
       {/* Vista de Tabla para Escritorio */}
       <div className="desktop-table-view table-container">
-        <table style={{ minWidth: 960 }}>
+        <table style={{ width: '100%', minWidth: 800 }}>
           <thead>
             <tr>
-              <th>Alojamiento / Ubicación</th>
-              <th>Anfitrión Universitario</th>
-              <th>Campus</th>
-              <th>Capacidad / Tipo</th>
-              <th>Estado Dictamen</th>
-              <th style={{ textAlign: 'right' }}>Acciones</th>
+              <th style={{ width: '28%' }}>Alojamiento / Ubicación</th>
+              <th style={{ width: '22%' }}>Anfitrión Universitario</th>
+              <th style={{ width: '14%' }}>Campus</th>
+              <th style={{ width: '12%' }}>Capacidad</th>
+              <th style={{ width: '12%' }}>Dictamen</th>
+              <th style={{ width: '12%', textAlign: 'right' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -594,15 +598,14 @@ export default function Alojamientos({ onActionFinished }) {
                     </div>
                   </td>
 
-                  <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', gap: 6 }}>
+                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <div className="table-actions">
                       <button
                         onClick={() => handleOpenInspection(p)}
-                        className="btn btn-primary"
-                        style={{ fontSize: '0.8rem', padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: '6px' }}
+                        className="table-action-btn btn-action-success"
                         title="Auditar y dictaminar oferta"
                       >
-                        <ShieldCheck size={14} />
+                        <ShieldCheck size={13} />
                         <span>Dictaminar</span>
                       </button>
 
@@ -615,11 +618,10 @@ export default function Alojamientos({ onActionFinished }) {
                             currentActive: p.activo,
                             processing: false
                           })}
-                          className={`btn ${p.activo ? 'btn-secondary' : 'btn-success'}`}
-                          style={{ fontSize: '0.8rem', padding: '6px 10px', display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: '6px' }}
+                          className={`table-action-btn ${p.activo ? 'btn-action-warning' : 'btn-action-success'}`}
                           title={p.activo ? 'Suspender visibilidad' : 'Reactivar visibilidad'}
                         >
-                          {p.activo ? <Ban size={14} /> : <Unlock size={14} />}
+                          {p.activo ? <Ban size={13} /> : <Unlock size={13} />}
                         </button>
                       )}
 
@@ -630,11 +632,10 @@ export default function Alojamientos({ onActionFinished }) {
                           propTitle: p.titulo,
                           processing: false
                         })}
-                        className="btn btn-danger"
-                        style={{ fontSize: '0.8rem', padding: '6px 10px', display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: '6px', background: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.25)' }}
+                        className="table-action-btn btn-action-icon-only"
                         title="Eliminar alojamiento permanentemente"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   </td>

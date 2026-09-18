@@ -409,15 +409,15 @@ export default function Usuarios({ onActionFinished }) {
 
       {/* Vista de Tabla para Pantallas Grandes / Desktop */}
       <div className="desktop-table-view table-container">
-        <table style={{ minWidth: 960 }}>
+        <table style={{ width: '100%', minWidth: 760 }}>
           <thead>
             <tr>
-              <th>Usuario</th>
-              <th>Campus / Sede</th>
-              <th>Rol</th>
-              <th>Verificación</th>
-              <th>Estado de Cuenta</th>
-              <th style={{ textAlign: 'right', whiteSpace: 'nowrap', width: '230px' }}>Acciones</th>
+              <th style={{ width: '30%' }}>Usuario</th>
+              <th style={{ width: '16%' }}>Campus / Sede</th>
+              <th style={{ width: '10%' }}>Rol</th>
+              <th style={{ width: '14%' }}>Verificación</th>
+              <th style={{ width: '14%' }}>Estado de Cuenta</th>
+              <th style={{ width: '16%', textAlign: 'right' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -432,17 +432,17 @@ export default function Usuarios({ onActionFinished }) {
                 <tr key={u.id}>
                   {/* Usuario Info */}
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       {u.foto_perfil ? (
                         <img 
                           src={u.foto_perfil} 
                           alt="" 
-                          style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)' }} 
+                          style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)' }} 
                         />
                       ) : (
                         <div style={{ 
-                          width: 44, 
-                          height: 44, 
+                          width: 40, 
+                          height: 40, 
                           borderRadius: '50%', 
                           background: 'linear-gradient(135deg, #0d7c3d, #059669)', 
                           color: 'white', 
@@ -450,7 +450,7 @@ export default function Usuarios({ onActionFinished }) {
                           alignItems: 'center', 
                           justifyContent: 'center', 
                           fontWeight: 700, 
-                          fontSize: '0.95rem' 
+                          fontSize: '0.9rem' 
                         }}>
                           {u.nombre?.charAt(0)}{u.apellido?.charAt(0)}
                         </div>
@@ -474,10 +474,10 @@ export default function Usuarios({ onActionFinished }) {
                             </span>
                           )}
                         </div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
                           <Mail size={12} /> {u.email}
                         </div>
-                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 2, fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 2, fontSize: '0.74rem', color: 'var(--text-muted)' }}>
                           {u.telefono && (
                             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                               <Phone size={11} /> {u.telefono}
@@ -501,39 +501,41 @@ export default function Usuarios({ onActionFinished }) {
                   {/* Campus */}
                   <td>
                     {u.campus ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text)', fontSize: '0.9rem', fontWeight: 500 }}>
-                        <MapPin size={14} color="var(--primary)" /> {u.campus}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--text)', fontSize: '0.88rem', fontWeight: 500 }}>
+                        <MapPin size={13} color="var(--primary)" /> {u.campus}
                       </span>
                     ) : (
-                      <em style={{ color: '#475569', fontSize: '0.88rem' }}>No especificado</em>
+                      <em style={{ color: '#94a3b8', fontSize: '0.84rem' }}>No especificado</em>
                     )}
                   </td>
 
                   {/* Rol */}
                   <td>
                     <span style={{ 
-                      fontSize: '0.75rem', 
-                      textTransform: 'uppercase', 
-                      fontWeight: 800, 
-                      color: u.role === 'admin' ? 'var(--primary)' : 'var(--text)', 
-                      background: u.role === 'admin' ? 'var(--success-bg)' : 'rgba(15, 23, 42, 0.05)', 
-                      padding: '4px 10px', 
+                      fontSize: '0.74rem', 
+                      fontWeight: 700, 
+                      color: u.role === 'admin' ? 'var(--primary)' : '#475569', 
+                      background: u.role === 'admin' ? '#ecfdf5' : '#f1f5f9', 
+                      padding: '3px 8px', 
                       borderRadius: '6px',
-                      border: u.role === 'admin' ? '1px solid rgba(13, 124, 61, 0.2)' : '1px solid transparent'
+                      border: u.role === 'admin' ? '1px solid #a7f3d0' : '1px solid #e2e8f0',
+                      textTransform: 'capitalize'
                     }}>
-                      {u.role}
+                      {u.role === 'admin' ? 'Administrador' : (u.role || 'Usuario')}
                     </span>
                   </td>
 
                   {/* Verificado */}
                   <td>
                     {u.verificado ? (
-                      <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        <ShieldCheck size={14} /> Verificado
+                      <span className="badge badge-success">
+                        <ShieldCheck size={13} />
+                        <span>Verificado</span>
                       </span>
                     ) : (
-                      <span className="badge badge-pendiente" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        <AlertCircle size={14} /> Pendiente
+                      <span className="badge badge-warning">
+                        <AlertCircle size={13} />
+                        <span>Pendiente</span>
                       </span>
                     )}
                   </td>
@@ -542,67 +544,64 @@ export default function Usuarios({ onActionFinished }) {
                   <td>
                     {u.bloqueado ? (
                       <div>
-                        <span className="badge badge-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                          <ShieldAlert size={14} /> Bloqueado
+                        <span className="badge badge-danger">
+                          <ShieldAlert size={13} />
+                          <span>Bloqueado</span>
                         </span>
-                        <div 
-                          style={{ 
-                            fontSize: '0.75rem', 
-                            color: '#ef4444', 
-                            marginTop: 6, 
-                            maxWidth: 160, 
-                            overflow: 'hidden', 
-                            textOverflow: 'ellipsis', 
-                            whiteSpace: 'nowrap',
-                            fontWeight: 500
-                          }} 
-                          title={u.motivo_bloqueo}
-                        >
-                          Razón: {u.motivo_bloqueo}
-                        </div>
+                        {u.motivo_bloqueo && (
+                          <div 
+                            style={{ 
+                              fontSize: '0.72rem', 
+                              color: '#b91c1c', 
+                              marginTop: 4, 
+                              maxWidth: 140, 
+                              overflow: 'hidden', 
+                              textOverflow: 'ellipsis', 
+                              whiteSpace: 'nowrap',
+                              fontWeight: 500
+                            }} 
+                            title={u.motivo_bloqueo}
+                          >
+                            {u.motivo_bloqueo}
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <span className="badge" style={{ 
-                        background: 'rgba(16, 185, 129, 0.05)', 
-                        color: 'var(--success)', 
-                        border: '1px solid rgba(16, 185, 129, 0.15)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6
-                      }}>
-                        Activo
+                      <span className="badge badge-success">
+                        <CheckCircle size={13} />
+                        <span>Activo</span>
                       </span>
                     )}
                   </td>
 
                   {/* Acciones */}
-                  <td style={{ padding: '16px 20px', textAlign: 'right', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>
+                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     {u.role !== 'admin' && (
-                      <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+                      <div className="table-actions">
                         <button 
-                          className={`btn ${u.bloqueado ? 'btn-success' : 'btn-danger'}`}
+                          className={`table-action-btn ${u.bloqueado ? 'btn-action-success' : 'btn-action-danger'}`}
                           onClick={() => u.bloqueado ? openUnblockModal(u) : openBlockModal(u)}
-                          style={{ fontSize: '0.78rem', padding: '7px 11px', borderRadius: '8px', minHeight: 36, whiteSpace: 'nowrap' }}
                           title={u.bloqueado ? 'Desbloquear cuenta' : 'Bloquear cuenta'}
                         >
                           {u.bloqueado ? <Unlock size={13} /> : <Ban size={13} />}
-                          {u.bloqueado ? 'Desbloquear' : 'Bloquear'}
+                          <span>{u.bloqueado ? 'Reactivar' : 'Bloquear'}</span>
                         </button>
+
                         <button 
-                          className="btn"
+                          className="table-action-btn btn-action-warning"
                           onClick={() => openResetModal(u)}
-                          style={{ fontSize: '0.78rem', padding: '7px 11px', borderRadius: '8px', minHeight: 36, background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', border: '1px solid rgba(245, 158, 11, 0.3)', whiteSpace: 'nowrap' }}
-                          title="Resetear contraseña"
+                          title="Resetear contraseña temporal"
                         >
-                          <KeyRound size={13} /> Reset Pass
+                          <KeyRound size={13} />
+                          <span>Reset</span>
                         </button>
+
                         <button 
-                          className="btn"
+                          className="table-action-btn btn-action-icon-only"
                           onClick={() => openDeleteModal(u)}
-                          style={{ fontSize: '0.78rem', padding: '7px 11px', borderRadius: '8px', minHeight: 36, background: 'rgba(220, 38, 38, 0.08)', color: '#dc2626', border: '1px solid rgba(220, 38, 38, 0.25)', whiteSpace: 'nowrap' }}
-                          title="Eliminar cuenta permanentemente"
+                          title="Eliminar usuario permanentemente"
                         >
-                          <Trash2 size={13} /> Eliminar
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     )}
@@ -680,13 +679,17 @@ export default function Usuarios({ onActionFinished }) {
                     <ShieldCheck size={12} /> Verificado
                   </span>
                 ) : (
-                  <span className="badge badge-pendiente" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: '0.72rem' }}>
+                  <span className="badge badge-warning" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: '0.72rem' }}>
                     <AlertCircle size={12} /> Pendiente
                   </span>
                 )}
-                {u.bloqueado && (
+                {u.bloqueado ? (
                   <span className="badge badge-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: '0.72rem' }}>
                     <ShieldAlert size={12} /> Bloqueado
+                  </span>
+                ) : (
+                  <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: '0.72rem' }}>
+                    <CheckCircle size={12} /> Activo
                   </span>
                 )}
                 {u.telefono && (
