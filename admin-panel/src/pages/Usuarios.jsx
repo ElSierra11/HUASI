@@ -321,7 +321,18 @@ export default function Usuarios({ onActionFinished }) {
             className="form-control"
             value={filtroCampus}
             onChange={(e) => setFiltroCampus(e.target.value)}
-            style={{ height: 38, fontSize: '0.85rem', width: 'auto', minWidth: '150px' }}
+            style={{ 
+              height: 38, 
+              paddingLeft: 12, 
+              paddingRight: 32, 
+              fontSize: '0.85rem', 
+              width: 'auto', 
+              minWidth: '165px',
+              borderRadius: 8,
+              background: 'white',
+              border: '1px solid var(--border)',
+              fontWeight: 500
+            }}
             aria-label="Filtrar por Campus"
           >
             <option value="todos">Todos los campus</option>

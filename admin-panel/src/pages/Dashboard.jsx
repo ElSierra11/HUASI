@@ -19,11 +19,12 @@ import api from '../api';
 import Modal from '../components/Modal';
 import { useToast } from '../components/Toast';
 
-export default function Dashboard() {
+export default function Dashboard({ onActionFinished }) {
   const [verificaciones, setVerificaciones] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [reportes, setReportes] = useState([]);
   const [extendedStats, setExtendedStats] = useState(null);
+  const [timeRange, setTimeRange] = useState('todos'); // 'todos' | '30d' | '7d'
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
 
@@ -88,6 +89,7 @@ export default function Dashboard() {
       }));
       
       showToast('Solicitud aprobada con éxito', 'success');
+      if (onActionFinished) onActionFinished();
     } catch (err) {
       console.error(err);
       showToast('Error al aprobar la verificación', 'error');
@@ -127,6 +129,7 @@ export default function Dashboard() {
       setVerificaciones(v => v.filter(item => item.id !== rejectId));
       setIsRejectModalOpen(false);
       showToast('Solicitud rechazada correctamente', 'success');
+      if (onActionFinished) onActionFinished();
     } catch (err) {
       console.error(err);
       showToast('Error al rechazar la solicitud', 'error');
@@ -136,8 +139,6 @@ export default function Dashboard() {
   };
 
   if (loading) return <div className="loading"><div className="spinner"></div></div>;
-
-  const [timeRange, setTimeRange] = useState('todos'); // 'todos' | '30d' | '7d'
 
   // --- CÁLCULOS ESTADÍSTICOS ---
   const filteredUsuarios = usuarios.filter(u => {

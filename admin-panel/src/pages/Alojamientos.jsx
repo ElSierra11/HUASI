@@ -396,7 +396,17 @@ export default function Alojamientos({ onActionFinished }) {
             className="form-control" 
             value={filtroCampus} 
             onChange={e => setFiltroCampus(e.target.value)}
-            style={{ width: '180px', height: 38, padding: '0 12px', fontSize: '0.85rem' }}
+            style={{ 
+              width: '180px', 
+              height: 38, 
+              paddingLeft: 12, 
+              paddingRight: 32, 
+              fontSize: '0.85rem',
+              borderRadius: 8,
+              background: 'white',
+              border: '1px solid var(--border)',
+              fontWeight: 500
+            }}
           >
             <option value="">Todos los campus</option>
             <option value="Santa Marta">Santa Marta</option>
