@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, CheckCircle2, AlertTriangle, Send } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle2, AlertTriangle, Send, Clock } from 'lucide-react';
 import api from '../api';
 import HuasiAlert from '../utils/alerts';
 
@@ -110,8 +110,8 @@ export default function OlvidoPassword() {
             <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
               Hemos enviado un enlace directo a <strong>{email}</strong>. Revisa tu bandeja de entrada o carpeta de spam y sigue las instrucciones para crear una nueva clave.
             </p>
-            <p style={{ margin: '8px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              ⏱️ El enlace es válido durante los próximos 60 minutos.
+            <p style={{ margin: '8px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <Clock size={13} style={{ verticalAlign: 'middle' }} /> El enlace es válido durante los próximos 60 minutos.
             </p>
 
             <Link

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { UserCircle, ShieldCheck, Mail, Phone, Edit3, Sun, ArrowUpRight, ArrowDownLeft, GraduationCap, Bell, BellRing, Check } from 'lucide-react';
+import { UserCircle, ShieldCheck, Mail, Phone, Edit3, Sun, ArrowUpRight, ArrowDownLeft, GraduationCap, Bell, BellRing, Check, MessageSquare, Building2 } from 'lucide-react';
 import api from '../api';
 import { getNotificationPermission, requestNotificationPermission, showPushNotification, notifyChatMessage, notifyNewProperty } from '../utils/notifications';
 
@@ -39,7 +39,7 @@ export default function Perfil() {
     setNotifPerm(perm);
     if (perm === 'granted') {
       showPushNotification({
-        title: '🎉 Notificaciones HUASI configuradas',
+        title: 'Notificaciones HUASI configuradas',
         body: '¡Todo listo! Recibirás avisos de reservas, mensajes y nuevos alojamientos en tiempo real.',
         icon: '/huasi-monograma.png',
         url: '/perfil'
@@ -51,7 +51,7 @@ export default function Perfil() {
 
   const handleSendTestPush = async () => {
     const success = await showPushNotification({
-      title: '🛎️ Prueba de Notificación HUASI',
+      title: 'Prueba de Notificación HUASI',
       body: 'Esta es una prueba de alerta en tiempo real en tu dispositivo.',
       icon: '/huasi-monograma.png',
       url: '/perfil'
@@ -425,7 +425,7 @@ export default function Perfil() {
                 onClick={handleTestChatNotif}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
               >
-                💬 Probar Notificación de Chat
+                <MessageSquare size={16} /> Probar Notificación de Chat
               </button>
               <button
                 type="button"
@@ -433,7 +433,7 @@ export default function Perfil() {
                 onClick={handleTestPropertyNotif}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
               >
-                🏠 Probar Nuevo Alojamiento
+                <Building2 size={16} /> Probar Nuevo Alojamiento
               </button>
             </>
           )}

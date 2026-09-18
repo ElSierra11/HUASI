@@ -45,7 +45,7 @@ export default function NotificationManager() {
 
     if (perm === 'granted') {
       showPushNotification({
-        title: '🔔 ¡Notificaciones activadas!',
+        title: 'Notificaciones activadas',
         body: 'Te avisaremos en tiempo real cuando un anfitrión responda tu reserva o recibas mensajes de chat.',
         icon: '/huasi-monograma.png',
         url: '/'
