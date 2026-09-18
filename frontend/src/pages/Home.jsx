@@ -10,7 +10,8 @@ import {
   Shield, Star, Building2, Heart, CheckCircle2, 
   Sofa, Bed, Trees, GraduationCap, ShieldCheck,
   Sliders, Dog, BookOpen, CigaretteOff, ArrowRight,
-  Sparkles, Compass, ChevronDown, RefreshCw
+  Sparkles, Compass, ChevronDown, RefreshCw,
+  Maximize2, X, Play, HeartHandshake, Lock, PlayCircle
 } from 'lucide-react';
 
 export default function Home() {
@@ -28,6 +29,7 @@ export default function Home() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [activeCategory, setActiveCategory] = useState('todos');
   const [showMap, setShowMap] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   const fetchMetricas = async () => {
     try {
@@ -267,9 +269,10 @@ export default function Home() {
 
           {/* Encabezado centrado */}
           <div className="text-center mb-8 space-y-3">
-            <span className="text-xs font-black text-ucc-green tracking-widest uppercase bg-ucc-green/10 px-3 py-1.5 rounded-full border border-ucc-green/20">
-              ✨ Conoce HUASI
-            </span>
+            <div className="inline-flex items-center gap-2 bg-ucc-green/10 text-ucc-green dark:text-emerald-400 px-3.5 py-1.5 rounded-full border border-ucc-green/20 text-xs font-black tracking-widest uppercase shadow-custom-sm">
+              <PlayCircle size={14} className="text-ucc-green dark:text-emerald-400" />
+              <span>Conoce HUASI</span>
+            </div>
             <h2 className="font-heading font-black text-3xl sm:text-4xl text-ucc-navy dark:text-white leading-tight">
               ¿Qué es{' '}
               <span className="bg-gradient-to-r from-ucc-green via-emerald-500 to-teal-500 bg-clip-text text-transparent">
@@ -285,20 +288,43 @@ export default function Home() {
           {/* Layout: texto a la izquierda · video vertical al centro/derecha */}
           <div className="flex flex-col lg:flex-row items-center lg:items-start gap-10 lg:gap-14 justify-center">
 
-            {/* Puntos clave */}
-            <div className="flex flex-col space-y-4 max-w-xs w-full lg:pt-6">
+            {/* Puntos clave con iconos profesionales */}
+            <div className="flex flex-col space-y-3.5 max-w-xs w-full lg:pt-4">
               {[
-                { emoji: '🏡', text: 'Hospedaje verificado entre pares universitarios' },
-                { emoji: '🤝', text: 'Red solidaria — sin ánimo de lucro' },
-                { emoji: '📍', text: 'Presencia en 13+ campus UCC a nivel nacional' },
-                { emoji: '⭐', text: 'Calificaciones y reseñas de la comunidad' },
-                { emoji: '🔒', text: 'Pagos seguros y anfitriones verificados' },
-              ].map(({ emoji, text }) => (
-                <div key={text} className="flex items-start gap-3 p-3 bg-white/70 dark:bg-slate-800/70 rounded-xl border border-ucc-border/30 dark:border-slate-700 shadow-custom-sm hover:scale-[1.02] transition-transform duration-200">
-                  <span className="text-xl flex-shrink-0">{emoji}</span>
-                  <span className="text-sm font-semibold text-ucc-text dark:text-slate-200 leading-snug">{text}</span>
+                { 
+                  icon: <HomeIcon size={18} className="text-emerald-600 dark:text-emerald-400" />, 
+                  badgeBg: "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800/60",
+                  text: 'Hospedaje verificado entre pares universitarios' 
+                },
+                { 
+                  icon: <HeartHandshake size={18} className="text-teal-600 dark:text-teal-400" />, 
+                  badgeBg: "bg-teal-50 dark:bg-teal-950/50 border-teal-200 dark:border-teal-800/60",
+                  text: 'Red solidaria — sin ánimo de lucro' 
+                },
+                { 
+                  icon: <Building2 size={18} className="text-blue-600 dark:text-blue-400" />, 
+                  badgeBg: "bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800/60",
+                  text: 'Presencia en 13+ campus UCC a nivel nacional' 
+                },
+                { 
+                  icon: <Star size={18} className="text-amber-500 fill-amber-500/20" />, 
+                  badgeBg: "bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-800/60",
+                  text: 'Calificaciones y reseñas de la comunidad' 
+                },
+                { 
+                  icon: <ShieldCheck size={18} className="text-emerald-600 dark:text-emerald-400" />, 
+                  badgeBg: "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800/60",
+                  text: 'Pagos seguros y anfitriones verificados' 
+                },
+              ].map(({ icon, badgeBg, text }) => (
+                <div key={text} className="flex items-center gap-3.5 p-3 bg-white/80 dark:bg-slate-800/80 rounded-2xl border border-ucc-border/40 dark:border-slate-700/70 shadow-custom-sm hover:shadow-custom-md hover:scale-[1.02] transition-all duration-200">
+                  <div className={`w-9 h-9 rounded-xl border ${badgeBg} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                    {icon}
+                  </div>
+                  <span className="text-xs sm:text-sm font-bold text-ucc-navy dark:text-slate-200 leading-snug">{text}</span>
                 </div>
               ))}
+
               <a
                 href="/quienes-somos"
                 className="inline-flex items-center justify-center gap-2 bg-ucc-navy hover:bg-ucc-navy-light text-white font-bold px-6 py-3 rounded-full text-sm shadow-custom hover:shadow-custom-md hover:scale-[1.03] active:scale-[0.97] transition-all duration-200 mt-2 w-full"
@@ -308,10 +334,10 @@ export default function Home() {
               </a>
             </div>
 
-            {/* Video vertical — formato Short */}
-            <div className="relative flex-shrink-0">
+            {/* Video vertical — formato Short con opción de agrandar */}
+            <div className="relative flex-shrink-0 flex flex-col items-center">
               {/* Marco estilo "teléfono / Short" */}
-              <div className="relative">
+              <div className="relative group">
                 {/* Sombra ambiental verde */}
                 <div className="absolute inset-0 bg-gradient-to-b from-ucc-green/30 to-emerald-600/20 rounded-3xl blur-2xl scale-105 opacity-60 pointer-events-none" />
 
@@ -324,29 +350,112 @@ export default function Home() {
                     className="w-full h-full"
                     src="https://www.youtube.com/embed/nvFHEeWSyoo"
                     title="¿Qué es HUASI? — Red de Alojamiento Solidario UCC"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                     allowFullScreen
                     loading="lazy"
                     style={{ border: 'none' }}
                   />
+
+                  {/* Botón flotante para Agrandar Video */}
+                  <button
+                    type="button"
+                    onClick={() => setIsVideoModalOpen(true)}
+                    className="absolute top-2.5 left-2.5 bg-black/65 hover:bg-black/85 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5 border border-white/20 shadow-custom hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer"
+                    title="Agrandar video"
+                  >
+                    <Maximize2 size={12} className="text-emerald-400" />
+                    <span>Agrandar</span>
+                  </button>
                 </div>
 
-                {/* Badge superior */}
-                <div className="absolute -top-3 -right-4 bg-gradient-to-br from-ucc-green to-emerald-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-custom-md rotate-3 select-none z-10 whitespace-nowrap">
-                  ▶ Video oficial
+                {/* Badge superior con icono Lucide */}
+                <div className="absolute -top-3 -right-3 bg-gradient-to-br from-ucc-green to-emerald-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-custom-md rotate-2 select-none z-10 flex items-center gap-1.5 whitespace-nowrap">
+                  <Play size={11} className="fill-white" />
+                  <span>Video oficial</span>
                 </div>
 
-                {/* Badge inferior */}
-                <div className="absolute -bottom-3 -left-4 bg-white dark:bg-slate-800 border border-ucc-border dark:border-slate-700 text-ucc-navy dark:text-white text-xs font-black px-3 py-1.5 rounded-full shadow-custom-md -rotate-2 select-none z-10 flex items-center gap-1.5 whitespace-nowrap">
-                  <ShieldCheck size={12} className="text-ucc-green" />
-                  Red Solidaria UCC
+                {/* Badge inferior con icono Lucide */}
+                <div className="absolute -bottom-3 -left-3 bg-white dark:bg-slate-800 border border-ucc-border dark:border-slate-700 text-ucc-navy dark:text-white text-xs font-black px-3 py-1.5 rounded-full shadow-custom-md -rotate-1 select-none z-10 flex items-center gap-1.5 whitespace-nowrap">
+                  <ShieldCheck size={13} className="text-ucc-green" />
+                  <span>Red Solidaria UCC</span>
                 </div>
               </div>
+
+              {/* Botón interactivo secundario para Agrandar Video */}
+              <button
+                type="button"
+                onClick={() => setIsVideoModalOpen(true)}
+                className="mt-5 inline-flex items-center justify-center gap-2 bg-white/90 dark:bg-slate-800/90 hover:bg-ucc-green-light dark:hover:bg-slate-700 border border-ucc-border/80 dark:border-slate-700 text-ucc-navy dark:text-white font-bold py-2 px-5 rounded-full text-xs transition-all duration-200 hover:scale-[1.02] shadow-custom-sm cursor-pointer"
+              >
+                <Maximize2 size={13} className="text-ucc-green" />
+                <span>Ver video en pantalla grande</span>
+              </button>
             </div>
 
           </div>
         </div>
       </section>
+
+      {/* ===== MODAL LIGHTBOX AGRANDAR VIDEO ===== */}
+      {isVideoModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fadeIn"
+          onClick={() => setIsVideoModalOpen(false)}
+        >
+          <div 
+            className="relative max-w-md w-full bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-700 flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header del Modal */}
+            <div className="w-full flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/70">
+              <div className="flex items-center gap-2">
+                <PlayCircle size={16} className="text-ucc-green" />
+                <span className="font-heading font-black text-sm text-white">¿Qué es HUASI? — Video Oficial</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsVideoModalOpen(false)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Cerrar video"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Reproductor Agrandado */}
+            <div className="w-full flex items-center justify-center p-4 sm:p-6 bg-black">
+              <div 
+                className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-slate-800"
+                style={{ maxWidth: '340px', height: '580px' }}
+              >
+                <iframe
+                  className="w-full h-full"
+                  src="https://www.youtube.com/embed/nvFHEeWSyoo?autoplay=1"
+                  title="¿Qué es HUASI? — Red de Alojamiento Solidario UCC"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                  allowFullScreen
+                  style={{ border: 'none' }}
+                />
+              </div>
+            </div>
+
+            {/* Footer con info */}
+            <div className="w-full px-5 py-3 bg-slate-950/60 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck size={13} className="text-ucc-green" />
+                Comunidad Solidaria UCC
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsVideoModalOpen(false)}
+                className="text-white hover:text-ucc-green font-bold transition-colors cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
 
       {/* ===== BARRA DE BÚSQUEDA 'AIRSEARCH' GLASSMORPHIC ===== */}
