@@ -169,7 +169,7 @@ function AudioMessageBubble({ url, duration = 0, isMine }) {
 }
 
 // ── Location bubble — mini mapa estático sin dependencias ──
-function LocationBubble({ lat, lng }) {
+function LocationBubble({ lat, lng, isMine = false }) {
   const [leafletReady, setLeafletReady] = useState(false);
   const gmapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
   const osmStaticUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=15&size=210x130&markers=${lat},${lng}`;
@@ -179,7 +179,7 @@ function LocationBubble({ lat, lng }) {
   }, []);
 
   return (
-    <div className="chat-location-bubble">
+    <div className={`chat-location-bubble ${isMine ? 'mine' : 'other'}`}>
       {leafletReady && MapContainer ? (
         <div style={{ height: 130, width: 210, borderRadius: 8, overflow: 'hidden', marginBottom: 6 }}>
           <MapContainer
@@ -202,8 +202,8 @@ function LocationBubble({ lat, lng }) {
           />
         </a>
       )}
-      <a href={gmapsUrl} target="_blank" rel="noopener noreferrer" className="chat-location-link">
-        <MapPin size={12} />
+      <a href={gmapsUrl} target="_blank" rel="noopener noreferrer" className={`chat-location-link ${isMine ? 'mine' : 'other'}`}>
+        <MapPin size={13} />
         <span>Abrir en Google Maps</span>
       </a>
     </div>
@@ -1146,8 +1146,10 @@ export default function ChatWidget({ isFullPage = false }) {
               if (parent && !parent.querySelector('.chat-img-fallback')) {
                 const fb = document.createElement('span');
                 fb.className = 'chat-img-fallback';
-                fb.innerText = 'Ver imagen';
-                fb.style.cssText = 'display:inline-block;padding:6px 10px;font-size:0.8rem;color:#ffffff;text-decoration:underline;';
+                fb.innerText = 'Ver imagen adjunta';
+                fb.style.cssText = isMine
+                  ? 'display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:0.8rem;color:#ffffff;text-decoration:underline;background:rgba(255,255,255,0.2);border-radius:8px;'
+                  : 'display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:0.8rem;color:#0d7c3d;text-decoration:underline;background:rgba(13,124,61,0.08);border-radius:8px;';
                 parent.appendChild(fb);
               }
             }}
@@ -1161,7 +1163,7 @@ export default function ChatWidget({ isFullPage = false }) {
       const lat = meta?.lat ?? parseFloat(parts[0] || 0);
       const lng = meta?.lng ?? parseFloat(parts[1] || 0);
       if (!lat || !lng) return <p>Ubicación compartida</p>;
-      return <LocationBubble lat={lat} lng={lng} />;
+      return <LocationBubble lat={lat} lng={lng} isMine={isMine} />;
     }
 
     return <p>{msg.contenido}</p>;
@@ -1526,23 +1528,55 @@ export default function ChatWidget({ isFullPage = false }) {
               />
 
               <div className={`chat-input-actions ${newMsg.trim().length > 0 ? 'is-typing' : ''}`}>
-                <button type="button" className="chat-input-icon-btn" onClick={() => fileInputRef.current?.click()} title="Enviar fotos (permite varias)"><Image size={18} /></button>
-                <button type="button" className="chat-input-icon-btn chat-extra-btn" onClick={() => cameraInputRef.current?.click()} title="Tomar foto con cámara"><Camera size={18} /></button>
-                <button type="button" className="chat-input-icon-btn chat-extra-btn" onClick={handleSendLocation} title="Compartir ubicación"><MapPin size={18} /></button>
-                <button type="button" className="chat-input-icon-btn chat-extra-btn" onClick={startVoiceRecording} title="Grabar nota de voz"><Mic size={18} /></button>
+                <button
+                  type="button"
+                  className="chat-input-icon-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Enviar fotos"
+                >
+                  <Image size={18} />
+                </button>
+                <button
+                  type="button"
+                  className="chat-input-icon-btn chat-extra-btn"
+                  onClick={() => cameraInputRef.current?.click()}
+                  title="Tomar foto con cámara"
+                >
+                  <Camera size={18} />
+                </button>
+                <button
+                  type="button"
+                  className="chat-input-icon-btn chat-extra-btn"
+                  onClick={handleSendLocation}
+                  title="Compartir ubicación"
+                >
+                  <MapPin size={18} />
+                </button>
               </div>
 
-              {/* Texto + enviar */}
-              <form onSubmit={handleSend} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Texto + Acción Dinámica (Enviar si hay texto / Grabar audio si está vacío) */}
+              <form onSubmit={handleSend} className="chat-form-wrap">
                 <input
                   type="text"
                   className="chat-text-input"
                   placeholder="Escribe un mensaje..."
                   value={newMsg}
                   onChange={handleTyping}
-                  autoFocus
                 />
-                <button type="submit" className="chat-send-btn" disabled={!newMsg.trim()}><Send size={18} /></button>
+                {newMsg.trim().length > 0 ? (
+                  <button type="submit" className="chat-send-btn" title="Enviar mensaje">
+                    <Send size={17} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="chat-mic-btn"
+                    onClick={startVoiceRecording}
+                    title="Grabar nota de voz"
+                  >
+                    <Mic size={18} />
+                  </button>
+                )}
               </form>
             </div>
           )
