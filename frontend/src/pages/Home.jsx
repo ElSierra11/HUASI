@@ -258,6 +258,97 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ===== SECCIÓN VIDEO EXPLICATIVO HUASI ===== */}
+      <section className="relative mb-12 sm:mb-16 max-w-5xl mx-auto px-2">
+        {/* Fondo decorativo */}
+        <div className="absolute inset-0 bg-gradient-to-br from-ucc-green/5 via-emerald-400/5 to-teal-500/5 rounded-3xl pointer-events-none" />
+
+        <div className="relative py-10 px-4 sm:px-10">
+
+          {/* Encabezado centrado */}
+          <div className="text-center mb-8 space-y-3">
+            <span className="text-xs font-black text-ucc-green tracking-widest uppercase bg-ucc-green/10 px-3 py-1.5 rounded-full border border-ucc-green/20">
+              ✨ Conoce HUASI
+            </span>
+            <h2 className="font-heading font-black text-3xl sm:text-4xl text-ucc-navy dark:text-white leading-tight">
+              ¿Qué es{' '}
+              <span className="bg-gradient-to-r from-ucc-green via-emerald-500 to-teal-500 bg-clip-text text-transparent">
+                HUASI
+              </span>
+              ?
+            </h2>
+            <p className="text-sm md:text-base text-ucc-muted dark:text-slate-300 font-semibold leading-relaxed max-w-xl mx-auto">
+              Red autogestionada de alojamiento solidario para la comunidad universitaria UCC. Hospedaje seguro, asequible y de confianza en toda Colombia.
+            </p>
+          </div>
+
+          {/* Layout: texto a la izquierda · video vertical al centro/derecha */}
+          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-10 lg:gap-14 justify-center">
+
+            {/* Puntos clave */}
+            <div className="flex flex-col space-y-4 max-w-xs w-full lg:pt-6">
+              {[
+                { emoji: '🏡', text: 'Hospedaje verificado entre pares universitarios' },
+                { emoji: '🤝', text: 'Red solidaria — sin ánimo de lucro' },
+                { emoji: '📍', text: 'Presencia en 13+ campus UCC a nivel nacional' },
+                { emoji: '⭐', text: 'Calificaciones y reseñas de la comunidad' },
+                { emoji: '🔒', text: 'Pagos seguros y anfitriones verificados' },
+              ].map(({ emoji, text }) => (
+                <div key={text} className="flex items-start gap-3 p-3 bg-white/70 dark:bg-slate-800/70 rounded-xl border border-ucc-border/30 dark:border-slate-700 shadow-custom-sm hover:scale-[1.02] transition-transform duration-200">
+                  <span className="text-xl flex-shrink-0">{emoji}</span>
+                  <span className="text-sm font-semibold text-ucc-text dark:text-slate-200 leading-snug">{text}</span>
+                </div>
+              ))}
+              <a
+                href="/quienes-somos"
+                className="inline-flex items-center justify-center gap-2 bg-ucc-navy hover:bg-ucc-navy-light text-white font-bold px-6 py-3 rounded-full text-sm shadow-custom hover:shadow-custom-md hover:scale-[1.03] active:scale-[0.97] transition-all duration-200 mt-2 w-full"
+              >
+                <span>Conocer más sobre HUASI</span>
+                <ArrowRight size={15} />
+              </a>
+            </div>
+
+            {/* Video vertical — formato Short */}
+            <div className="relative flex-shrink-0">
+              {/* Marco estilo "teléfono / Short" */}
+              <div className="relative">
+                {/* Sombra ambiental verde */}
+                <div className="absolute inset-0 bg-gradient-to-b from-ucc-green/30 to-emerald-600/20 rounded-3xl blur-2xl scale-105 opacity-60 pointer-events-none" />
+
+                {/* Contenedor 9:16 */}
+                <div
+                  className="relative rounded-3xl overflow-hidden shadow-custom-xl border-4 border-white dark:border-slate-700 bg-black"
+                  style={{ width: '260px', height: '462px' }}
+                >
+                  <iframe
+                    className="w-full h-full"
+                    src="https://www.youtube.com/embed/nvFHEeWSyoo"
+                    title="¿Qué es HUASI? — Red de Alojamiento Solidario UCC"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    loading="lazy"
+                    style={{ border: 'none' }}
+                  />
+                </div>
+
+                {/* Badge superior */}
+                <div className="absolute -top-3 -right-4 bg-gradient-to-br from-ucc-green to-emerald-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-custom-md rotate-3 select-none z-10 whitespace-nowrap">
+                  ▶ Video oficial
+                </div>
+
+                {/* Badge inferior */}
+                <div className="absolute -bottom-3 -left-4 bg-white dark:bg-slate-800 border border-ucc-border dark:border-slate-700 text-ucc-navy dark:text-white text-xs font-black px-3 py-1.5 rounded-full shadow-custom-md -rotate-2 select-none z-10 flex items-center gap-1.5 whitespace-nowrap">
+                  <ShieldCheck size={12} className="text-ucc-green" />
+                  Red Solidaria UCC
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+
       {/* ===== BARRA DE BÚSQUEDA 'AIRSEARCH' GLASSMORPHIC ===== */}
       <section className="relative z-20 -mt-10 md:-mt-14 mb-8 px-2 md:px-4 max-w-4xl mx-auto">
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl p-3 sm:p-4 rounded-3xl md:rounded-full shadow-custom-xl border border-ucc-border/70 dark:border-slate-700/80 hover:border-ucc-green/50 hover:shadow-2xl transition-all duration-300">
