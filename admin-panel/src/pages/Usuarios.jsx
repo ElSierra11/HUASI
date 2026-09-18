@@ -19,7 +19,9 @@ import {
   CheckCheck,
   Download,
   Sparkles,
-  Clock
+  Clock,
+  Users,
+  UserPlus
 } from 'lucide-react';
 import api from '../api';
 import Modal from '../components/Modal';

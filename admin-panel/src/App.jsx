@@ -15,6 +15,7 @@ import Alojamientos from './pages/Alojamientos';
 import EstadisticasMensuales from './pages/EstadisticasMensuales';
 import MonitoreoActividad from './pages/MonitoreoActividad';
 import NotificationCenter from './components/NotificationCenter';
+import ErrorBoundary from './components/ErrorBoundary';
 import useActivityTracker from './hooks/useActivityTracker';
 
 function ProtectedRoute({ children }) {
@@ -189,7 +190,7 @@ function App() {
       {/* Cuerpo con Sidebar + Contenido */}
       <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
         {user && (
-          <aside className={`admin-sidebar ${sidebarOpen ? 'sidebar-open' : ''}`} style={{ minWidth: 260, width: 260 }}>
+          <aside className={`admin-sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
             
             {/* Tarjeta de Identidad Institucional — Logos */}
             <div style={{
@@ -240,7 +241,7 @@ function App() {
             </h4>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {navLinks.map(({ to, icon, label, badge, badgeColor }) => {
+              {navLinks.map(({ to, icon, label, badge }) => {
                 const active = isLinkActive(to);
                 return (
                   <Link
@@ -288,27 +289,29 @@ function App() {
         )}
 
         <main className="admin-main" style={{ flex: 1, padding: '24px' }}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={
-              <ProtectedRoute><Dashboard onActionFinished={fetchCounters} /></ProtectedRoute>
-            } />
-            <Route path="/usuarios" element={
-              <ProtectedRoute><Usuarios onActionFinished={fetchCounters} /></ProtectedRoute>
-            } />
-            <Route path="/monitoreo" element={
-              <ProtectedRoute><MonitoreoActividad onActionFinished={fetchCounters} /></ProtectedRoute>
-            } />
-            <Route path="/alojamientos" element={
-              <ProtectedRoute><Alojamientos onActionFinished={fetchCounters} /></ProtectedRoute>
-            } />
-            <Route path="/reportes" element={
-              <ProtectedRoute><Reportes onActionFinished={fetchCounters} /></ProtectedRoute>
-            } />
-            <Route path="/estadisticas" element={
-              <ProtectedRoute><EstadisticasMensuales /></ProtectedRoute>
-            } />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={
+                <ProtectedRoute><Dashboard onActionFinished={fetchCounters} /></ProtectedRoute>
+              } />
+              <Route path="/usuarios" element={
+                <ProtectedRoute><Usuarios onActionFinished={fetchCounters} /></ProtectedRoute>
+              } />
+              <Route path="/monitoreo" element={
+                <ProtectedRoute><MonitoreoActividad onActionFinished={fetchCounters} /></ProtectedRoute>
+              } />
+              <Route path="/alojamientos" element={
+                <ProtectedRoute><Alojamientos onActionFinished={fetchCounters} /></ProtectedRoute>
+              } />
+              <Route path="/reportes" element={
+                <ProtectedRoute><Reportes onActionFinished={fetchCounters} /></ProtectedRoute>
+              } />
+              <Route path="/estadisticas" element={
+                <ProtectedRoute><EstadisticasMensuales /></ProtectedRoute>
+              } />
+            </Routes>
+          </ErrorBoundary>
         </main>
       </div>
     </div>

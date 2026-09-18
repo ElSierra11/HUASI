@@ -1124,15 +1124,15 @@ router.get('/admin/notificaciones-procesos', async (req, res) => {
         p.created_at,
         p.updated_at,
         u.id as host_id,
-        u.nombre as host_nombre,
-        u.apellido as host_apellido,
-        u.email as host_email,
-        u.telefono as host_telefono,
+        COALESCE(u.nombre, 'Usuario') as host_nombre,
+        COALESCE(u.apellido, '') as host_apellido,
+        COALESCE(u.email, 'Sin correo') as host_email,
+        COALESCE(u.telefono, '') as host_telefono,
         u.foto_perfil as host_foto,
         u.campus as host_campus,
         u.verificado as host_verificado
       FROM propiedades p
-      JOIN users u ON p.host_id = u.id
+      LEFT JOIN users u ON p.host_id = u.id
       ORDER BY 
         CASE 
           WHEN p.estado_aprobacion = 'pendiente_revision' THEN 0 

@@ -216,22 +216,58 @@ export default function Dashboard() {
       </h2>
       
       {/* Tarjetas de Estadísticas */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, marginBottom: 40 }}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+        gap: 20, 
+        marginBottom: 36 
+      }}>
         
         {/* Usuarios Registrados */}
         <div className="card" style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center', 
-          borderLeft: '5px solid var(--primary)', 
-          background: 'var(--bg-surface)'
+          background: 'linear-gradient(135deg, #ffffff 0%, rgba(13, 124, 61, 0.02) 100%)',
+          border: '1px solid rgba(13, 124, 61, 0.15)',
+          borderRadius: 16,
+          padding: '22px 24px',
+          boxShadow: '0 4px 20px -4px rgba(13, 124, 61, 0.08)',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'var(--primary)' }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Usuarios Registrados</span>
-            <span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>{usuarios.length}</span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--success)', fontWeight: 600 }}>Comunidad activa</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+              Usuarios Registrados
+            </span>
+            <span style={{ fontSize: '2.6rem', fontWeight: 900, color: 'var(--text)', lineHeight: 1, letterSpacing: '-1px' }}>
+              {usuarios.length}
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <span style={{ 
+                fontSize: '0.74rem', 
+                color: 'var(--primary)', 
+                fontWeight: 700, 
+                background: 'rgba(13, 124, 61, 0.08)',
+                padding: '2px 8px',
+                borderRadius: 999
+              }}>
+                Comunidad activa
+              </span>
+            </div>
           </div>
-          <div style={{ background: 'rgba(0, 152, 205, 0.1)', color: 'var(--primary)', borderRadius: '14px', padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ 
+            background: 'linear-gradient(135deg, rgba(13, 124, 61, 0.12), rgba(16, 185, 129, 0.18))', 
+            color: 'var(--primary)', 
+            borderRadius: '16px', 
+            width: 54,
+            height: 54,
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            boxShadow: '0 8px 16px -4px rgba(13, 124, 61, 0.2)'
+          }}>
             <Users size={26} />
           </div>
         </div>
@@ -241,19 +277,46 @@ export default function Dashboard() {
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center', 
-          borderLeft: '5px solid var(--success)',
-          background: 'var(--bg-surface)'
+          background: 'linear-gradient(135deg, #ffffff 0%, rgba(16, 185, 129, 0.02) 100%)',
+          border: '1px solid rgba(16, 185, 129, 0.2)',
+          borderRadius: 16,
+          padding: '22px 24px',
+          boxShadow: '0 4px 20px -4px rgba(16, 185, 129, 0.08)',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'var(--success)' }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Estudiantes Verificados</span>
-            <span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+              Estudiantes Verificados
+            </span>
+            <span style={{ fontSize: '2.6rem', fontWeight: 900, color: 'var(--text)', lineHeight: 1, letterSpacing: '-1px' }}>
               {usuarios.filter(u => u.verificado).length}
             </span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-              {usuarios.filter(u => !u.verificado).length} pendientes de verificar
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <span style={{ 
+                fontSize: '0.74rem', 
+                color: 'var(--text-muted)', 
+                fontWeight: 600,
+                background: 'rgba(15, 23, 42, 0.04)',
+                padding: '2px 8px',
+                borderRadius: 999
+              }}>
+                {usuarios.filter(u => !u.verificado).length} pendientes
+              </span>
+            </div>
           </div>
-          <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', borderRadius: '14px', padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ 
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.2))', 
+            color: 'var(--success)', 
+            borderRadius: '16px', 
+            width: 54,
+            height: 54,
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            boxShadow: '0 8px 16px -4px rgba(16, 185, 129, 0.2)'
+          }}>
             <CheckCircle size={26} />
           </div>
         </div>
@@ -263,15 +326,46 @@ export default function Dashboard() {
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center', 
-          borderLeft: '5px solid var(--warning)',
-          background: 'var(--bg-surface)'
+          background: 'linear-gradient(135deg, #ffffff 0%, rgba(245, 158, 11, 0.02) 100%)',
+          border: '1px solid rgba(245, 158, 11, 0.25)',
+          borderRadius: 16,
+          padding: '22px 24px',
+          boxShadow: '0 4px 20px -4px rgba(245, 158, 11, 0.08)',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'var(--warning)' }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Solicitudes de Carnet</span>
-            <span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>{verificaciones.length}</span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--warning)', fontWeight: 600 }}>Por revisar</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+              Solicitudes de Carnet
+            </span>
+            <span style={{ fontSize: '2.6rem', fontWeight: 900, color: 'var(--text)', lineHeight: 1, letterSpacing: '-1px' }}>
+              {verificaciones.length}
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <span style={{ 
+                fontSize: '0.74rem', 
+                color: '#b45309', 
+                fontWeight: 700,
+                background: 'rgba(245, 158, 11, 0.12)',
+                padding: '2px 8px',
+                borderRadius: 999
+              }}>
+                Por revisar
+              </span>
+            </div>
           </div>
-          <div style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--warning)', borderRadius: '14px', padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ 
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.2))', 
+            color: 'var(--warning)', 
+            borderRadius: '16px', 
+            width: 54,
+            height: 54,
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            boxShadow: '0 8px 16px -4px rgba(245, 158, 11, 0.2)'
+          }}>
             <FileText size={26} />
           </div>
         </div>
@@ -281,17 +375,46 @@ export default function Dashboard() {
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center', 
-          borderLeft: '5px solid var(--danger)',
-          background: 'var(--bg-surface)'
+          background: 'linear-gradient(135deg, #ffffff 0%, rgba(239, 68, 68, 0.02) 100%)',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+          borderRadius: 16,
+          padding: '22px 24px',
+          boxShadow: '0 4px 20px -4px rgba(239, 68, 68, 0.08)',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'var(--danger)' }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>PQRs Activas</span>
-            <span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+              PQRs Activas
+            </span>
+            <span style={{ fontSize: '2.6rem', fontWeight: 900, color: 'var(--text)', lineHeight: 1, letterSpacing: '-1px' }}>
               {reportes.filter(r => r.estado === 'pendiente').length}
             </span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--danger)', fontWeight: 600 }}>PQRs de comportamiento</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <span style={{ 
+                fontSize: '0.74rem', 
+                color: '#dc2626', 
+                fontWeight: 700,
+                background: 'rgba(239, 68, 68, 0.1)',
+                padding: '2px 8px',
+                borderRadius: 999
+              }}>
+                Comportamiento
+              </span>
+            </div>
           </div>
-          <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', borderRadius: '14px', padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ 
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(220, 38, 38, 0.2))', 
+            color: 'var(--danger)', 
+            borderRadius: '16px', 
+            width: 54,
+            height: 54,
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            boxShadow: '0 8px 16px -4px rgba(239, 68, 68, 0.2)'
+          }}>
             <ShieldAlert size={26} />
           </div>
         </div>
