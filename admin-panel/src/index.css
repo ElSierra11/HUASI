@@ -362,24 +362,26 @@ tr:hover td {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   width: 100%;
-  max-width: 520px;
-  /* Evita que el modal desborde la pantalla en móviles */
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  max-width: 540px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.25);
   animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  overflow: hidden;
 }
 
 .modal-header {
-  padding: 20px 24px;
+  padding: 18px 24px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .modal-title {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--text);
   display: flex;
@@ -392,28 +394,52 @@ tr:hover td {
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 4px;
+  padding: 6px;
   border-radius: var(--radius-sm);
   transition: var(--transition);
   display: flex;
   align-items: center;
 }
 .modal-close:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.05);
   color: var(--text);
 }
 
 .modal-body {
-  padding: 24px;
+  padding: 22px 24px;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .modal-footer {
-  padding: 16px 24px;
-  background: rgba(255, 255, 255, 0.01);
+  padding: 14px 24px;
+  background: var(--bg-main);
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Responsive Table vs Card View System
+   ========================================================================== */
+.desktop-table-view {
+  display: block;
+}
+.mobile-cards-view {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-table-view {
+    display: none !important;
+  }
+  .mobile-cards-view {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+  }
 }
 
 @keyframes fadeIn {

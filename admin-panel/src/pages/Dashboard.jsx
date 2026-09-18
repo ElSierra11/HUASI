@@ -137,12 +137,22 @@ export default function Dashboard() {
 
   if (loading) return <div className="loading"><div className="spinner"></div></div>;
 
+  const [timeRange, setTimeRange] = useState('todos'); // 'todos' | '30d' | '7d'
+
   // --- CÁLCULOS ESTADÍSTICOS ---
+  const filteredUsuarios = usuarios.filter(u => {
+    if (timeRange === 'todos') return true;
+    if (!u.created_at) return false;
+    const days = timeRange === '7d' ? 7 : 30;
+    const diff = (Date.now() - new Date(u.created_at).getTime()) / (1000 * 60 * 60 * 24);
+    return diff <= days;
+  });
+
   const campusStats = {};
   const roleStats = { admin: 0, host: 0, guest: 0, user: 0 };
   let verifCount = 0;
 
-  usuarios.forEach(u => {
+  filteredUsuarios.forEach(u => {
     const campus = u.campus || 'No especificado';
     campusStats[campus] = (campusStats[campus] || 0) + 1;
     
@@ -152,7 +162,7 @@ export default function Dashboard() {
     if (u.verificado) verifCount++;
   });
 
-  const totalUsuarios = usuarios.length || 1;
+  const totalUsuarios = filteredUsuarios.length || 1;
   const verifPercent = Math.round((verifCount / totalUsuarios) * 100);
 
   const totalReportes = reportes.length || 1;
@@ -211,9 +221,39 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h2 style={{ marginBottom: 28, fontSize: '2rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px' }}>
-        Resumen de la Plataforma HUASI
-      </h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
+        <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px' }}>
+          Resumen de la Plataforma HUASI
+        </h2>
+
+        {/* Selector de Rango de Tiempo */}
+        <div style={{ display: 'flex', background: 'rgba(15, 23, 42, 0.04)', padding: 3, borderRadius: 10, gap: 4 }}>
+          {[
+            { id: 'todos', label: 'Histórico' },
+            { id: '30d', label: 'Últimos 30 días' },
+            { id: '7d', label: 'Últimos 7 días' },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTimeRange(t.id)}
+              style={{
+                border: 'none',
+                background: timeRange === t.id ? '#ffffff' : 'transparent',
+                color: timeRange === t.id ? 'var(--primary)' : 'var(--text-muted)',
+                fontWeight: timeRange === t.id ? 800 : 500,
+                fontSize: '0.78rem',
+                padding: '6px 12px',
+                borderRadius: 7,
+                cursor: 'pointer',
+                boxShadow: timeRange === t.id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
       
       {/* Tarjetas de Estadísticas */}
       <div style={{ 
@@ -242,7 +282,7 @@ export default function Dashboard() {
               Usuarios Registrados
             </span>
             <span style={{ fontSize: '2.6rem', fontWeight: 900, color: 'var(--text)', lineHeight: 1, letterSpacing: '-1px' }}>
-              {usuarios.length}
+              {filteredUsuarios.length}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
               <span style={{ 
@@ -253,7 +293,7 @@ export default function Dashboard() {
                 padding: '2px 8px',
                 borderRadius: 999
               }}>
-                Comunidad activa
+                {timeRange === 'todos' ? 'Comunidad activa' : `Altas en ${timeRange === '7d' ? '7 días' : '30 días'}`}
               </span>
             </div>
           </div>

@@ -563,6 +563,8 @@ export default function Register() {
               <label>Correo Electrónico Institucional</label>
               <input type="email" required className="form-control"
                 placeholder="usuario@campusucc.edu.co"
+                autoComplete="email"
+                inputMode="email"
                 value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
               <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
                 Solo correos <strong>@campusucc.edu.co</strong> o <strong>@ucc.edu.co</strong>
@@ -632,6 +634,8 @@ export default function Register() {
                   required
                   className="form-control"
                   placeholder="+57 300 000 0000"
+                  autoComplete="tel"
+                  inputMode="tel"
                   style={{ paddingLeft: 44 }}
                   value={form.telefono}
                   onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))}
@@ -669,6 +673,8 @@ export default function Register() {
                   required
                   className="form-control"
                   placeholder="Ej. 1234567890"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   maxLength={12}
                   value={form.numero_documento}
                   onChange={e => setForm(f => ({ ...f, numero_documento: e.target.value.replace(/[^0-9]/g, '') }))}
@@ -910,6 +916,9 @@ export default function Register() {
                   <input
                     key={index}
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="one-time-code"
                     maxLength={1}
                     ref={el => otpRefs.current[index] = el}
                     value={digit}

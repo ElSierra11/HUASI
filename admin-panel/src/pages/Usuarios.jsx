@@ -33,6 +33,7 @@ export default function Usuarios({ onActionFinished }) {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroRapido, setFiltroRapido] = useState('todos'); // 'todos' | 'recientes' | 'sin_verificar'
+  const [filtroCampus, setFiltroCampus] = useState('todos');
   const [searchParams] = useSearchParams();
   const { showToast } = useToast();
 
@@ -262,10 +263,16 @@ export default function Usuarios({ onActionFinished }) {
 
   const countSinVerificar = usuarios.filter(u => !u.verificado && !u.email_verificado).length;
 
+  const campusesDisponibles = Array.from(new Set(usuarios.map(u => u.campus).filter(Boolean))).sort();
+
   const filteredUsuarios = usuarios.filter(u => {
     const searchString = `${u.nombre || ''} ${u.apellido || ''} ${u.email || ''} ${u.campus || ''} ${u.telefono || ''}`.toLowerCase();
     const matchesSearch = searchString.includes(searchTerm.toLowerCase());
     if (!matchesSearch) return false;
+
+    if (filtroCampus !== 'todos' && u.campus !== filtroCampus) {
+      return false;
+    }
 
     if (filtroRapido === 'recientes') {
       if (!u.created_at) return false;
@@ -294,21 +301,34 @@ export default function Usuarios({ onActionFinished }) {
           </p>
         </div>
 
-        {/* Buscador y Botón Exportar */}
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', width: '280px' }}>
+        {/* Buscador, Filtro por Campus y Botón Exportar */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', flex: '1 1 auto', justifyContent: 'flex-end' }}>
+          <div style={{ position: 'relative', minWidth: '220px', flex: '1 1 200px' }}>
             <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
               <Search size={16} />
             </span>
             <input 
               type="text" 
               className="form-control" 
-              placeholder="Buscar por nombre, email, sede o tel..." 
+              placeholder="Buscar por nombre, email, sede..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ paddingLeft: 38, height: 38, fontSize: '0.85rem' }}
             />
           </div>
+
+          <select
+            className="form-control"
+            value={filtroCampus}
+            onChange={(e) => setFiltroCampus(e.target.value)}
+            style={{ height: 38, fontSize: '0.85rem', width: 'auto', minWidth: '150px' }}
+            aria-label="Filtrar por Campus"
+          >
+            <option value="todos">Todos los campus</option>
+            {campusesDisponibles.map(c => (
+              <option key={c} value={c}>Sede {c}</option>
+            ))}
+          </select>
 
           <button
             onClick={handleExportCSV}
@@ -329,7 +349,7 @@ export default function Usuarios({ onActionFinished }) {
             title="Exportar usuarios a formato CSV compatible con Excel"
           >
             <Download size={15} className="text-ucc-green" />
-            <span>Exportar CSV</span>
+            <span>CSV</span>
           </button>
         </div>
       </div>
@@ -387,7 +407,8 @@ export default function Usuarios({ onActionFinished }) {
         </div>
       )}
 
-      <div className="table-container">
+      {/* Vista de Tabla para Pantallas Grandes / Desktop */}
+      <div className="desktop-table-view table-container">
         <table style={{ minWidth: 960 }}>
           <thead>
             <tr>
@@ -591,6 +612,122 @@ export default function Usuarios({ onActionFinished }) {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Vista de Tarjetas para Móviles (< 768px) */}
+      <div className="mobile-cards-view">
+        {filteredUsuarios.length === 0 ? (
+          <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
+            No se encontraron usuarios registrados.
+          </div>
+        ) : (
+          filteredUsuarios.map(u => (
+            <div key={u.id} className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {u.foto_perfil ? (
+                  <img 
+                    src={u.foto_perfil} 
+                    alt="" 
+                    style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }} 
+                  />
+                ) : (
+                  <div style={{ 
+                    width: 44, 
+                    height: 44, 
+                    borderRadius: '50%', 
+                    background: 'linear-gradient(135deg, #0d7c3d, #059669)', 
+                    color: 'white', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    fontWeight: 700, 
+                    fontSize: '0.95rem',
+                    flexShrink: 0
+                  }}>
+                    {u.nombre?.charAt(0)}{u.apellido?.charAt(0)}
+                  </div>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                    <span style={{ fontWeight: 800, color: 'var(--text)', fontSize: '0.98rem' }}>
+                      {u.nombre} {u.apellido}
+                    </span>
+                    <span style={{ 
+                      fontSize: '0.7rem', 
+                      textTransform: 'uppercase', 
+                      fontWeight: 800, 
+                      color: u.role === 'admin' ? 'var(--primary)' : 'var(--text-muted)', 
+                      background: u.role === 'admin' ? 'var(--success-bg)' : 'rgba(15, 23, 42, 0.05)', 
+                      padding: '2px 7px', 
+                      borderRadius: 4 
+                    }}>
+                      {u.role}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                    <Mail size={12} /> {u.email}
+                  </div>
+                </div>
+              </div>
+
+              {/* Chips de Campus y Estado */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', fontSize: '0.78rem' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--text)', background: 'rgba(15, 23, 42, 0.04)', padding: '3px 8px', borderRadius: 6 }}>
+                  <MapPin size={12} color="var(--primary)" /> {u.campus || 'Sin sede'}
+                </span>
+                {u.verificado ? (
+                  <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: '0.72rem' }}>
+                    <ShieldCheck size={12} /> Verificado
+                  </span>
+                ) : (
+                  <span className="badge badge-pendiente" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: '0.72rem' }}>
+                    <AlertCircle size={12} /> Pendiente
+                  </span>
+                )}
+                {u.bloqueado && (
+                  <span className="badge badge-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: '0.72rem' }}>
+                    <ShieldAlert size={12} /> Bloqueado
+                  </span>
+                )}
+                {u.telefono && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--text-muted)' }}>
+                    <Phone size={11} /> {u.telefono}
+                  </span>
+                )}
+              </div>
+
+              {/* Botones de acción en móvil */}
+              {u.role !== 'admin' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 4, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                  <button 
+                    className={`btn ${u.bloqueado ? 'btn-success' : 'btn-danger'}`}
+                    onClick={() => u.bloqueado ? openUnblockModal(u) : openBlockModal(u)}
+                    style={{ fontSize: '0.74rem', padding: '6px 8px', borderRadius: '8px', minHeight: 34, justifyContent: 'center' }}
+                  >
+                    {u.bloqueado ? <Unlock size={12} /> : <Ban size={12} />}
+                    <span>{u.bloqueado ? 'Desbloquear' : 'Bloquear'}</span>
+                  </button>
+                  <button 
+                    className="btn"
+                    onClick={() => openResetModal(u)}
+                    style={{ fontSize: '0.74rem', padding: '6px 8px', borderRadius: '8px', minHeight: 34, background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', border: '1px solid rgba(245, 158, 11, 0.3)', justifyContent: 'center' }}
+                  >
+                    <KeyRound size={12} />
+                    <span>Reset</span>
+                  </button>
+                  <button 
+                    className="btn"
+                    onClick={() => openDeleteModal(u)}
+                    style={{ fontSize: '0.74rem', padding: '6px 8px', borderRadius: '8px', minHeight: 34, background: 'rgba(220, 38, 38, 0.08)', color: '#dc2626', border: '1px solid rgba(220, 38, 38, 0.25)', justifyContent: 'center' }}
+                  >
+                    <Trash2 size={12} />
+                    <span>Eliminar</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       {/* Modal de Bloqueo */}

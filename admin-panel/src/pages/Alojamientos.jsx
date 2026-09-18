@@ -481,8 +481,8 @@ export default function Alojamientos({ onActionFinished }) {
 
       {error && <div className="alert alert-error" style={{ marginBottom: 24 }}>{error}</div>}
 
-      {/* Tabla de Alojamientos */}
-      <div className="table-container">
+      {/* Vista de Tabla para Escritorio */}
+      <div className="desktop-table-view table-container">
         <table style={{ minWidth: 960 }}>
           <thead>
             <tr>
@@ -533,56 +533,77 @@ export default function Alojamientos({ onActionFinished }) {
                         <MapPin size={12} /> {p.barrio ? `${p.barrio}, ${p.ciudad}` : (p.ciudad || 'Santa Marta')}
                       </span>
                       {p.created_at && (
-                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 2 }}>
-                          <Clock size={11} /> {new Date(p.created_at).toLocaleDateString('es-CO', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <Clock size={11} /> Recibido: {new Date(p.created_at).toLocaleDateString('es-CO')}
                         </span>
                       )}
                     </div>
                   </td>
+
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(13, 124, 61, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.85rem' }}>
+                      <div style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: '50%',
+                        background: 'rgba(13, 124, 61, 0.1)',
+                        color: 'var(--primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        fontSize: '0.8rem'
+                      }}>
                         {p.host_nombre?.charAt(0) || 'U'}
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>
                           {p.host_nombre} {p.host_apellido}
-                        </span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          <Mail size={11} /> {p.host_email || 'Sin correo'}
-                        </span>
-                        {p.host_telefono && (
-                          <span style={{ fontSize: '0.73rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
-                            <Phone size={11} /> {p.host_telefono}
-                          </span>
-                        )}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          {p.host_email}
+                        </div>
                       </div>
                     </div>
                   </td>
+
                   <td>
-                    <span style={{ fontSize: '0.88rem', color: 'var(--text)' }}>{p.campus_cercano || 'Santa Marta'}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.85rem' }}>
+                      <Building2 size={13} color="var(--primary)" />
+                      {p.campus_cercano || 'General'}
+                    </span>
                   </td>
+
                   <td>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600, textTransform: 'capitalize' }}>
-                        {p.tipo || 'Habitación'}
-                      </span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <Users size={11} /> {p.capacidad || 1} huésped{p.capacidad !== 1 ? 'es' : ''}
-                      </span>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                      {p.tipo}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <Users size={12} /> {p.capacidad} plaza(s)
                     </div>
                   </td>
+
                   <td>
-                    {renderApprovalBadge(p.estado_aprobacion)}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {renderApprovalBadge(p.estado_aprobacion)}
+                      {!p.activo && (
+                        <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 700 }}>
+                          (Inactivo/Oculto)
+                        </span>
+                      )}
+                    </div>
                   </td>
-                  <td style={{ padding: '14px 20px', textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', gap: 6 }}>
                       <button
                         onClick={() => handleOpenInspection(p)}
                         className="btn btn-primary"
                         style={{ fontSize: '0.8rem', padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: '6px' }}
+                        title="Auditar y dictaminar oferta"
                       >
-                        <ClipboardCheck size={14} /> Inspeccionar
+                        <ShieldCheck size={14} />
+                        <span>Dictaminar</span>
                       </button>
 
                       {p.estado_aprobacion === 'aprobado' && (
@@ -591,12 +612,12 @@ export default function Alojamientos({ onActionFinished }) {
                             open: true,
                             propId: p.id,
                             propTitle: p.titulo,
-                            action: p.activo ? 'desactivar' : 'activar',
+                            currentActive: p.activo,
                             processing: false
                           })}
-                          className={`btn ${p.activo ? 'btn-danger' : 'btn-success'}`}
+                          className={`btn ${p.activo ? 'btn-secondary' : 'btn-success'}`}
                           style={{ fontSize: '0.8rem', padding: '6px 10px', display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: '6px' }}
-                          title={p.activo ? 'Desactivar publicación' : 'Activar publicación'}
+                          title={p.activo ? 'Suspender visibilidad' : 'Reactivar visibilidad'}
                         >
                           {p.activo ? <Ban size={14} /> : <Unlock size={14} />}
                         </button>
@@ -623,6 +644,86 @@ export default function Alojamientos({ onActionFinished }) {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Vista de Tarjetas para Móviles (< 768px) */}
+      <div className="mobile-cards-view">
+        {filtered.length === 0 ? (
+          <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
+            No se encontraron alojamientos bajo los criterios seleccionados.
+          </div>
+        ) : (
+          filtered.map(p => (
+            <div key={p.id} className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                <div>
+                  <h4 style={{ margin: '0 0 4px 0', fontSize: '1rem', fontWeight: 800, color: 'var(--text)' }}>
+                    {p.titulo}
+                  </h4>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <MapPin size={12} color="var(--primary)" />
+                    {p.barrio ? `${p.barrio}, ${p.ciudad}` : (p.ciudad || 'Santa Marta')} · Sede {p.campus_cercano || 'General'}
+                  </div>
+                </div>
+                <div>
+                  {renderApprovalBadge(p.estado_aprobacion)}
+                </div>
+              </div>
+
+              {/* Datos de Anfitrión y Capacidad */}
+              <div style={{ background: 'rgba(15, 23, 42, 0.03)', padding: '8px 12px', borderRadius: 8, fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text)' }}>
+                  <strong>Anfitrión:</strong> {p.host_nombre} {p.host_apellido}
+                </span>
+                <span style={{ color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Users size={12} /> {p.capacidad} plaza(s)
+                </span>
+              </div>
+
+              {/* Acciones en móvil */}
+              <div style={{ display: 'flex', gap: 8, marginTop: 4, paddingTop: 10, borderTop: '1px solid var(--border)', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => handleOpenInspection(p)}
+                  className="btn btn-primary"
+                  style={{ flex: 1, fontSize: '0.8rem', padding: '8px 12px', justifyContent: 'center', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  <ShieldCheck size={14} />
+                  <span>Auditar / Dictamen</span>
+                </button>
+
+                {p.estado_aprobacion === 'aprobado' && (
+                  <button
+                    onClick={() => setToggleModal({
+                      open: true,
+                      propId: p.id,
+                      propTitle: p.titulo,
+                      currentActive: p.activo,
+                      processing: false
+                    })}
+                    className={`btn ${p.activo ? 'btn-secondary' : 'btn-success'}`}
+                    style={{ fontSize: '0.8rem', padding: '8px 12px' }}
+                    title={p.activo ? 'Suspender' : 'Reactivar'}
+                  >
+                    {p.activo ? <Ban size={14} /> : <Unlock size={14} />}
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setDeleteModal({
+                    open: true,
+                    propId: p.id,
+                    propTitle: p.titulo,
+                    processing: false
+                  })}
+                  className="btn btn-danger"
+                  style={{ fontSize: '0.8rem', padding: '8px 12px', background: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.25)' }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* ================= MODAL DE INSPECCIÓN Y DICTAMEN ================= */}

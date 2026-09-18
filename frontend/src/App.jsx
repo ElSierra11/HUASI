@@ -29,8 +29,9 @@ import useActivityTracker from './hooks/useActivityTracker';
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
-  const location = useLocation();
   const isChatRoute = location.pathname.startsWith('/chat');
+  const isFormRoute = ['/login', '/registro', '/register', '/olvido-password', '/recuperar-password'].includes(location.pathname);
+  const hideFloatingWidgets = isChatRoute || isFormRoute;
   useActivityTracker();
 
   return (
@@ -69,8 +70,8 @@ function App() {
       </main>
       <Footer />
       <NotificationManager />
-      {!isChatRoute && <ChatWidget />}
-      {!isChatRoute && <PqrButton />}
+      {!hideFloatingWidgets && <ChatWidget />}
+      {!hideFloatingWidgets && <PqrButton />}
       <PwaInstallBanner />
       <BottomNavBar />
     </div>

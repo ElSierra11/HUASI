@@ -219,7 +219,7 @@ export default function HostPropertyForm() {
           </div>
           <div className="form-group">
             <label>Capacidad (huéspedes) *</label>
-            <input type="number" className="form-control" min="1" max="12" required
+            <input type="number" inputMode="numeric" className="form-control" min="1" max="12" required
               value={form.capacidad} onChange={e => updateField('capacidad', e.target.value)} />
             {errors.capacidad && <small style={{ color: 'var(--danger)' }}>{errors.capacidad}</small>}
           </div>
@@ -248,7 +248,7 @@ export default function HostPropertyForm() {
           </div>
           <div className="form-group">
             <label>Duración máxima del hospedaje (días)</label>
-            <input type="number" className="form-control" min="1" max="365" placeholder="Ej: 15"
+            <input type="number" inputMode="numeric" className="form-control" min="1" max="365" placeholder="Ej: 15"
               value={form.duracion_maxima} onChange={e => updateField('duracion_maxima', e.target.value)} />
             <small style={{ color: 'var(--text-muted)' }}>Opcional: ayuda a filtrar solicitudes poco realistas.</small>
             {errors.duracion_maxima && <small style={{ color: 'var(--danger)' }}>{errors.duracion_maxima}</small>}
