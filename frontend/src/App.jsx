@@ -29,6 +29,7 @@ import useActivityTracker from './hooks/useActivityTracker';
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const location = useLocation();
   const isChatRoute = location.pathname.startsWith('/chat');
   const isFormRoute = ['/login', '/registro', '/register', '/olvido-password', '/recuperar-password'].includes(location.pathname);
   const hideFloatingWidgets = isChatRoute || isFormRoute;

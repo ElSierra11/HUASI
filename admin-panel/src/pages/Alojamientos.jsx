@@ -377,8 +377,8 @@ export default function Alojamientos({ onActionFinished }) {
         </div>
 
         {/* Buscador y Filtro Campus */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ position: 'relative', width: '240px' }}>
+        <div className="toolbar-responsive">
+          <div className="toolbar-search">
             <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
               <Search size={16} />
             </span>
@@ -393,11 +393,10 @@ export default function Alojamientos({ onActionFinished }) {
           </div>
 
           <select 
-            className="form-control" 
+            className="form-control toolbar-select" 
             value={filtroCampus} 
             onChange={e => setFiltroCampus(e.target.value)}
             style={{ 
-              width: '180px', 
               height: 38, 
               paddingLeft: 12, 
               paddingRight: 32, 
@@ -426,7 +425,7 @@ export default function Alojamientos({ onActionFinished }) {
 
           <button
             onClick={handleExportCSV}
-            className="btn btn-secondary"
+            className="btn btn-secondary toolbar-btn"
             style={{
               height: 38,
               padding: '0 16px',
@@ -443,13 +442,13 @@ export default function Alojamientos({ onActionFinished }) {
             title="Exportar informe en formato CSV compatible con Excel"
           >
             <Download size={15} className="text-ucc-green" />
-            <span>Exportar CSV</span>
+            <span>CSV</span>
           </button>
         </div>
       </div>
 
       {/* Pestañas de Estado con Contadores */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+      <div className="tabs-carousel" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
         {[
           { id: 'todos', label: 'Todos los Alojamientos', count: counts.todos },
           { id: 'pendiente_revision', label: 'Pendientes de Inspección', count: counts.pendiente_revision, highlight: counts.pendiente_revision > 0 },
@@ -743,7 +742,7 @@ export default function Alojamientos({ onActionFinished }) {
           <div 
             className="modal-content" 
             onClick={e => e.stopPropagation()} 
-            style={{ maxWidth: '820px', width: '90%', maxHeight: '90vh', overflowY: 'auto', padding: '24px 28px' }}
+            style={{ maxWidth: '820px', width: '95%', maxHeight: '90vh', overflowY: 'auto', padding: 'clamp(16px, 3vw, 26px)' }}
           >
             {/* Header del Modal */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border)', paddingBottom: 16, marginBottom: 20 }}>
@@ -768,7 +767,7 @@ export default function Alojamientos({ onActionFinished }) {
             </div>
 
             {/* Ficha de Detalles del Alojamiento */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16, marginBottom: 20 }}>
               {/* Columna Izquierda: Datos de la Propiedad */}
               <div style={{ background: 'var(--bg, #f8fafc)', padding: 16, borderRadius: '8px', border: '1px solid var(--border)' }}>
                 <h4 style={{ margin: '0 0 10px 0', fontSize: '0.92rem', fontWeight: 700, color: 'var(--text)' }}>

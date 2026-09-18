@@ -849,49 +849,43 @@ export default function Dashboard({ onActionFinished }) {
                   </p>
                 </div>
                 
-                <div style={{ marginTop: 18, display: 'flex', gap: 12 }}>
+                <div style={{ marginTop: 18, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <a href={v.carnet_url} target="_blank" rel="noreferrer" className="btn" style={{ 
                     background: 'var(--bg-surface-hover)', 
                     border: '1px solid var(--border)',
                     color: 'var(--text)',
-                    padding: '8px 16px', 
+                    padding: '8px 14px', 
                     borderRadius: 8,
-                    fontSize: '0.85rem'
+                    fontSize: '0.82rem'
                   }}>
-                    <Eye size={14} /> Ver Carnet de la UCC
+                    <Eye size={14} /> Ver Carnet UCC
                   </a>
                   {v.documento_url && (
                     <a href={v.documento_url} target="_blank" rel="noreferrer" className="btn" style={{ 
                       background: 'var(--bg-surface-hover)', 
                       border: '1px solid var(--border)',
                       color: 'var(--text)',
-                      padding: '8px 16px', 
+                      padding: '8px 14px', 
                       borderRadius: 8,
-                      fontSize: '0.85rem'
+                      fontSize: '0.82rem'
                     }}>
-                      <Eye size={14} /> Ver Documento Adicional
+                      <Eye size={14} /> Documento Adicional
                     </a>
                   )}
                 </div>
               </div>
               
-              <div style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: 12, 
-                minWidth: '180px', 
-                alignItems: 'stretch',
-                borderLeft: '1px solid var(--border)',
-                paddingLeft: '24px'
-              }}>
-                <div style={{ textAlign: 'center' }}>
-                  <span className="badge badge-pendiente" style={{ display: 'inline-flex', width: '100%', justifyContent: 'center' }}>Pendiente</span>
+              <div className="item-card-actions">
+                <div className="item-badge-wrapper" style={{ textAlign: 'center' }}>
+                  <span className="badge badge-warning" style={{ display: 'inline-flex', width: '100%', justifyContent: 'center' }}>
+                    Pendiente
+                  </span>
                 </div>
                 <button 
                   className="btn btn-success" 
                   onClick={() => openApproveModal(v.id)} 
                   disabled={approvingId === v.id}
-                  style={{ borderRadius: 8, fontSize: '0.85rem', width: '100%' }}
+                  style={{ borderRadius: 8, fontSize: '0.85rem', width: '100%', minHeight: 38 }}
                 >
                   {approvingId === v.id
                     ? <><Loader2 size={14} className="animate-spin" /> Aprobando...</>
@@ -901,7 +895,7 @@ export default function Dashboard({ onActionFinished }) {
                 <button 
                   className="btn btn-danger" 
                   onClick={() => openRejectModal(v.id)} 
-                  style={{ borderRadius: 8, fontSize: '0.85rem', width: '100%' }}
+                  style={{ borderRadius: 8, fontSize: '0.85rem', width: '100%', minHeight: 38 }}
                 >
                   <ThumbsDown size={14} /> Rechazar
                 </button>

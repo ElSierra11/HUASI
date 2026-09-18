@@ -302,8 +302,8 @@ export default function Usuarios({ onActionFinished }) {
         </div>
 
         {/* Buscador, Filtro por Campus y Botón Exportar */}
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', flex: '1 1 auto', justifyContent: 'flex-end' }}>
-          <div style={{ position: 'relative', minWidth: '220px', flex: '1 1 200px' }}>
+        <div className="toolbar-responsive">
+          <div className="toolbar-search">
             <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
               <Search size={16} />
             </span>
@@ -318,7 +318,7 @@ export default function Usuarios({ onActionFinished }) {
           </div>
 
           <select
-            className="form-control"
+            className="form-control toolbar-select"
             value={filtroCampus}
             onChange={(e) => setFiltroCampus(e.target.value)}
             style={{ 
@@ -326,8 +326,6 @@ export default function Usuarios({ onActionFinished }) {
               paddingLeft: 12, 
               paddingRight: 32, 
               fontSize: '0.85rem', 
-              width: 'auto', 
-              minWidth: '165px',
               borderRadius: 8,
               background: 'white',
               border: '1px solid var(--border)',
@@ -343,7 +341,7 @@ export default function Usuarios({ onActionFinished }) {
 
           <button
             onClick={handleExportCSV}
-            className="btn btn-secondary"
+            className="btn btn-secondary toolbar-btn"
             style={{
               height: 38,
               padding: '0 16px',
@@ -366,7 +364,7 @@ export default function Usuarios({ onActionFinished }) {
       </div>
 
       {/* Pestañas de Filtrado Rápido */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div className="tabs-carousel">
         {[
           { id: 'todos', label: 'Todos los usuarios', count: usuarios.length, icon: <Users size={14} /> },
           { id: 'recientes', label: 'Nuevos registros (últimos 7 días)', count: countRecientes, highlight: countRecientes > 0, icon: <UserPlus size={14} /> },

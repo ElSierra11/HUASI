@@ -922,3 +922,99 @@ tr:hover td {
   }
 }
 
+/* ==========================================================================
+   TOOLBARS, TABS & ITEM CARDS RESPONSIVE
+   ========================================================================== */
+.toolbar-responsive {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.toolbar-responsive .toolbar-search {
+  position: relative;
+  width: 240px;
+}
+
+.toolbar-responsive .toolbar-select {
+  width: auto;
+  min-width: 165px;
+}
+
+@media (max-width: 640px) {
+  .toolbar-responsive {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .toolbar-responsive .toolbar-search {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .toolbar-responsive .toolbar-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .toolbar-responsive .toolbar-btn {
+    white-space: nowrap;
+  }
+}
+
+/* Carrusel táctil para pestañas de filtros */
+.tabs-carousel {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+  scrollbar-width: none;
+}
+
+.tabs-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.tabs-carousel button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Botonera de acciones para tarjetas de verificación en Dashboard */
+.item-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 180px;
+  align-items: stretch;
+  border-left: 1px solid var(--border);
+  padding-left: 24px;
+}
+
+@media (max-width: 768px) {
+  .item-card-actions {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding-left: 0;
+    padding-top: 14px;
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .item-card-actions .item-badge-wrapper {
+    grid-column: 1 / -1;
+    text-align: left;
+    margin-bottom: 4px;
+  }
+}
+
+
