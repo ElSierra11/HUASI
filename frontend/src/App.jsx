@@ -36,7 +36,7 @@ function App() {
   useActivityTracker();
 
   return (
-    <div className="app pb-16 md:pb-0 flex flex-col min-h-screen">
+    <div className={`app ${isChatRoute ? 'pb-0' : 'pb-16 md:pb-0'} flex flex-col min-h-screen`}>
       {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
       <Navbar />
       <main className="main-content flex-1">
@@ -69,7 +69,7 @@ function App() {
           } />
         </Routes>
       </main>
-      <Footer />
+      {!isChatRoute && <Footer />}
       <NotificationManager />
       {!hideFloatingWidgets && <ChatWidget />}
       {!hideFloatingWidgets && <PqrButton />}

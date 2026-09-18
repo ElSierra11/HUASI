@@ -1525,11 +1525,11 @@ export default function ChatWidget({ isFullPage = false }) {
                 }}
               />
 
-              <div className="chat-input-actions">
+              <div className={`chat-input-actions ${newMsg.trim().length > 0 ? 'is-typing' : ''}`}>
                 <button type="button" className="chat-input-icon-btn" onClick={() => fileInputRef.current?.click()} title="Enviar fotos (permite varias)"><Image size={18} /></button>
-                <button type="button" className="chat-input-icon-btn" onClick={() => cameraInputRef.current?.click()} title="Tomar foto con cámara"><Camera size={18} /></button>
-                <button type="button" className="chat-input-icon-btn" onClick={handleSendLocation} title="Compartir ubicación"><MapPin size={18} /></button>
-                <button type="button" className="chat-input-icon-btn" onClick={startVoiceRecording} title="Grabar nota de voz"><Mic size={18} /></button>
+                <button type="button" className="chat-input-icon-btn chat-extra-btn" onClick={() => cameraInputRef.current?.click()} title="Tomar foto con cámara"><Camera size={18} /></button>
+                <button type="button" className="chat-input-icon-btn chat-extra-btn" onClick={handleSendLocation} title="Compartir ubicación"><MapPin size={18} /></button>
+                <button type="button" className="chat-input-icon-btn chat-extra-btn" onClick={startVoiceRecording} title="Grabar nota de voz"><Mic size={18} /></button>
               </div>
 
               {/* Texto + enviar */}
