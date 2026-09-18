@@ -138,8 +138,8 @@ function App() {
 
           <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
             {/* Estado del Servidor */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 rounded-full text-xs font-bold text-emerald-700 dark:text-emerald-300">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <div className="servidor-activo-pill">
+              <span className="pulse-dot"></span>
               <span>Servidor Activo</span>
             </div>
 

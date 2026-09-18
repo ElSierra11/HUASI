@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Bell, 
@@ -8,19 +8,26 @@ import {
   RefreshCw, 
   ExternalLink, 
   Clock, 
-  MapPin, 
   Mail, 
   Phone, 
-  ShieldAlert, 
   ShieldCheck, 
-  Sparkles,
   Filter,
   X,
   Smartphone,
-  ArrowRight,
-  UserPlus
+  ArrowRight
 } from 'lucide-react';
 import api from '../api';
+
+// Hook para detectar si es mobile
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < breakpoint);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, [breakpoint]);
+  return isMobile;
+}
 
 // Función para calcular tiempo relativo legible
 function formatRelativeTime(dateString) {
@@ -41,6 +48,7 @@ function formatRelativeTime(dateString) {
 }
 
 export default function NotificationCenter({ onCountChange }) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('todos'); // 'todos' | 'alojamientos' | 'registros'
@@ -151,8 +159,9 @@ export default function NotificationCenter({ onCountChange }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Cerrar al hacer clic fuera
+  // Cerrar al hacer clic fuera (solo desktop)
   useEffect(() => {
+    if (isMobile) return; // En mobile el overlay se encarga de cerrar
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setOpen(false);
@@ -162,7 +171,17 @@ export default function NotificationCenter({ onCountChange }) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [open]);
+  }, [open, isMobile]);
+
+  // Bloquear scroll del body cuando el bottom sheet está abierto en mobile
+  useEffect(() => {
+    if (isMobile && open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobile, open]);
 
   // Contar no leídas
   const unreadNotifications = notificaciones.filter(n => !readIds.includes(n.id));
@@ -264,10 +283,44 @@ export default function NotificationCenter({ onCountChange }) {
         )}
       </button>
 
-      {/* Menú flotante / Popover */}
+      {/* Menú flotante / Popover — Desktop | Modal pantalla completa — Mobile */}
       {open && (
+        <>
+          {/* Overlay oscuro solo en mobile */}
+          {isMobile && (
+            <div
+              onClick={() => setOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(15, 23, 42, 0.5)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 1500,
+                animation: 'fadeIn 0.2s ease-out'
+              }}
+            />
+          )}
         <div 
-          style={{
+          style={isMobile ? {
+            // ── MOBILE: bottom-sheet ──────────────────────────────────────
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            width: '100%',
+            maxHeight: '92dvh',
+            background: 'var(--bg-surface, #ffffff)',
+            borderRadius: '20px 20px 0 0',
+            border: '1px solid var(--border, #e2e8f0)',
+            borderBottom: 'none',
+            boxShadow: '0 -8px 40px rgba(0, 0, 0, 0.2)',
+            zIndex: 1600,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            animation: 'slideUpMobile 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+          } : {
+            // ── DESKTOP: popover ─────────────────────────────────────────
             position: 'absolute',
             top: 48,
             right: 0,
@@ -285,6 +338,17 @@ export default function NotificationCenter({ onCountChange }) {
             animation: 'fadeIn 0.18s ease-out'
           }}
         >
+          {/* Drag handle — solo en mobile */}
+          {isMobile && (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px' }}>
+              <div style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                background: 'rgba(15, 23, 42, 0.15)'
+              }} />
+            </div>
+          )}
           {/* Cabecera del Centro de Notificaciones */}
           <div style={{
             padding: '16px 18px',
@@ -745,6 +809,7 @@ export default function NotificationCenter({ onCountChange }) {
             </button>
           </div>
         </div>
+        </>
       )}
     </div>
   );
