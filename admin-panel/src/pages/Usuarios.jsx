@@ -21,7 +21,11 @@ import {
   Sparkles,
   Clock,
   Users,
-  UserPlus
+  UserPlus,
+  GraduationCap,
+  Briefcase,
+  Award,
+  BookOpen
 } from 'lucide-react';
 import api from '../api';
 import Modal from '../components/Modal';
@@ -530,10 +534,12 @@ export default function Usuarios({ onActionFinished }) {
                       border: u.role === 'admin' ? '1px solid #a7f3d0' : '1px solid #bbf7d0',
                     }}>
                       {u.role === 'admin' ? 'Administrador' : (
-                        u.rol_universitario === 'profesor' || u.rol_universitario === 'docente' ? '👨‍🏫 Docente' :
-                        u.rol_universitario === 'administrativo' ? '💼 Administrativo' :
-                        u.rol_universitario === 'egresado' ? '📜 Egresado' :
-                        u.rol_universitario === 'investigador' ? '🔬 Investigador' : '🎓 Estudiante'
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          {u.rol_universitario === 'profesor' || u.rol_universitario === 'docente' ? <><BookOpen size={13} /> Docente</> :
+                           u.rol_universitario === 'administrativo' ? <><Briefcase size={13} /> Administrativo</> :
+                           u.rol_universitario === 'egresado' ? <><Award size={13} /> Egresado</> :
+                           u.rol_universitario === 'investigador' ? <><Sparkles size={13} /> Investigador</> : <><GraduationCap size={13} /> Estudiante</>}
+                        </span>
                       )}
                     </span>
                   </td>

@@ -286,11 +286,11 @@ export default function Perfil() {
               value={form.rol_universitario}
               onChange={e => setForm(f => ({ ...f, rol_universitario: e.target.value }))}
             >
-              <option value="estudiante">🎓 Estudiante (Pregrado / Posgrado)</option>
-              <option value="profesor">👨‍🏫 Profesor / Docente</option>
-              <option value="administrativo">💼 Personal Administrativo / Funcionario</option>
-              <option value="egresado">📜 Egresado / Graduado</option>
-              <option value="investigador">🔬 Investigador / Pasante</option>
+              <option value="estudiante">Estudiante (Pregrado / Posgrado)</option>
+              <option value="profesor">Profesor / Docente</option>
+              <option value="administrativo">Personal Administrativo / Funcionario</option>
+              <option value="egresado">Egresado / Graduado</option>
+              <option value="investigador">Investigador / Pasante</option>
             </select>
             <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
               Tu rol determina los permisos, insignias institucionales y movilidad dentro de HUASI.
