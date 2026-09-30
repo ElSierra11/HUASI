@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Star, Users, Home, Bed, Sofa, Trees, Coins, Sparkles, HelpCircle, DollarSign, Heart, ShieldCheck } from 'lucide-react';
+import { MapPin, Star, Users, Home, Bed, Sofa, Trees, Coins, Sparkles, HelpCircle, DollarSign, Heart, ShieldCheck, Clock } from 'lucide-react';
 
 const TIPO_LABELS = {
   cama: 'Cama individual',
@@ -115,10 +115,16 @@ export default function PropertyCard({ propiedad }) {
           {getTipoLabel(propiedad.tipo)}
         </span>
 
-        {/* Verification badge */}
-        <span className="absolute top-3 right-3 bg-emerald-600/90 text-white backdrop-blur-md px-2.5 py-1 rounded-full text-[0.65rem] font-bold shadow-custom-sm flex items-center gap-1 z-10">
-          <ShieldCheck size={12} className="text-white" /> Verificado
-        </span>
+        {/* Verification / Full capacity badge */}
+        {propiedad.esta_lleno ? (
+          <span className="absolute top-3 right-3 bg-red-600/95 text-white backdrop-blur-md px-2.5 py-1 rounded-full text-[0.65rem] font-bold shadow-custom-sm flex items-center gap-1 z-10">
+            <Clock size={12} className="text-white" /> Cupos Llenos
+          </span>
+        ) : (
+          <span className="absolute top-3 right-3 bg-emerald-600/90 text-white backdrop-blur-md px-2.5 py-1 rounded-full text-[0.65rem] font-bold shadow-custom-sm flex items-center gap-1 z-10">
+            <ShieldCheck size={12} className="text-white" /> Verificado
+          </span>
+        )}
 
         {/* Big Icon */}
         <div className="text-white flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
@@ -145,10 +151,35 @@ export default function PropertyCard({ propiedad }) {
         </div>
         
         {/* Location Info */}
-        <div className="text-ucc-muted dark:text-slate-400 text-xs font-semibold mb-4 flex items-center gap-1.5">
+        <div className="text-ucc-muted dark:text-slate-400 text-xs font-semibold mb-3 flex items-center gap-1.5">
           <MapPin size={13} className="text-ucc-muted/70 dark:text-slate-400 flex-shrink-0" /> 
           <span className="truncate">{propiedad.barrio || propiedad.direccion}, {propiedad.ciudad}</span>
         </div>
+
+        {/* Status indicator: Full / Available spots */}
+        {propiedad.esta_lleno ? (
+          <div className="mb-3 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-400 text-xs font-semibold flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Clock size={13} className="text-red-500 flex-shrink-0" />
+              <span>No disponible por el momento</span>
+            </span>
+            {propiedad.fecha_fin_estadia_actual && (
+              <span className="text-[0.7rem] font-bold text-red-600 dark:text-red-300">
+                Libre desde {new Date(propiedad.fecha_fin_estadia_actual).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
+              </span>
+            )}
+          </div>
+        ) : propiedad.capacidad > 1 ? (
+          <div className="mb-3 px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/60 text-sky-700 dark:text-sky-300 text-xs font-semibold flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Users size={13} className="text-sky-600 flex-shrink-0" />
+              <span>{propiedad.cupos_disponibles !== undefined ? propiedad.cupos_disponibles : propiedad.capacidad} cupos disponibles</span>
+            </span>
+            <span className="text-[0.7rem] font-bold text-sky-600 dark:text-sky-400">
+              Total {propiedad.capacidad}
+            </span>
+          </div>
+        ) : null}
 
         {/* Meta Line */}
         <div className="flex items-center justify-between mt-auto pt-3.5 border-t border-ucc-border/40 text-[0.8rem] font-bold text-ucc-navy">

@@ -199,16 +199,29 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Verificar que no hay reservas que se solapen (aceptadas)
-    const overlap = await pool.query(
-      `SELECT id FROM reservas
+    // Verificar cupos disponibles para las fechas solicitadas
+    const capacidadTotal = prop.rows[0].capacidad || 1;
+    const ocupacionQuery = await pool.query(
+      `SELECT COALESCE(SUM(num_huespedes), 0) AS huespedes_ocupados
+       FROM reservas
        WHERE propiedad_id = $1 AND estado = 'aceptada'
        AND fecha_inicio < $3 AND fecha_fin > $2`,
       [propiedad_id, fecha_inicio, fecha_fin]
     );
 
-    if (overlap.rows.length > 0) {
-      return res.status(409).json({ error: 'La propiedad ya tiene una reserva confirmada en esas fechas' });
+    const huespedesOcupados = parseInt(ocupacionQuery.rows[0].huespedes_ocupados, 10);
+    const cuposDisponibles = Math.max(0, capacidadTotal - huespedesOcupados);
+
+    if (huespedesOcupados >= capacidadTotal) {
+      return res.status(409).json({ 
+        error: `El alojamiento ya tiene todos sus cupos llenos (${capacidadTotal}/${capacidadTotal}) para esas fechas. Estará disponible nuevamente cuando termine la estadía de los huéspedes actuales.` 
+      });
+    }
+
+    if (huespedesNum > cuposDisponibles) {
+      return res.status(409).json({ 
+        error: `Solo quedan ${cuposDisponibles} cupo(s) disponible(s) de ${capacidadTotal} para las fechas seleccionadas.` 
+      });
     }
 
     const result = await pool.query(

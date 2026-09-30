@@ -201,7 +201,23 @@ router.get('/', async (req, res) => {
     let query = `
       SELECT p.*, u.nombre AS host_nombre, u.apellido AS host_apellido, u.foto_perfil AS host_foto,
              COALESCE(AVG(r.calificacion), 0) AS calificacion_promedio,
-             COUNT(DISTINCT r.id) AS num_resenas
+             COUNT(DISTINCT r.id) AS num_resenas,
+             COALESCE((
+               SELECT SUM(res.num_huespedes)
+               FROM reservas res
+               WHERE res.propiedad_id = p.id
+                 AND res.estado = 'aceptada'
+                 AND CURRENT_DATE >= res.fecha_inicio
+                 AND CURRENT_DATE < res.fecha_fin
+             ), 0) AS huespedes_actuales,
+             (
+               SELECT MAX(res.fecha_fin)
+               FROM reservas res
+               WHERE res.propiedad_id = p.id
+                 AND res.estado = 'aceptada'
+                 AND CURRENT_DATE >= res.fecha_inicio
+                 AND CURRENT_DATE < res.fecha_fin
+             ) AS fecha_fin_estadia_actual
        FROM propiedades p
        JOIN users u ON p.host_id = u.id
        LEFT JOIN resenas r ON r.propiedad_id = p.id
@@ -247,7 +263,7 @@ router.get('/', async (req, res) => {
       paramIndex++;
     }
 
-    // Filtrar por disponibilidad si se pasan fechas
+    // Filtrar por disponibilidad si se pasan fechas (sin ocultar del menú las ocupadas, para indicar su estado)
     if (fecha_inicio && fecha_fin) {
       query += ` AND EXISTS (
         SELECT 1 FROM disponibilidad d
@@ -258,17 +274,6 @@ router.get('/', async (req, res) => {
       )`;
       params.push(fecha_inicio, fecha_fin);
       paramIndex += 2;
-
-      // Excluir propiedades con reservas aceptadas que se solapen
-      query += ` AND NOT EXISTS (
-        SELECT 1 FROM reservas res
-        WHERE res.propiedad_id = p.id
-        AND res.estado = 'aceptada'
-        AND res.fecha_inicio < $${paramIndex}
-        AND res.fecha_fin > $${paramIndex + 1}
-      )`;
-      params.push(fecha_fin, fecha_inicio);
-      paramIndex += 2;
     }
 
     query += ` GROUP BY p.id, u.nombre, u.apellido, u.foto_perfil`;
@@ -278,10 +283,13 @@ router.get('/', async (req, res) => {
 
     const result = await pool.query(query, params);
 
-    // Ocultar dirección exacta en la lista pública
+    // Ocultar dirección exacta en la lista pública y calcular disponibilidad de cupos
     const propiedadesList = result.rows.map(p => {
       const pCopy = { ...p };
       pCopy.direccion = 'Dirección exacta oculta';
+      pCopy.huespedes_actuales = parseInt(p.huespedes_actuales, 10) || 0;
+      pCopy.esta_lleno = pCopy.huespedes_actuales >= pCopy.capacidad;
+      pCopy.cupos_disponibles = Math.max(0, pCopy.capacidad - pCopy.huespedes_actuales);
       return pCopy;
     });
 
@@ -314,7 +322,23 @@ router.get('/:id', async (req, res) => {
                 u.foto_perfil AS host_foto, u.created_at AS host_desde,
                 u.preferencias_convivencia AS host_preferencias,
                 COALESCE(AVG(r.calificacion), 0) AS calificacion_promedio,
-                COUNT(DISTINCT r.id) AS num_resenas
+                COUNT(DISTINCT r.id) AS num_resenas,
+                COALESCE((
+                  SELECT SUM(res.num_huespedes)
+                  FROM reservas res
+                  WHERE res.propiedad_id = p.id
+                    AND res.estado = 'aceptada'
+                    AND CURRENT_DATE >= res.fecha_inicio
+                    AND CURRENT_DATE < res.fecha_fin
+                ), 0) AS huespedes_actuales,
+                (
+                  SELECT MAX(res.fecha_fin)
+                  FROM reservas res
+                  WHERE res.propiedad_id = p.id
+                    AND res.estado = 'aceptada'
+                    AND CURRENT_DATE >= res.fecha_inicio
+                    AND CURRENT_DATE < res.fecha_fin
+                ) AS fecha_fin_estadia_actual
          FROM propiedades p
          JOIN users u ON p.host_id = u.id
          LEFT JOIN resenas r ON r.propiedad_id = p.id
@@ -329,7 +353,23 @@ router.get('/:id', async (req, res) => {
                 u.foto_perfil AS host_foto, u.created_at AS host_desde,
                 NULL AS host_preferencias,
                 COALESCE(AVG(r.calificacion), 0) AS calificacion_promedio,
-                COUNT(DISTINCT r.id) AS num_resenas
+                COUNT(DISTINCT r.id) AS num_resenas,
+                COALESCE((
+                  SELECT SUM(res.num_huespedes)
+                  FROM reservas res
+                  WHERE res.propiedad_id = p.id
+                    AND res.estado = 'aceptada'
+                    AND CURRENT_DATE >= res.fecha_inicio
+                    AND CURRENT_DATE < res.fecha_fin
+                ), 0) AS huespedes_actuales,
+                (
+                  SELECT MAX(res.fecha_fin)
+                  FROM reservas res
+                  WHERE res.propiedad_id = p.id
+                    AND res.estado = 'aceptada'
+                    AND CURRENT_DATE >= res.fecha_inicio
+                    AND CURRENT_DATE < res.fecha_fin
+                ) AS fecha_fin_estadia_actual
          FROM propiedades p
          JOIN users u ON p.host_id = u.id
          LEFT JOIN resenas r ON r.propiedad_id = p.id
@@ -379,13 +419,17 @@ router.get('/:id', async (req, res) => {
     let reservasAceptadas = { rows: [] };
     try {
       reservasAceptadas = await pool.query(
-        `SELECT fecha_inicio, fecha_fin FROM reservas 
+        `SELECT id, fecha_inicio, fecha_fin, num_huespedes FROM reservas 
          WHERE propiedad_id = $1 AND estado = 'aceptada' AND fecha_fin >= CURRENT_DATE`,
         [id]
       );
     } catch (e) { console.error('Error cargando reservas aceptadas:', e); }
 
     const propiedadData = result.rows[0];
+    propiedadData.huespedes_actuales = parseInt(propiedadData.huespedes_actuales, 10) || 0;
+    propiedadData.esta_lleno = propiedadData.huespedes_actuales >= propiedadData.capacidad;
+    propiedadData.cupos_disponibles = Math.max(0, propiedadData.capacidad - propiedadData.huespedes_actuales);
+
     const isOwner = req.user && Number(req.user.id) === Number(propiedadData.host_id);
     const isAcceptedGuest = ya_reservado && ya_reservado.estado === 'aceptada';
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { MapPin, Star, Users, Home, CheckCircle2, Calendar, MessageSquare, Award, GraduationCap, Bed, Sofa, Trees, Coins, HelpCircle, ShieldAlert, ShieldCheck, Flag } from 'lucide-react';
+import { MapPin, Star, Users, Home, CheckCircle2, Calendar, MessageSquare, Award, GraduationCap, Bed, Sofa, Trees, Coins, HelpCircle, ShieldAlert, ShieldCheck, Flag, Clock } from 'lucide-react';
 import api from '../api';
 import SistemaReputacion from '../components/SistemaReputacion';
 import MapaAlojamientos, { getPropertyCoordinates, getGoogleMapsUrl, getWazeUrl } from '../components/MapaAlojamientos';
@@ -69,7 +69,7 @@ const TIPO_THEMES = {
 
 
 
-function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], fechaInicio, fechaFin, onSelectDates }) {
+function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], capacidad = 1, fechaInicio, fechaFin, onSelectDates }) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const year = currentDate.getFullYear();
@@ -109,12 +109,20 @@ function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], fechaIn
     });
   };
 
-  const isBooked = (date) => {
-    return reservasAceptadas.some(r => {
+  const getOccupancyOnDate = (date) => {
+    return reservasAceptadas.reduce((total, r) => {
       const start = new Date(r.fecha_inicio + 'T00:00:00');
       const end = new Date(r.fecha_fin + 'T00:00:00');
-      return date >= start && date <= end;
-    });
+      // If the date falls within the booked stay (up to check-out morning)
+      if (date >= start && date < end) {
+        return total + (parseInt(r.num_huespedes, 10) || 1);
+      }
+      return total;
+    }, 0);
+  };
+
+  const isFullyBooked = (date) => {
+    return getOccupancyOnDate(date) >= capacidad;
   };
 
   const formatDateString = (date) => {
@@ -126,7 +134,7 @@ function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], fechaIn
 
   const handleDayClick = (dayNum) => {
     const clickedDate = new Date(year, month, dayNum);
-    if (isPast(clickedDate) || isBooked(clickedDate) || !isAvailable(clickedDate)) return;
+    if (isPast(clickedDate) || isFullyBooked(clickedDate) || !isAvailable(clickedDate)) return;
 
     const clickedStr = formatDateString(clickedDate);
 
@@ -137,12 +145,12 @@ function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], fechaIn
       if (clickedDate < start) {
         onSelectDates(clickedStr, '');
       } else {
-        // Verify no booked days exist between start and clickedDate
+        // Verify no fully booked days exist between start and clickedDate
         let hasBookedBetween = false;
         let curr = new Date(start);
         curr.setDate(curr.getDate() + 1);
-        while (curr <= clickedDate) {
-          if (isBooked(curr)) {
+        while (curr < clickedDate) {
+          if (isFullyBooked(curr)) {
             hasBookedBetween = true;
             break;
           }
@@ -150,7 +158,7 @@ function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], fechaIn
         }
 
         if (hasBookedBetween) {
-          HuasiAlert.warning('Fechas no disponibles', 'No puedes reservar un rango que incluya días ya reservados por otro estudiante.');
+          HuasiAlert.warning('Fechas no disponibles', 'No puedes reservar un rango que incluya días con cupos totalmente llenos.');
           return;
         }
 
@@ -185,9 +193,25 @@ function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], fechaIn
     if (!dayNum) return 'cal-empty';
     const date = new Date(year, month, dayNum);
     if (isPast(date)) return 'cal-past';
-    if (isBooked(date)) return 'cal-booked';
     if (!isAvailable(date)) return 'cal-unavailable';
+    const occupied = getOccupancyOnDate(date);
+    if (occupied >= capacidad) return 'cal-booked';
+    if (occupied > 0) return 'cal-partial';
     return 'cal-available';
+  };
+
+  const getDayTooltip = (dayNum) => {
+    if (!dayNum) return '';
+    const date = new Date(year, month, dayNum);
+    if (isPast(date)) return 'Fecha pasada';
+    if (!isAvailable(date)) return 'No habilitado';
+    const occupied = getOccupancyOnDate(date);
+    if (occupied >= capacidad) return `Cupos llenos (${capacidad}/${capacidad})`;
+    if (capacidad > 1) {
+      const disponibles = Math.max(0, capacidad - occupied);
+      return `${disponibles} de ${capacidad} cupos libres`;
+    }
+    return 'Disponible';
   };
 
   return (
@@ -203,6 +227,9 @@ function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], fechaIn
         .cal-past { color: #cbd5e1; cursor: not-allowed; text-decoration: line-through; }
         .cal-booked { background: #fee2e2; color: #ef4444; cursor: not-allowed; text-decoration: line-through; }
         .dark .cal-booked { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .cal-partial { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; font-weight: 700; }
+        .dark .cal-partial { background: rgba(2, 132, 199, 0.2); color: #38bdf8; border: 1px solid rgba(2, 132, 199, 0.35); }
+        .cal-partial:hover { background: #bae6fd; }
         .cal-unavailable { color: #94a3b8; cursor: not-allowed; opacity: 0.6; }
         .cal-available { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
         .dark .cal-available { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
@@ -229,10 +256,12 @@ function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], fechaIn
           if (day === null) return <div key={`empty-${idx}`} className="cal-day cal-empty" />;
           const statusClass = getDayStatusClass(day);
           const selected = isSelected(day);
+          const tooltip = getDayTooltip(day);
           return (
             <div
               key={`day-${day}`}
               className={`cal-day ${statusClass} ${selected ? 'cal-selected' : ''}`}
+              title={tooltip}
               onClick={() => handleDayClick(day)}
             >
               {day}
@@ -246,9 +275,15 @@ function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], fechaIn
           <div className="cal-leg-dot" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }} />
           <span>Disponible</span>
         </div>
+        {capacidad > 1 && (
+          <div className="cal-leg-item">
+            <div className="cal-leg-dot" style={{ background: '#e0f2fe', border: '1px solid #bae6fd' }} />
+            <span>Cupos parciales</span>
+          </div>
+        )}
         <div className="cal-leg-item">
           <div className="cal-leg-dot" style={{ background: '#fee2e2' }} />
-          <span>Reservado</span>
+          <span>Lleno</span>
         </div>
         <div className="cal-leg-item">
           <div className="cal-leg-dot" style={{ background: 'var(--ucc-green)' }} />
@@ -417,6 +452,15 @@ export default function PropertyDetail() {
           <span><MapPin size={16} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> {prop.barrio ? `${prop.barrio}, ${prop.ciudad}` : `${prop.direccion}, ${prop.ciudad}`}</span>
           <span><Star size={16} fill="var(--text-muted)" style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> {rating > 0 ? rating.toFixed(1) : 'Nuevo'} ({prop.num_resenas || 0} reseñas)</span>
           <span><Users size={16} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> {prop.capacidad} {prop.capacidad === 1 ? 'huésped' : 'huéspedes'}</span>
+          {prop.esta_lleno ? (
+            <span className="badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(239, 68, 68, 0.12)', color: '#b91c1c', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 700, fontSize: '0.78rem' }}>
+              <Clock size={14} /> Cupos Llenos (No disponible hoy)
+            </span>
+          ) : prop.capacidad > 1 ? (
+            <span className="badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(2, 132, 199, 0.12)', color: '#0369a1', border: '1px solid rgba(2, 132, 199, 0.3)', fontWeight: 700, fontSize: '0.78rem' }}>
+              <Users size={14} /> {prop.cupos_disponibles !== undefined ? prop.cupos_disponibles : prop.capacidad} cupos disponibles hoy
+            </span>
+          ) : null}
           {prop.campus_cercano && (
             <span style={{ color: 'var(--accent)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <GraduationCap size={16} />
@@ -728,10 +772,26 @@ export default function PropertyDetail() {
             ) : (
               <form onSubmit={handleBooking}>
                 {error && <div className="alert alert-error">{error}</div>}
+
+                {prop.esta_lleno && (
+                  <div className="alert alert-warning" style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 6, background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: '#b45309' }}>
+                      <Clock size={18} />
+                      <span>Cupos llenos por el momento</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#78350f', lineHeight: 1.4 }}>
+                      Este alojamiento actualmente tiene ocupados todos sus {prop.capacidad} cupos.
+                      {prop.fecha_fin_estadia_actual && (
+                        <> Estará disponible nuevamente a partir del <strong>{new Date(prop.fecha_fin_estadia_actual).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>.</>
+                      )}
+                    </p>
+                  </div>
+                )}
                 
                 <PropertyCalendar
                   disponibilidad={prop.disponibilidad || []}
                   reservasAceptadas={prop.reservas_aceptadas || []}
+                  capacidad={prop.capacidad || 1}
                   fechaInicio={booking.fecha_inicio}
                   fechaFin={booking.fecha_fin}
                   onSelectDates={(start, end) => {
