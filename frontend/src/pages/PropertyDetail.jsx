@@ -14,7 +14,8 @@ const TIPO_MAP = {
   cama: 'Cama',
   sofa: 'Sofá',
   hamaca: 'Hamaca',
-  habitacion: 'Habitación',
+  habitacion: 'Habitación Privada',
+  habitacion_compartida: 'Habitación Compartida (Múltiples camas)',
   alquiler: 'Alquiler',
   otro: 'Otros',
   'Habitación Privada': 'Habitación Privada',
@@ -27,6 +28,7 @@ const TIPO_LABELS = TIPO_MAP;
 const getNormalizedTipo = (tipo) => {
   if (!tipo) return 'otro';
   const t = tipo.toLowerCase();
+  if (t.includes('compartid')) return 'habitacion_compartida';
   if (t.includes('cama')) return 'cama';
   if (t.includes('sofa') || t.includes('sofá')) return 'sofa';
   if (t.includes('hamaca')) return 'hamaca';
@@ -40,6 +42,7 @@ const TIPO_ICON = {
   sofa: <Sofa size={32} />,
   hamaca: <Trees size={32} />,
   habitacion: <Home size={32} />,
+  habitacion_compartida: <Users size={32} />,
   alquiler: <Coins size={32} />,
   otro: <HelpCircle size={32} />
 };
@@ -49,6 +52,7 @@ const TIPO_ICON_SMALL = {
   sofa: <Sofa size={16} />,
   hamaca: <Trees size={16} />,
   habitacion: <Home size={16} />,
+  habitacion_compartida: <Users size={16} />,
   alquiler: <Coins size={16} />,
   otro: <HelpCircle size={16} />
 };
@@ -56,8 +60,9 @@ const TIPO_ICON_SMALL = {
 const TIPO_THEMES = {
   cama: { gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', shadow: '0 10px 30px rgba(59, 130, 246, 0.3)' },
   sofa: { gradient: 'linear-gradient(135deg, #a855f7, #6b21a8)', shadow: '0 10px 30px rgba(168, 85, 247, 0.3)' },
-  hamaca: { gradient: 'linear-gradient(135deg, #10b981, #047857)', shadow: '0 10px 30px rgba(16, 185, 129, 0.3)' },
+  hamaca: { gradient: 'linear-gradient(135deg, #10b981, #047857)', shadow: '0 10px 30px rgba(168, 85, 247, 0.3)' },
   habitacion: { gradient: 'linear-gradient(135deg, #0d9488, #0f766e)', shadow: '0 10px 30px rgba(13, 148, 136, 0.3)' },
+  habitacion_compartida: { gradient: 'linear-gradient(135deg, #0284c7, #0369a1)', shadow: '0 10px 30px rgba(2, 132, 199, 0.3)' },
   alquiler: { gradient: 'linear-gradient(135deg, #f59e0b, #d97706)', shadow: '0 10px 30px rgba(245, 158, 11, 0.3)' },
   otro: { gradient: 'linear-gradient(135deg, #64748b, #334155)', shadow: '0 10px 30px rgba(100, 116, 139, 0.3)' }
 };

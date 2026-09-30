@@ -48,6 +48,15 @@ app.get('/health', (req, res) => {
 
 // Auto-verificar cuentas pendientes reportadas (idempotente)
 const pool = require('./db');
+
+// Auto-migración idempotente: columna rol_universitario
+pool.query(`
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS rol_universitario VARCHAR(50) DEFAULT 'estudiante';
+  UPDATE users SET rol_universitario = 'estudiante' WHERE rol_universitario IS NULL;
+`).then(() => {
+  console.log('✅ [MIGRATION] Columna rol_universitario verificada en users.');
+}).catch(err => console.warn('Aviso auto-migración rol_universitario:', err.message));
+
 pool.query(`
   UPDATE users 
   SET email_verificado = TRUE, verificado = TRUE, otp_code = NULL, otp_expires_at = NULL 

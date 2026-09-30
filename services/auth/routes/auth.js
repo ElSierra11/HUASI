@@ -490,7 +490,7 @@ const getOtpStatus = (user) => {
 // ============ REGISTER ============
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, nombre, apellido, telefono, tipo_documento, numero_documento, role, campus } = req.body;
+    const { email, password, nombre, apellido, telefono, tipo_documento, numero_documento, role, campus, rol_universitario } = req.body;
 
     if (!email || !password || !nombre || !apellido) {
       return res.status(400).json({ error: 'Email, contraseña, nombre y apellido son obligatorios' });
@@ -521,6 +521,13 @@ router.post('/register', async (req, res) => {
 
     if (typeof password !== 'string' || password.length < 8) {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+    }
+
+    const validRoles = ['estudiante', 'profesor', 'docente', 'administrativo', 'egresado', 'investigador'];
+    let safeRolUniv = 'estudiante';
+    if (rol_universitario && validRoles.includes(String(rol_universitario).toLowerCase())) {
+      safeRolUniv = String(rol_universitario).toLowerCase();
+      if (safeRolUniv === 'docente') safeRolUniv = 'profesor';
     }
 
     // Verificar si el email ya existe
@@ -555,10 +562,10 @@ router.post('/register', async (req, res) => {
       await pool.query(
         `UPDATE users 
          SET password_hash = $1, nombre = $2, apellido = $3, telefono = $4, role = $5, campus = $6, otp_code = $7, otp_expires_at = $8,
-             tipo_documento = $10, numero_documento = $11,
+             tipo_documento = $10, numero_documento = $11, rol_universitario = $12,
              otp_attempts = 0, otp_locked_until = NULL, otp_last_sent_at = NOW(), otp_resend_count = COALESCE(otp_resend_count, 0) + 1
          WHERE LOWER(email) = $9`,
-        [password_hash, nombre, apellido, telefono || null, role === 'admin' ? 'admin' : 'user', campus, otp, otp_expires_at, cleanEmail, tipo_documento || 'cedula', numero_documento || null]
+        [password_hash, nombre, apellido, telefono || null, role === 'admin' ? 'admin' : 'user', campus, otp, otp_expires_at, cleanEmail, tipo_documento || 'cedula', numero_documento || null, safeRolUniv]
       );
 
       // Enviar OTP y esperar resultado
@@ -582,10 +589,10 @@ router.post('/register', async (req, res) => {
 
     // Insertar usuario no verificado con OTP
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, nombre, apellido, telefono, role, email_verificado, verificado, campus, tipo_documento, numero_documento, otp_code, otp_expires_at, otp_attempts, otp_locked_until, otp_last_sent_at, otp_resend_count)
-       VALUES ($1, $2, $3, $4, $5, $6, FALSE, FALSE, $7, $8, $9, $10, $11, 0, NULL, NOW(), 1)
-       RETURNING id, email, nombre, apellido, role, campus`,
-      [cleanEmail, password_hash, nombre, apellido, telefono || null, userRole, campus, tipo_documento || 'cedula', numero_documento || null, otp, otp_expires_at]
+      `INSERT INTO users (email, password_hash, nombre, apellido, telefono, role, email_verificado, verificado, campus, tipo_documento, numero_documento, otp_code, otp_expires_at, otp_attempts, otp_locked_until, otp_last_sent_at, otp_resend_count, rol_universitario)
+       VALUES ($1, $2, $3, $4, $5, $6, FALSE, FALSE, $7, $8, $9, $10, $11, 0, NULL, NOW(), 1, $12)
+       RETURNING id, email, nombre, apellido, role, campus, rol_universitario`,
+      [cleanEmail, password_hash, nombre, apellido, telefono || null, userRole, campus, tipo_documento || 'cedula', numero_documento || null, otp, otp_expires_at, safeRolUniv]
     );
 
     const newUser = result.rows[0];
@@ -597,8 +604,8 @@ router.post('/register', async (req, res) => {
          VALUES ($1, 'registro', $2, '/registro', 'Web', $3)`,
         [
           newUser.id,
-          `Nuevo usuario registrado: ${newUser.nombre} ${newUser.apellido} (${newUser.email}) - Sede ${newUser.campus}`,
-          JSON.stringify({ campus: newUser.campus, role: newUser.role, email: newUser.email, telefono: telefono || null })
+          `Nuevo usuario registrado: ${newUser.nombre} ${newUser.apellido} (${newUser.email}) - Sede ${newUser.campus} [${newUser.rol_universitario}]`,
+          JSON.stringify({ campus: newUser.campus, role: newUser.role, rol_universitario: newUser.rol_universitario, email: newUser.email, telefono: telefono || null })
         ]
       );
     } catch (actErr) {
@@ -953,7 +960,7 @@ router.get('/me', async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, email, nombre, apellido, telefono, role, foto_perfil, verificado, created_at, campus, soles_balance, preferencias_convivencia
+      `SELECT id, email, nombre, apellido, telefono, role, foto_perfil, verificado, created_at, campus, soles_balance, preferencias_convivencia, COALESCE(rol_universitario, 'estudiante') AS rol_universitario
        FROM users WHERE id = $1`,
       [req.user.id]
     );
@@ -976,14 +983,15 @@ router.put('/me', async (req, res) => {
       return res.status(401).json({ error: 'No autenticado' });
     }
 
-    const { nombre, apellido, telefono, campus } = req.body;
+    const { nombre, apellido, telefono, campus, rol_universitario } = req.body;
 
     const result = await pool.query(
       `UPDATE users SET nombre = COALESCE($1, nombre), apellido = COALESCE($2, apellido),
-       telefono = COALESCE($3, telefono), campus = COALESCE($4, campus), updated_at = NOW()
-       WHERE id = $5
-       RETURNING id, email, nombre, apellido, telefono, role, foto_perfil, verificado, campus`,
-      [nombre, apellido, telefono, campus, req.user.id]
+       telefono = COALESCE($3, telefono), campus = COALESCE($4, campus),
+       rol_universitario = COALESCE($5, rol_universitario), updated_at = NOW()
+       WHERE id = $6
+       RETURNING id, email, nombre, apellido, telefono, role, foto_perfil, verificado, campus, rol_universitario`,
+      [nombre, apellido, telefono, campus, rol_universitario, req.user.id]
     );
 
     res.json(result.rows[0]);
@@ -1046,7 +1054,7 @@ router.get('/admin/usuarios', async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, email, nombre, apellido, telefono, role, foto_perfil, verificado, email_verificado, campus, bloqueado, motivo_bloqueo, bloqueado_en, created_at
+      `SELECT id, email, nombre, apellido, telefono, role, foto_perfil, verificado, email_verificado, campus, bloqueado, motivo_bloqueo, bloqueado_en, created_at, COALESCE(rol_universitario, 'estudiante') AS rol_universitario
        FROM users
        ORDER BY created_at DESC`
     );

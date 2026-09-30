@@ -523,14 +523,18 @@ export default function Usuarios({ onActionFinished }) {
                     <span style={{ 
                       fontSize: '0.74rem', 
                       fontWeight: 700, 
-                      color: u.role === 'admin' ? 'var(--primary)' : '#475569', 
-                      background: u.role === 'admin' ? '#ecfdf5' : '#f1f5f9', 
+                      color: u.role === 'admin' ? 'var(--primary)' : '#047857', 
+                      background: u.role === 'admin' ? '#ecfdf5' : '#f0fdf4', 
                       padding: '3px 8px', 
                       borderRadius: '6px',
-                      border: u.role === 'admin' ? '1px solid #a7f3d0' : '1px solid #e2e8f0',
-                      textTransform: 'capitalize'
+                      border: u.role === 'admin' ? '1px solid #a7f3d0' : '1px solid #bbf7d0',
                     }}>
-                      {u.role === 'admin' ? 'Administrador' : (u.role || 'Usuario')}
+                      {u.role === 'admin' ? 'Administrador' : (
+                        u.rol_universitario === 'profesor' || u.rol_universitario === 'docente' ? '👨‍🏫 Docente' :
+                        u.rol_universitario === 'administrativo' ? '💼 Administrativo' :
+                        u.rol_universitario === 'egresado' ? '📜 Egresado' :
+                        u.rol_universitario === 'investigador' ? '🔬 Investigador' : '🎓 Estudiante'
+                      )}
                     </span>
                   </td>
 
@@ -664,12 +668,13 @@ export default function Usuarios({ onActionFinished }) {
                       fontSize: '0.7rem', 
                       textTransform: 'uppercase', 
                       fontWeight: 800, 
-                      color: u.role === 'admin' ? 'var(--primary)' : 'var(--text-muted)', 
-                      background: u.role === 'admin' ? 'var(--success-bg)' : 'rgba(15, 23, 42, 0.05)', 
+                      color: u.role === 'admin' ? 'var(--primary)' : '#047857', 
+                      background: u.role === 'admin' ? 'var(--success-bg)' : '#f0fdf4', 
                       padding: '2px 7px', 
-                      borderRadius: 4 
+                      borderRadius: 4,
+                      border: '1px solid #bbf7d0'
                     }}>
-                      {u.role}
+                      {u.role === 'admin' ? 'ADMIN' : (u.rol_universitario || 'ESTUDIANTE').toUpperCase()}
                     </span>
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>

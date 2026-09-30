@@ -5,13 +5,32 @@ import { UserCircle, ShieldCheck, Mail, Phone, Edit3, Sun, ArrowUpRight, ArrowDo
 import api from '../api';
 import { getNotificationPermission, requestNotificationPermission, showPushNotification, notifyChatMessage, notifyNewProperty } from '../utils/notifications';
 
+const ROLES_MAP = {
+  estudiante: 'Estudiante (Pregrado / Posgrado)',
+  profesor: 'Profesor / Docente',
+  docente: 'Profesor / Docente',
+  administrativo: 'Personal Administrativo',
+  egresado: 'Egresado / Graduado',
+  investigador: 'Investigador / Pasante'
+};
+
+const getBadgeLabel = (rol) => {
+  const normalized = (rol || 'estudiante').toLowerCase();
+  if (normalized === 'profesor' || normalized === 'docente') return 'Profesor Verificado';
+  if (normalized === 'administrativo') return 'Administrativo Verificado';
+  if (normalized === 'egresado') return 'Egresado Verificado';
+  if (normalized === 'investigador') return 'Investigador Verificado';
+  return 'Estudiante Verificado';
+};
+
 export default function Perfil() {
   const { user, refreshUser } = useAuth();
   const [form, setForm] = useState({ 
     nombre: user?.nombre || '', 
     apellido: user?.apellido || '', 
     telefono: user?.telefono || '',
-    campus: user?.campus || ''
+    campus: user?.campus || '',
+    rol_universitario: user?.rol_universitario || 'estudiante'
   });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
@@ -104,6 +123,14 @@ export default function Perfil() {
 
   useEffect(() => {
     if (user) {
+      setForm({
+        nombre: user.nombre || '',
+        apellido: user.apellido || '',
+        telefono: user.telefono || '',
+        campus: user.campus || '',
+        rol_universitario: user.rol_universitario || 'estudiante'
+      });
+
       api.get('/auth/soles/historial')
         .then(res => setHistory(res.data))
         .catch(err => console.error('Error al cargar historial de soles:', err))
@@ -196,10 +223,15 @@ export default function Perfil() {
           <p style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 4 }}>
             <strong>Sede:</strong> {user?.campus || 'No especificada'}
           </p>
+          <p style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 2, fontSize: '0.9rem' }}>
+            <GraduationCap size={16} className="text-ucc-green" /> <span>{ROLES_MAP[user?.rol_universitario] || 'Estudiante'}</span>
+          </p>
           
           <div style={{ marginTop: 16 }}>
             {user?.verificado ? (
-              <span className="badge badge-verificado" style={{ fontSize: '0.9rem', padding: '6px 16px' }}><ShieldCheck size={16} /> Estudiante Verificado</span>
+              <span className="badge badge-verificado" style={{ fontSize: '0.9rem', padding: '6px 16px' }}>
+                <ShieldCheck size={16} /> {getBadgeLabel(user?.rol_universitario)}
+              </span>
             ) : (
               <Link to="/verificacion" className="btn btn-secondary btn-sm" style={{ marginTop: 8 }}>Verificar mi vinculación universitaria</Link>
             )}
@@ -222,7 +254,7 @@ export default function Perfil() {
               <input type="text" className="form-control" value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} />
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginTop: 16 }}>
             <div className="form-group">
               <label><Phone size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} /> Teléfono de contacto</label>
               <input type="tel" className="form-control" value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} />
@@ -246,6 +278,23 @@ export default function Perfil() {
                 <option value="Neiva">Neiva</option>
               </select>
             </div>
+          </div>
+          <div className="form-group" style={{ marginTop: 16 }}>
+            <label>Rol en la Comunidad UCC</label>
+            <select
+              className="form-control"
+              value={form.rol_universitario}
+              onChange={e => setForm(f => ({ ...f, rol_universitario: e.target.value }))}
+            >
+              <option value="estudiante">🎓 Estudiante (Pregrado / Posgrado)</option>
+              <option value="profesor">👨‍🏫 Profesor / Docente</option>
+              <option value="administrativo">💼 Personal Administrativo / Funcionario</option>
+              <option value="egresado">📜 Egresado / Graduado</option>
+              <option value="investigador">🔬 Investigador / Pasante</option>
+            </select>
+            <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+              Tu rol determina los permisos, insignias institucionales y movilidad dentro de HUASI.
+            </small>
           </div>
           <button type="submit" className="btn btn-primary btn-block" disabled={saving} style={{ marginTop: 24 }}>
             {saving ? 'Guardando...' : <><Edit3 size={18} /> Guardar cambios</>}

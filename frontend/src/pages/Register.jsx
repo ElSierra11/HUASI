@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { Link, useNavigate } from 'react-router-dom';
-import { Clock, CheckCircle, ArrowRight, Loader2, ShieldCheck, RefreshCw, HelpCircle, AlertTriangle, Eye, EyeOff, Lock, Check, Phone, CreditCard, CheckCircle2, XCircle } from 'lucide-react';
+import { Clock, CheckCircle, ArrowRight, Loader2, ShieldCheck, RefreshCw, HelpCircle, AlertTriangle, Eye, EyeOff, Lock, Check, Phone, CreditCard, CheckCircle2, XCircle, GraduationCap } from 'lucide-react';
 import HuasiAlert from '../utils/alerts';
 
 export default function Register() {
   const { register, verifyOtp } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '', nombre: '', apellido: '', campus: '', telefono: '', tipo_documento: 'cedula', numero_documento: '' });
+  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '', nombre: '', apellido: '', campus: '', telefono: '', tipo_documento: 'cedula', numero_documento: '', rol_universitario: 'estudiante' });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otp, setOtp] = useState('');
@@ -349,7 +349,7 @@ export default function Register() {
           </h2>
 
           <p style={{ fontSize: '1.05rem', color: 'var(--text-muted)', marginBottom: 8 }}>
-            ¡Bienvenido a <strong style={{ color: 'var(--accent)' }}>HUASI</strong>, {userName || 'estudiante'}!
+            ¡Bienvenido a <strong style={{ color: 'var(--accent)' }}>HUASI</strong>, {userName || 'miembro de la comunidad'}!
           </p>
 
           <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: 32 }}>
@@ -622,6 +622,30 @@ export default function Register() {
                 <option value="Barrancabermeja">Barrancabermeja</option>
                 <option value="Neiva">Neiva</option>
               </select>
+            </div>
+
+            {/* Rol Institucional */}
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label>Rol en la Comunidad Universitaria *</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <GraduationCap size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none', zIndex: 1 }} />
+                <select
+                  required
+                  className="form-control"
+                  style={{ paddingLeft: 44 }}
+                  value={form.rol_universitario}
+                  onChange={e => setForm(f => ({ ...f, rol_universitario: e.target.value }))}
+                >
+                  <option value="estudiante">🎓 Estudiante (Pregrado / Posgrado)</option>
+                  <option value="profesor">👨‍🏫 Profesor / Docente</option>
+                  <option value="administrativo">💼 Personal Administrativo / Funcionario</option>
+                  <option value="egresado">📜 Egresado / Graduado</option>
+                  <option value="investigador">🔬 Investigador / Pasante</option>
+                </select>
+              </div>
+              <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                Indica tu rol actual para adaptar tus beneficios y verificaciones en la plataforma.
+              </small>
             </div>
 
             {/* Teléfono */}

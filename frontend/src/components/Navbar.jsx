@@ -285,7 +285,12 @@ export default function Navbar() {
 
             {user.verificado && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: '0.82rem', color: '#0d7c3d', fontWeight: 700 }}>
-                <CheckCircle2 size={14} /> Estudiante Verificado
+                <CheckCircle2 size={14} /> {
+                  user.rol_universitario === 'profesor' || user.rol_universitario === 'docente' ? 'Profesor Verificado' :
+                  user.rol_universitario === 'administrativo' ? 'Administrativo Verificado' :
+                  user.rol_universitario === 'egresado' ? 'Egresado Verificado' :
+                  user.rol_universitario === 'investigador' ? 'Investigador Verificado' : 'Estudiante Verificado'
+                }
               </div>
             )}
 

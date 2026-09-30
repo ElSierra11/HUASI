@@ -82,6 +82,10 @@ export default function Home() {
       updatedFilters.tipo = 'habitacion';
       setFilters(f => ({ ...f, tipo: 'habitacion' }));
       fetchPropiedades({ tipo: 'habitacion' });
+    } else if (catId === 'habitacion_compartida') {
+      updatedFilters.tipo = 'habitacion_compartida';
+      setFilters(f => ({ ...f, tipo: 'habitacion_compartida' }));
+      fetchPropiedades({ tipo: 'habitacion_compartida' });
     } else if (catId === 'sofa') {
       updatedFilters.tipo = 'sofa';
       setFilters(f => ({ ...f, tipo: 'sofa' }));
@@ -610,8 +614,9 @@ export default function Home() {
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none justify-start md:justify-center">
           {[
             { id: 'todos', label: 'Todos los espacios', icon: <HomeIcon size={14} /> },
-            { id: 'estudio', label: 'Estudio Silencioso', icon: <BookOpen size={14} /> },
             { id: 'habitacion', label: 'Habitación Privada', icon: <Bed size={14} /> },
+            { id: 'habitacion_compartida', label: 'Habitación Compartida', icon: <Users size={14} /> },
+            { id: 'estudio', label: 'Estudio Silencioso', icon: <BookOpen size={14} /> },
             { id: 'sofa', label: 'Sofá / Sofá Cama', icon: <Sofa size={14} /> },
             { id: 'mascotas', label: 'Pet Friendly', icon: <Dog size={14} /> },
             { id: 'sin_humo', label: 'Libre de Humo', icon: <CigaretteOff size={14} /> },

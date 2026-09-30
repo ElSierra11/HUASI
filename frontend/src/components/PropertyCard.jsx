@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, Star, Users, Home, Bed, Sofa, Trees, Coins, Sparkles, HelpCircle, DollarSign, Heart, ShieldCheck } from 'lucide-react';
 
 const TIPO_LABELS = {
-  cama: 'Cama',
-  sofa: 'Sofá',
+  cama: 'Cama individual',
+  sofa: 'Sofá cama',
   hamaca: 'Hamaca',
-  habitacion: 'Habitación',
+  habitacion: 'Habitación Privada',
+  habitacion_compartida: 'Habitación Compartida',
   alquiler: 'Alquiler',
   otro: 'Otros',
   'Habitación Privada': 'Habitación Privada',
@@ -17,6 +18,7 @@ const TIPO_LABELS = {
 const getNormalizedTipo = (tipo) => {
   if (!tipo) return 'otro';
   const t = tipo.toLowerCase();
+  if (t.includes('compartid')) return 'habitacion_compartida';
   if (t.includes('cama')) return 'cama';
   if (t.includes('sofa') || t.includes('sofá')) return 'sofa';
   if (t.includes('hamaca')) return 'hamaca';
@@ -30,6 +32,7 @@ const TIPO_ICON = {
   sofa: <Sofa size={48} />,
   hamaca: <Trees size={48} />,
   habitacion: <Home size={48} />,
+  habitacion_compartida: <Users size={48} />,
   alquiler: <Coins size={48} />,
   otro: <HelpCircle size={48} />
 };
@@ -39,6 +42,7 @@ const TIPO_ICON_SMALL = {
   sofa: <Sofa size={14} />,
   hamaca: <Trees size={14} />,
   habitacion: <Home size={14} />,
+  habitacion_compartida: <Users size={14} />,
   alquiler: <Coins size={14} />,
   otro: <HelpCircle size={14} />
 };
@@ -63,6 +67,11 @@ const TIPO_THEMES = {
     gradient: 'linear-gradient(135deg, #0d7c3d, #059669)', // Verde UCC
     colorClass: 'text-ucc-green',
     dotClass: 'bg-ucc-green'
+  },
+  habitacion_compartida: {
+    gradient: 'linear-gradient(135deg, #0284c7, #0369a1)', // Azul / Compartida
+    colorClass: 'text-sky-600',
+    dotClass: 'bg-sky-500'
   },
   alquiler: {
     gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', // Cyan

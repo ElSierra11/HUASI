@@ -102,6 +102,7 @@ const normalizeTipo = (tipo = '') => {
     .replace(/[\s_+-]+/g, ' ')
     .trim();
 
+  if (t.includes('compartid')) return 'habitacion_compartida';
   if (t.includes('alquiler')) return 'alquiler';
   if (t.includes('sofa') || t.includes('sofa cama')) return 'sofa';
   if (t.includes('cama')) return 'cama';
@@ -110,7 +111,7 @@ const normalizeTipo = (tipo = '') => {
   return 'otro';
 };
 
-const validTypes = ['cama', 'sofa', 'hamaca', 'habitacion', 'alquiler', 'otro'];
+const validTypes = ['cama', 'sofa', 'hamaca', 'habitacion', 'habitacion_compartida', 'alquiler', 'otro'];
 
 const validarPropiedad = ({ titulo, descripcion, direccion, barrio, capacidad, campus_cercano, duracion_maxima }) => {
   const errors = [];
@@ -121,7 +122,7 @@ const validarPropiedad = ({ titulo, descripcion, direccion, barrio, capacidad, c
   if (barrio && String(barrio).trim().length > 60) errors.push('El barrio no puede superar 60 caracteres.');
   if (campus_cercano && String(campus_cercano).trim().length > 60) errors.push('El campus cercano no es válido.');
   const capacidadNum = Number(capacidad);
-  if (!Number.isInteger(capacidadNum) || capacidadNum < 1 || capacidadNum > 12) errors.push('La capacidad debe estar entre 1 y 12 huéspedes.');
+  if (!Number.isInteger(capacidadNum) || capacidadNum < 1 || capacidadNum > 60) errors.push('La capacidad debe estar entre 1 y 60 camas o huéspedes.');
   const duracionNum = duracion_maxima === '' || duracion_maxima === null || duracion_maxima === undefined ? null : Number(duracion_maxima);
   if (duracionNum !== null && (!Number.isInteger(duracionNum) || duracionNum < 1 || duracionNum > 365)) errors.push('La duración máxima debe estar entre 1 y 365 días.');
 

@@ -27,8 +27,8 @@ const validateForm = (form) => {
 
   if (!form.campus_cercano) errors.campus_cercano = 'Selecciona la sede UCC más cercana.';
 
-  if (!form.capacidad || Number(form.capacidad) < 1 || Number(form.capacidad) > 12) {
-    errors.capacidad = 'La capacidad debe estar entre 1 y 12 huéspedes.';
+  if (!form.capacidad || Number(form.capacidad) < 1 || Number(form.capacidad) > 60) {
+    errors.capacidad = 'La capacidad debe estar entre 1 y 60 camas o huéspedes.';
   }
 
   if (form.duracion_maxima && (Number(form.duracion_maxima) < 1 || Number(form.duracion_maxima) > 365)) {
@@ -169,11 +169,12 @@ export default function HostPropertyForm() {
   if (loading) return <div className="loading"><div className="spinner"></div></div>;
 
   const tipoEtiqueta = {
-    cama: 'Cama',
-    sofa: 'Sofá',
+    cama: 'Cama individual',
+    sofa: 'Sofá cama',
     hamaca: 'Hamaca',
-    habitacion: 'Habitación',
-    alquiler: 'Alquiler',
+    habitacion: 'Habitación privada',
+    habitacion_compartida: 'Habitación compartida / Múltiples camas',
+    alquiler: 'Alquiler / Vivienda completa',
     otro: 'Otro'
   }[form.tipo] || 'Alojamiento';
 
@@ -185,13 +186,33 @@ export default function HostPropertyForm() {
       </h1>
       <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>Un anuncio claro aumenta tus reservas. Completa los campos esenciales y revisa tu vista previa antes de publicar.</p>
 
+      {/* Consejo de publicación para anfitriones con múltiples casas */}
+      <div style={{
+        backgroundColor: '#eff6ff',
+        border: '1px solid #bfdbfe',
+        borderRadius: 'var(--radius-sm)',
+        padding: '14px 18px',
+        marginBottom: 24,
+        fontSize: '0.88rem',
+        color: '#1e40af',
+        display: 'flex',
+        gap: 12,
+        alignItems: 'flex-start',
+        lineHeight: 1.5
+      }}>
+        <Users size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
+        <span>
+          <strong>Consejo para múltiples sedes o casas:</strong> Si dispones de diferentes casas o ubicaciones (por ejemplo, <em>Casa 1 en Villa Toledo</em> y <em>Casa 2 en Cabañas de Tahití</em>), te recomendamos publicar un anuncio por separado para cada una. Así los huéspedes conocerán la dirección exacta, fotos reales y cupos disponibles de cada espacio.
+        </span>
+      </div>
+
       {error && <div className="alert alert-error"><AlertCircle size={16} style={{ marginRight: 8 }} />{error}</div>}
 
       <form onSubmit={handleSubmit} className="card" style={{ padding: 32 }}>
 
         <div className="form-group">
           <label>Título del anuncio *</label>
-          <input type="text" className="form-control" placeholder="Ej: Habitación acogedora cerca del campus UCC" required maxLength={80}
+          <input type="text" className="form-control" placeholder="Ej: Casa 1 en Villa Toledo - Habitación compartida 10 camas" required maxLength={80}
             value={form.titulo} onChange={e => updateField('titulo', e.target.value)} />
           <small style={{ color: 'var(--text-muted)' }}>{form.titulo.length}/80 caracteres · Sé específico y breve.</small>
           {errors.titulo && <small style={{ color: 'var(--danger)' }}>{errors.titulo}</small>}
@@ -199,7 +220,7 @@ export default function HostPropertyForm() {
 
         <div className="form-group">
           <label>Descripción *</label>
-          <textarea className="form-control" placeholder="Describe tu espacio, incluído, horarios, acceso y por qué es ideal para estudiantes..." required maxLength={500}
+          <textarea className="form-control" placeholder="Describe tu espacio, dormitorios, número de camas, horarios, acceso y por qué es ideal para estudiantes o profesores..." required maxLength={500}
             value={form.descripcion} onChange={e => updateField('descripcion', e.target.value)} rows={4} />
           <small style={{ color: 'var(--text-muted)' }}>{form.descripcion.length}/500 caracteres · Menciona comodidades, ubicación y reglas.</small>
           {errors.descripcion && <small style={{ color: 'var(--danger)' }}>{errors.descripcion}</small>}
@@ -209,18 +230,20 @@ export default function HostPropertyForm() {
           <div className="form-group">
             <label>Tipo de alojamiento *</label>
             <select className="form-control" value={form.tipo} onChange={e => updateField('tipo', e.target.value)}>
-              <option value="cama">Cama</option>
-              <option value="sofa">Sofá</option>
+              <option value="habitacion">Habitación privada</option>
+              <option value="habitacion_compartida">Habitación compartida / Múltiples camas</option>
+              <option value="cama">Cama individual</option>
+              <option value="sofa">Sofá cama</option>
               <option value="hamaca">Hamaca</option>
-              <option value="habitacion">Habitación</option>
-              <option value="alquiler">Alquiler</option>
+              <option value="alquiler">Vivienda completa / Alquiler</option>
               <option value="otro">Otro</option>
             </select>
           </div>
           <div className="form-group">
-            <label>Capacidad (huéspedes) *</label>
-            <input type="number" inputMode="numeric" className="form-control" min="1" max="12" required
+            <label>Capacidad (camas / huéspedes) *</label>
+            <input type="number" inputMode="numeric" className="form-control" min="1" max="60" required
               value={form.capacidad} onChange={e => updateField('capacidad', e.target.value)} />
+            <small style={{ color: 'var(--text-muted)' }}>Capacidad de 1 a 60 camas o huéspedes.</small>
             {errors.capacidad && <small style={{ color: 'var(--danger)' }}>{errors.capacidad}</small>}
           </div>
         </div>
