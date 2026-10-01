@@ -9,7 +9,8 @@ import {
   showPushNotification,
   notifyBookingStatusChange,
   notifyNewBookingRequest,
-  notifyNewProperty
+  notifyNewProperty,
+  subscribeUserToPush
 } from '../utils/notifications';
 
 export default function NotificationManager() {
@@ -23,9 +24,15 @@ export default function NotificationManager() {
   const previousHostReservasRef = useRef(null);
   const isFirstCheckRef = useRef(true);
 
+  // Sincronizar suscripción Web Push en segundo plano si el permiso ya fue concedido
   useEffect(() => {
     if (!isNotificationSupported()) return;
-    setPermission(getNotificationPermission());
+    const currentPerm = getNotificationPermission();
+    setPermission(currentPerm);
+
+    if (user && currentPerm === 'granted') {
+      subscribeUserToPush().catch(() => {});
+    }
 
     const isDismissed = localStorage.getItem('stayu_notif_dismissed') === 'true';
     if (user && Notification.permission === 'default' && !isDismissed) {
@@ -44,9 +51,10 @@ export default function NotificationManager() {
     setShowPrompt(false);
 
     if (perm === 'granted') {
+      await subscribeUserToPush();
       showPushNotification({
-        title: 'Notificaciones activadas',
-        body: 'Te avisaremos en tiempo real cuando un anfitrión responda tu reserva o recibas mensajes de chat.',
+        title: 'Notificaciones en segundo plano activadas',
+        body: '¡Listo! Te avisaremos en tu pantalla de bloqueo y barra de notificaciones incluso con la app cerrada.',
         icon: '/huasi-monograma.png',
         url: '/'
       });
@@ -55,6 +63,7 @@ export default function NotificationManager() {
       setDismissed(true);
     }
   };
+
 
   const handleDismiss = () => {
     setShowPrompt(false);

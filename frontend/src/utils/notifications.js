@@ -1,3 +1,5 @@
+import api from '../api';
+
 // Utilidades para Notificaciones Push y PWA en StayU / HUASI
 
 export function isNotificationSupported() {
@@ -254,3 +256,80 @@ export async function notifyIncomingCall({ callerName = 'Un usuario', callType =
     data: { callerName, callType }
   });
 }
+
+// ── Convierte claves VAPID Base64 URL safe a Uint8Array ──────────────────────
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+// ── Suscribir el dispositivo actual al servicio Web Push en segundo plano ────
+export async function subscribeUserToPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    console.warn('[WebPush] Web Push no soportado en este navegador');
+    return null;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    if (!registration) {
+      console.warn('[WebPush] Service Worker no listo');
+      return null;
+    }
+
+    // 1. Obtener la clave pública VAPID del backend
+    const res = await api.get('/notificaciones/vapid-public-key');
+    const vapidPublicKey = res.data?.publicKey;
+    if (!vapidPublicKey) return null;
+
+    // 2. Verificar suscripción existente
+    let subscription = await registration.pushManager.getSubscription();
+
+    // 3. Si no existe suscripción previa o está caducada, crear una nueva
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+      });
+    }
+
+    // 4. Enviar la suscripción al backend para guardarla en push_subscriptions
+    const subJson = subscription.toJSON();
+    await api.post('/notificaciones/suscribir-push', {
+      endpoint: subJson.endpoint,
+      keys: subJson.keys
+    });
+
+    console.log('✅ Dispositivo suscrito exitosamente a Web Push HUASI');
+    return subscription;
+  } catch (err) {
+    console.warn('[WebPush Error al suscribir]', err);
+    return null;
+  }
+}
+
+// ── Desuscribir el dispositivo de las notificaciones Web Push ────────────────
+export async function unsubscribeUserFromPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    if (subscription) {
+      const subJson = subscription.toJSON();
+      await api.post('/notificaciones/desuscribir-push', { endpoint: subJson.endpoint });
+      await subscription.unsubscribe();
+      console.log('Dispositivo desuscrito de Web Push');
+    }
+    return true;
+  } catch (err) {
+    console.warn('[WebPush Error al desuscribir]', err);
+    return false;
+  }
+}
+
