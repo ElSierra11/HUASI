@@ -21,7 +21,9 @@ import {
   Trash2,
   Users,
   UserCheck,
-  Calendar
+  Calendar,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { ReservationCardSkeleton } from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
@@ -110,6 +112,24 @@ export default function HostDashboard() {
     }
   };
 
+  const handleDesactivar = async (p) => {
+    const res = await HuasiAlert.confirm(
+      '¿Pausar publicación?',
+      `Al pausar "${p.titulo}", el alojamiento quedará oculto de la página principal y no recibirá nuevas solicitudes hasta que lo reactives.`,
+      'Sí, pausar alojamiento'
+    );
+    if (res.isConfirmed) {
+      try {
+        await api.patch(`/propiedades/${p.id}/desactivar`);
+        HuasiAlert.toast('Alojamiento pausado y ocultado exitosamente', 'success');
+        setPropiedades(propiedades.map(item => item.id === p.id ? { ...item, activo: false } : item));
+      } catch (err) {
+        console.error('Error al pausar alojamiento:', err);
+        HuasiAlert.error('Error', err.response?.data?.error || 'No se pudo pausar el alojamiento.');
+      }
+    }
+  };
+
   const handleEliminar = async (p) => {
     const res = await HuasiAlert.confirm(
       '¿Eliminar este alojamiento?',
@@ -159,6 +179,13 @@ export default function HostDashboard() {
   const renderApprovalState = (p) => {
     const estado = p.estado_aprobacion || 'pendiente_revision';
     if (estado === 'aprobado') {
+      if (!p.activo) {
+        return (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 6, background: 'rgba(100, 116, 139, 0.12)', color: '#475569', fontSize: '0.78rem', fontWeight: 700, border: '1px solid rgba(100, 116, 139, 0.25)' }}>
+            <EyeOff size={14} /> Pausado / Oculto
+          </div>
+        );
+      }
       return (
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 6, background: 'rgba(16, 185, 129, 0.1)', color: '#15803d', fontSize: '0.78rem', fontWeight: 700, border: '1px solid rgba(16, 185, 129, 0.25)' }}>
           <ShieldCheck size={14} /> Verificado y Aprobado por la Universidad
@@ -443,13 +470,26 @@ export default function HostDashboard() {
                     </div>
 
                     <div className="list-card-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      {p.estado_aprobacion === 'aprobado' && !p.activo && (
-                        <button 
-                          className="btn btn-primary btn-sm" 
-                          onClick={() => handleActivar(p)}
-                        >
-                          Volver a activar
-                        </button>
+                      {p.estado_aprobacion === 'aprobado' && (
+                        p.activo ? (
+                          <button 
+                            className="btn btn-outline btn-sm" 
+                            onClick={() => handleDesactivar(p)}
+                            title="Pausar u ocultar publicación de la página principal"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                          >
+                            <EyeOff size={14} /> Pausar
+                          </button>
+                        ) : (
+                          <button 
+                            className="btn btn-primary btn-sm" 
+                            onClick={() => handleActivar(p)}
+                            title="Reactivar publicación en la página principal"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                          >
+                            <Eye size={14} /> Activar
+                          </button>
+                        )
                       )}
                       <Link to={`/propiedad/${p.id}`} className="btn btn-outline btn-sm">Ver anuncio</Link>
                       <Link to={`/host/editar/${p.id}`} className="btn btn-secondary btn-sm"><Edit size={14} /> Editar</Link>

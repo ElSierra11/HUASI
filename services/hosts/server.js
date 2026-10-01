@@ -8,17 +8,6 @@ const pool = require('./db');
 const propiedadesRoutes = require('./routes/propiedades');
 const disponibilidadRoutes = require('./routes/disponibilidad');
 
-// Restaurar propiedades aprobadas que hayan sido desactivadas erróneamente por reservas anteriores
-pool.query(`
-  UPDATE propiedades 
-  SET activo = TRUE 
-  WHERE activo = FALSE 
-    AND (estado_aprobacion = 'aprobado' OR estado_aprobacion IS NULL)
-`).then(res => {
-  if (res.rowCount > 0) {
-    console.log(`✅ Restauradas ${res.rowCount} propiedades activas en la plataforma.`);
-  }
-}).catch(err => console.warn('[Hosts DB] Error restaurando propiedades activas:', err.message));
 
 
 const app = express();
