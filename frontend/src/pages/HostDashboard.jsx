@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { ReservationCardSkeleton } from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
+import HostOccupancyCalendar from '../components/HostOccupancyCalendar';
 import api from '../api';
 import HuasiAlert from '../utils/alerts';
 
@@ -267,7 +268,7 @@ export default function HostDashboard() {
       )}
 
       {/* Tabs Navigation */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 8, flexWrap: 'wrap' }}>
         <button
           className={`tab ${activeTab === 'propiedades' ? 'active' : ''}`}
           onClick={() => setActiveTab('propiedades')}
@@ -279,10 +280,34 @@ export default function HostDashboard() {
             background: activeTab === 'propiedades' ? 'var(--primary)' : 'transparent',
             color: activeTab === 'propiedades' ? 'white' : 'var(--text-muted)',
             border: 'none',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6
           }}
         >
+          <Home size={16} />
           Mis Alojamientos ({propiedades.length})
+        </button>
+        <button
+          className={`tab ${activeTab === 'calendario' ? 'active' : ''}`}
+          onClick={() => setActiveTab('calendario')}
+          style={{
+            padding: '8px 18px',
+            borderRadius: 8,
+            fontWeight: 700,
+            fontSize: '0.92rem',
+            background: activeTab === 'calendario' ? 'var(--primary)' : 'transparent',
+            color: activeTab === 'calendario' ? 'white' : 'var(--text-muted)',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6
+          }}
+        >
+          <Calendar size={16} />
+          Calendario de Ocupación
         </button>
         <button
           className={`tab ${activeTab === 'resenas' ? 'active' : ''}`}
@@ -309,9 +334,19 @@ export default function HostDashboard() {
       {/* Tab: Mis Propiedades */}
       {activeTab === 'propiedades' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
             <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Tus Alojamientos Publicados</h2>
-            <Link to="/host/reservas" className="btn btn-secondary btn-sm">Gestionar reservas</Link>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setActiveTab('calendario')}
+                className="btn btn-outline btn-sm"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+              >
+                <Calendar size={14} /> Ver Calendario
+              </button>
+              <Link to="/host/reservas" className="btn btn-secondary btn-sm">Gestionar reservas</Link>
+            </div>
           </div>
 
           {propiedades.length === 0 ? (
@@ -394,7 +429,8 @@ export default function HostDashboard() {
                             alignItems: 'center',
                             gap: 4
                           }}>
-                            🟢 {p.huespedes_hospedados_hoy} hospedado(s) hoy
+                            <CheckCircle size={12} color="#059669" />
+                            {p.huespedes_hospedados_hoy} hospedado(s) hoy
                           </span>
                         )}
 
@@ -476,12 +512,12 @@ export default function HostDashboard() {
                                     {h.guest_nombre} {h.guest_apellido || ''}
                                   </strong>
                                   {h.es_activo_hoy ? (
-                                    <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: 4, background: '#10b981', color: 'white', fontWeight: 700 }}>
-                                      🟢 En estadía hoy
+                                    <span style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: 4, background: '#10b981', color: 'white', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                      <CheckCircle size={10} /> En estadía hoy
                                     </span>
                                   ) : (
-                                    <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: 4, background: '#3b82f6', color: 'white', fontWeight: 600 }}>
-                                      Próxima estadía
+                                    <span style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: 4, background: '#0284c7', color: 'white', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                      <Clock size={10} /> Próxima estadía
                                     </span>
                                   )}
                                 </div>
@@ -579,6 +615,11 @@ export default function HostDashboard() {
             })
           )}
         </div>
+      )}
+
+      {/* Tab: Calendario de Ocupación */}
+      {activeTab === 'calendario' && (
+        <HostOccupancyCalendar propiedades={propiedades} />
       )}
 
       {/* Tab: Reseñas Recibidas */}

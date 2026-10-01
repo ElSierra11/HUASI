@@ -11,8 +11,17 @@ import {
   Sofa, Bed, Trees, GraduationCap, ShieldCheck,
   Sliders, Dog, BookOpen, CigaretteOff, ArrowRight,
   Sparkles, Compass, ChevronDown, RefreshCw,
-  Maximize2, X, Play, HeartHandshake, Lock, PlayCircle
+  Maximize2, X, Play, HeartHandshake, Lock, PlayCircle,
+  ExternalLink, Video
 } from 'lucide-react';
+
+const InstagramIcon = ({ size = 16, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+);
 
 export default function Home() {
   const [propiedades, setPropiedades] = useState([]);
@@ -30,6 +39,7 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState('todos');
   const [showMap, setShowMap] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [activeVideo, setActiveVideo] = useState('oficial'); // 'oficial' | 'comunidad'
 
   const fetchMetricas = async () => {
     try {
@@ -338,27 +348,71 @@ export default function Home() {
               </a>
             </div>
 
-            {/* Video vertical — formato Short con opción de agrandar */}
+            {/* Video vertical — formato Short con opción de alternar videos */}
             <div className="relative flex-shrink-0 flex flex-col items-center">
+              {/* Selector de video profesional */}
+              <div className="flex items-center gap-1.5 p-1 bg-white dark:bg-slate-800 rounded-full border border-ucc-border dark:border-slate-700 shadow-custom-sm mb-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveVideo('oficial')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    activeVideo === 'oficial'
+                      ? 'bg-ucc-navy text-white shadow-sm'
+                      : 'text-ucc-muted hover:text-ucc-navy dark:text-slate-400 dark:hover:text-white'
+                  }`}
+                >
+                  <Play size={12} className={activeVideo === 'oficial' ? 'fill-white' : ''} />
+                  <span>Video Oficial</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveVideo('comunidad')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    activeVideo === 'comunidad'
+                      ? 'bg-ucc-green text-white shadow-sm'
+                      : 'text-ucc-muted hover:text-ucc-green dark:text-slate-400 dark:hover:text-white'
+                  }`}
+                >
+                  <InstagramIcon size={12} />
+                  <span>Comunidad Solidaria</span>
+                </button>
+              </div>
+
               {/* Marco estilo "teléfono / Short" */}
               <div className="relative group">
-                {/* Sombra ambiental verde */}
-                <div className="absolute inset-0 bg-gradient-to-b from-ucc-green/30 to-emerald-600/20 rounded-3xl blur-2xl scale-105 opacity-60 pointer-events-none" />
+                {/* Sombra ambiental */}
+                <div className={`absolute inset-0 rounded-3xl blur-2xl scale-105 opacity-60 pointer-events-none transition-all duration-300 ${
+                  activeVideo === 'oficial'
+                    ? 'bg-gradient-to-b from-ucc-green/30 to-emerald-600/20'
+                    : 'bg-gradient-to-b from-purple-600/30 to-pink-600/20'
+                }`} />
 
                 {/* Contenedor 9:16 */}
                 <div
                   className="relative rounded-3xl overflow-hidden shadow-custom-xl border-4 border-white dark:border-slate-700 bg-black"
-                  style={{ width: '260px', height: '462px' }}
+                  style={{ width: '270px', height: '480px' }}
                 >
-                  <iframe
-                    className="w-full h-full"
-                    src="https://www.youtube.com/embed/nvFHEeWSyoo"
-                    title="¿Qué es HUASI? — Red de Alojamiento Solidario UCC"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                    allowFullScreen
-                    loading="lazy"
-                    style={{ border: 'none' }}
-                  />
+                  {activeVideo === 'oficial' ? (
+                    <iframe
+                      className="w-full h-full"
+                      src="https://www.youtube.com/embed/nvFHEeWSyoo"
+                      title="¿Qué es HUASI? — Red de Alojamiento Solidario UCC"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                      allowFullScreen
+                      loading="lazy"
+                      style={{ border: 'none' }}
+                    />
+                  ) : (
+                    <iframe
+                      className="w-full h-full"
+                      src="https://www.instagram.com/reel/Dd2Ks_ex3Bk/embed/"
+                      title="Comunidad HUASI — Red Solidaria UCC"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      loading="lazy"
+                      style={{ border: 'none' }}
+                    />
+                  )}
 
                   {/* Botón flotante para Agrandar Video */}
                   <button
@@ -374,8 +428,17 @@ export default function Home() {
 
                 {/* Badge superior con icono Lucide */}
                 <div className="absolute -top-3 -right-3 bg-gradient-to-br from-ucc-green to-emerald-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-custom-md rotate-2 select-none z-10 flex items-center gap-1.5 whitespace-nowrap">
-                  <Play size={11} className="fill-white" />
-                  <span>Video oficial</span>
+                  {activeVideo === 'oficial' ? (
+                    <>
+                      <Play size={11} className="fill-white" />
+                      <span>Video oficial</span>
+                    </>
+                  ) : (
+                    <>
+                      <InstagramIcon size={11} />
+                      <span>Reel Comunidad</span>
+                    </>
+                  )}
                 </div>
 
                 {/* Badge inferior con icono Lucide */}
@@ -385,15 +448,30 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Botón interactivo secundario para Agrandar Video */}
-              <button
-                type="button"
-                onClick={() => setIsVideoModalOpen(true)}
-                className="mt-5 inline-flex items-center justify-center gap-2 bg-white/90 dark:bg-slate-800/90 hover:bg-ucc-green-light dark:hover:bg-slate-700 border border-ucc-border/80 dark:border-slate-700 text-ucc-navy dark:text-white font-bold py-2 px-5 rounded-full text-xs transition-all duration-200 hover:scale-[1.02] shadow-custom-sm cursor-pointer"
-              >
-                <Maximize2 size={13} className="text-ucc-green" />
-                <span>Ver video en pantalla grande</span>
-              </button>
+              {/* Botones interactivos debajo del video */}
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsVideoModalOpen(true)}
+                  className="inline-flex items-center justify-center gap-2 bg-white/90 dark:bg-slate-800/90 hover:bg-ucc-green-light dark:hover:bg-slate-700 border border-ucc-border/80 dark:border-slate-700 text-ucc-navy dark:text-white font-bold py-2 px-4 rounded-full text-xs transition-all duration-200 hover:scale-[1.02] shadow-custom-sm cursor-pointer"
+                >
+                  <Maximize2 size={13} className="text-ucc-green" />
+                  <span>Ver video en pantalla grande</span>
+                </button>
+
+                {activeVideo === 'comunidad' && (
+                  <a
+                    href="https://www.instagram.com/reel/Dd2Ks_ex3Bk/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-1.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-bold py-2 px-4 rounded-full text-xs transition-all duration-200 hover:scale-[1.02] shadow-custom-sm"
+                  >
+                    <InstagramIcon size={13} />
+                    <span>Ver en Instagram</span>
+                    <ExternalLink size={11} />
+                  </a>
+                )}
+              </div>
             </div>
 
           </div>
@@ -413,8 +491,17 @@ export default function Home() {
             {/* Header del Modal */}
             <div className="w-full flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/70">
               <div className="flex items-center gap-2">
-                <PlayCircle size={16} className="text-ucc-green" />
-                <span className="font-heading font-black text-sm text-white">¿Qué es HUASI? — Video Oficial</span>
+                {activeVideo === 'oficial' ? (
+                  <>
+                    <PlayCircle size={16} className="text-ucc-green" />
+                    <span className="font-heading font-black text-sm text-white">¿Qué es HUASI? — Video Oficial</span>
+                  </>
+                ) : (
+                  <>
+                    <InstagramIcon size={16} className="text-pink-400" />
+                    <span className="font-heading font-black text-sm text-white">Comunidad Solidaria HUASI — Instagram Reel</span>
+                  </>
+                )}
               </div>
               <button
                 type="button"
@@ -426,20 +513,57 @@ export default function Home() {
               </button>
             </div>
 
+            {/* Selector dentro del modal */}
+            <div className="w-full flex justify-center py-2.5 bg-slate-950/90 border-b border-slate-800">
+              <div className="flex items-center gap-2 p-1 bg-slate-800/80 rounded-full border border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setActiveVideo('oficial')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    activeVideo === 'oficial' ? 'bg-ucc-navy text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Play size={11} className={activeVideo === 'oficial' ? 'fill-white' : ''} />
+                  <span>Video Oficial</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveVideo('comunidad')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    activeVideo === 'comunidad' ? 'bg-ucc-green text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <InstagramIcon size={11} />
+                  <span>Comunidad</span>
+                </button>
+              </div>
+            </div>
+
             {/* Reproductor Agrandado */}
             <div className="w-full flex items-center justify-center p-4 sm:p-6 bg-black">
               <div 
                 className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-slate-800"
-                style={{ maxWidth: '340px', height: '580px' }}
+                style={{ maxWidth: '350px', height: '590px' }}
               >
-                <iframe
-                  className="w-full h-full"
-                  src="https://www.youtube.com/embed/nvFHEeWSyoo?autoplay=1"
-                  title="¿Qué es HUASI? — Red de Alojamiento Solidario UCC"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                  allowFullScreen
-                  style={{ border: 'none' }}
-                />
+                {activeVideo === 'oficial' ? (
+                  <iframe
+                    className="w-full h-full"
+                    src="https://www.youtube.com/embed/nvFHEeWSyoo?autoplay=1"
+                    title="¿Qué es HUASI? — Red de Alojamiento Solidario UCC"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                    allowFullScreen
+                    style={{ border: 'none' }}
+                  />
+                ) : (
+                  <iframe
+                    className="w-full h-full"
+                    src="https://www.instagram.com/reel/Dd2Ks_ex3Bk/embed/"
+                    title="Comunidad HUASI — Red Solidaria UCC"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    style={{ border: 'none' }}
+                  />
+                )}
               </div>
             </div>
 
@@ -449,13 +573,26 @@ export default function Home() {
                 <ShieldCheck size={13} className="text-ucc-green" />
                 Comunidad Solidaria UCC
               </span>
-              <button
-                type="button"
-                onClick={() => setIsVideoModalOpen(false)}
-                className="text-white hover:text-ucc-green font-bold transition-colors cursor-pointer"
-              >
-                Cerrar
-              </button>
+              <div className="flex items-center gap-3">
+                {activeVideo === 'comunidad' && (
+                  <a
+                    href="https://www.instagram.com/reel/Dd2Ks_ex3Bk/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-pink-400 hover:text-pink-300 font-bold transition-colors inline-flex items-center gap-1"
+                  >
+                    <span>Abrir en Instagram</span>
+                    <ExternalLink size={11} />
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsVideoModalOpen(false)}
+                  className="text-white hover:text-ucc-green font-bold transition-colors cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         </div>
