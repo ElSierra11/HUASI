@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogOut, User, CheckCircle2, Building, ShieldCheck, Menu, X, Sun, Moon, Download, Smartphone } from 'lucide-react';
 import HuasiAlert from '../utils/alerts';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -203,6 +204,7 @@ export default function Navbar() {
             </Link>
 
 
+            <NotificationBell />
 
             <Link
               to="/perfil"
@@ -311,6 +313,11 @@ export default function Navbar() {
             <Link to="/perfil" onClick={() => setMenuOpen(false)} className={isActive('/perfil') ? 'mobile-nav-active' : ''}>
               <User size={16} /> {user?.nombre ? user.nombre.split(' ')[0] : 'Mi Perfil'} — Mi Perfil
             </Link>
+
+            {/* Notificaciones en móvil */}
+            <div style={{ padding: '4px 16px' }}>
+              <NotificationBell />
+            </div>
 
             <div className="mobile-nav-divider" />
 

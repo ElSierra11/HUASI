@@ -1,6 +1,7 @@
 const express = require('express');
 const nodemailer = require('nodemailer');
 const pool = require('../db');
+const { crearNotificacion } = require('./notificaciones');
 
 const router = express.Router();
 
@@ -250,6 +251,17 @@ router.post('/', async (req, res) => {
                <p>Por favor, ingresa al panel de HUASI para aprobar o rechazar esta solicitud.</p>`
       });
       console.log(`Notificación de nueva reserva enviada al host (${host.email}) exitosamente.`);
+
+      // Notificación in-app para el anfitrión
+      await crearNotificacion({
+        user_id: prop.rows[0].host_id,
+        tipo: 'reserva_nueva',
+        titulo: 'Nueva solicitud de hospedaje',
+        cuerpo: `${guest.nombre} ${guest.apellido} ha solicitado reservar "${prop.rows[0].titulo}". Revisa y responde en tu panel.`,
+        url: '/host/reservas',
+        icono: 'home',
+        datos: { reserva_id: reserva.id, guest_id: req.user.id }
+      });
     } catch (mailErr) {
       console.error('Error enviando correo de notificación de reserva:', mailErr);
     }
@@ -419,11 +431,25 @@ router.patch('/:id', async (req, res) => {
           });
           console.log('Notificación de cambio de estado enviada al guest.');
         }
+
+        // Notificación in-app para el huésped
+        await crearNotificacion({
+          user_id: updatedRes.guest_id,
+          tipo: 'reserva_estado',
+          titulo: estadoNormalizado === 'aceptada' ? '✅ Reserva aceptada' : '❌ Solicitud rechazada',
+          cuerpo: estadoNormalizado === 'aceptada'
+            ? `El anfitrión ${host.nombre} aceptó tu solicitud para "${res_data.propiedad_titulo}". ¡Disfruta tu estadía!`
+            : `El anfitrión no pudo aceptar tu solicitud para "${res_data.propiedad_titulo}". Explora otros alojamientos.`,
+          url: '/mis-reservas',
+          icono: estadoNormalizado === 'aceptada' ? 'check' : 'x',
+          datos: { reserva_id: updatedRes.id, estado: estadoNormalizado }
+        });
       } else if (estadoNormalizado === 'cancelada') {
         const esGuest = req.user.id === updatedRes.guest_id;
         const destinatarioEmail = esGuest ? host.email : guest.email;
         const destinatarioNombre = esGuest ? host.nombre : guest.nombre;
         const rolCancelador = esGuest ? 'el huésped' : 'el anfitrión';
+        const destinatarioId = esGuest ? res_data.host_id : updatedRes.guest_id;
         
         if (destinatarioEmail) {
           await sendEmail({
@@ -434,6 +460,17 @@ router.patch('/:id', async (req, res) => {
           });
           console.log('Notificación de cancelación enviada.');
         }
+
+        // Notificación in-app para el destinatario de la cancelación
+        await crearNotificacion({
+          user_id: destinatarioId,
+          tipo: 'reserva_estado',
+          titulo: '🚫 Reserva cancelada',
+          cuerpo: `La reserva para "${res_data.propiedad_titulo}" fue cancelada por ${rolCancelador}.`,
+          url: esGuest ? '/host/reservas' : '/mis-reservas',
+          icono: 'x',
+          datos: { reserva_id: updatedRes.id, estado: 'cancelada' }
+        });
       }
     } catch (mailErr) {
       console.error('Error enviando correo de cambio de estado de reserva:', mailErr);

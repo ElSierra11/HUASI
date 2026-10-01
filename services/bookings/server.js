@@ -6,6 +6,7 @@ require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 const reservasRoutes = require('./routes/reservas');
 const resenasRoutes = require('./routes/resenas');
+const { router: notificacionesRouter } = require('./routes/notificaciones');
 
 const app = express();
 const PORT = process.env.BOOKING_PORT || 4003;
@@ -44,6 +45,8 @@ app.use((req, res, next) => {
 // Rutas
 app.use('/reservas', reservasRoutes);
 app.use('/resenas', resenasRoutes);
+app.use('/notificaciones', notificacionesRouter);
+
 
 // Health check
 app.get('/health', (req, res) => {

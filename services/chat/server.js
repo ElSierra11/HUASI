@@ -11,6 +11,21 @@ require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 const pool = require('./db');
 const chatRoutes = require('./routes/chat');
 
+// ── Helper: crear notificación en BD (tabla notificaciones) ─────────────────
+async function crearNotificacionChat({ user_id, titulo, cuerpo, url, conversacion_id }) {
+  try {
+    await pool.query(
+      `INSERT INTO notificaciones (user_id, tipo, titulo, cuerpo, url, icono, datos)
+       VALUES ($1, 'mensaje', $2, $3, $4, 'chat', $5)
+       ON CONFLICT DO NOTHING`,
+      [user_id, titulo, cuerpo, url || '/chat', JSON.stringify({ conversacion_id })]
+    );
+  } catch (err) {
+    // Silent — no queremos que falle el chat por la notificación
+    console.warn('[Chat Notif]', err.message);
+  }
+}
+
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.CHAT_PORT || 4004;
@@ -242,6 +257,20 @@ io.on('connection', (socket) => {
 
       io.to(`user_${userId}`).emit('new_message', fullMessage);
       io.to(`user_${receiverId}`).emit('new_message', fullMessage);
+
+      // Si el receptor no está conectado, crear notificación persistente en BD
+      if (!isReceiverOnline) {
+        const senderName = `${sender.nombre || 'Alguien'} ${sender.apellido || ''}`.trim();
+        const preview = contenido.length > 60 ? contenido.substring(0, 60) + '…' : contenido;
+        await crearNotificacionChat({
+          user_id: receiverId,
+          titulo: `Mensaje de ${senderName}`,
+          cuerpo: preview,
+          url: `/chat?conv=${conversacion_id}`,
+          conversacion_id,
+        });
+      }
+
     } catch (err) {
       console.error('Error sending message:', err);
       socket.emit('error_message', { error: 'Error al enviar mensaje' });

@@ -154,8 +154,27 @@ CREATE INDEX IF NOT EXISTS idx_mensajes_leido ON mensajes(leido);
 CREATE INDEX IF NOT EXISTS idx_mensajes_tipo ON mensajes(tipo);
 CREATE INDEX IF NOT EXISTS idx_mensajes_entregado ON mensajes(entregado);
 
+-- Tabla de notificaciones in-app
+CREATE TABLE IF NOT EXISTS notificaciones (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tipo VARCHAR(50) NOT NULL,
+    titulo VARCHAR(255) NOT NULL,
+    cuerpo TEXT NOT NULL,
+    url VARCHAR(500) DEFAULT '/',
+    leida BOOLEAN NOT NULL DEFAULT FALSE,
+    icono VARCHAR(50) DEFAULT 'bell',
+    datos JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notificaciones_user_id ON notificaciones(user_id);
+CREATE INDEX IF NOT EXISTS idx_notificaciones_user_leida ON notificaciones(user_id, leida);
+CREATE INDEX IF NOT EXISTS idx_notificaciones_created_at ON notificaciones(created_at DESC);
+
 -- Insertar usuario admin por defecto
 INSERT INTO users (email, password_hash, nombre, apellido, role, verificado, email_verificado)
 VALUES ('admin@stayu.com', '$2b$10$.j.FbO/mDfdvK.xpPjwacuodARggzkIcdTU5D7IcUlStBOYUmurm2', 'Admin', 'StayU', 'admin', TRUE, TRUE)
 ON CONFLICT (email) DO NOTHING;
+
 

@@ -1,8 +1,62 @@
 const express = require('express');
 const nodemailer = require('nodemailer');
+const { EventEmitter } = require('events');
 const pool = require('../db');
 
 const router = express.Router();
+
+// ============ SSE: EMISOR GLOBAL DE EVENTOS DE NUEVAS PROPIEDADES ============
+// Se usa un EventEmitter compartido para notificar a todos los clientes SSE conectados.
+const propiedadEmitter = new EventEmitter();
+propiedadEmitter.setMaxListeners(200); // Soportar hasta 200 clientes conectados simultáneamente
+
+/**
+ * Emite un evento SSE a todos los clientes que estén escuchando el stream.
+ * @param {object} propiedad - Objeto con los datos de la nueva propiedad
+ */
+function emitirNuevaPropiedad(propiedad) {
+  propiedadEmitter.emit('nueva-propiedad', propiedad);
+}
+
+// ============ SSE ENDPOINT: /propiedades/stream/nueva-publicacion ============
+// Clientes (usuarios y admins) se suscriben aquí para recibir notificaciones en tiempo real.
+router.get('/stream/nueva-publicacion', (req, res) => {
+  // Configurar cabeceras SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Desactivar buffering en Nginx
+  res.flushHeaders();
+
+  // Mensaje de conexión exitosa
+  res.write(`event: connected\ndata: {"status":"ok","ts":${Date.now()}}\n\n`);
+
+  // Heartbeat cada 25 segundos para mantener la conexión viva
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(`:heartbeat\n\n`);
+    } catch (_) {
+      clearInterval(heartbeat);
+    }
+  }, 25000);
+
+  // Listener: enviar evento cuando se publica una nueva propiedad
+  const onNuevaPropiedad = (propiedad) => {
+    try {
+      res.write(`event: nueva-propiedad\ndata: ${JSON.stringify(propiedad)}\n\n`);
+    } catch (_) {
+      // Si el cliente ya se desconectó, se limpiará en 'close'
+    }
+  };
+
+  propiedadEmitter.on('nueva-propiedad', onNuevaPropiedad);
+
+  // Limpiar cuando el cliente se desconecta
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    propiedadEmitter.off('nueva-propiedad', onNuevaPropiedad);
+  });
+});
 
 // ============ EMAIL NOTIFICATIONS (Nodemailer SMTP + Fallback) ============
 const createSmtpTransporter = () => {
@@ -498,6 +552,29 @@ router.post('/', async (req, res) => {
     );
 
     const nuevaPropiedad = result.rows[0];
+
+    // ── SSE: Notificar en tiempo real a todos los clientes conectados ──────────
+    try {
+      // Obtener nombre del host para incluirlo en el evento
+      const hostRes = await pool.query(
+        `SELECT nombre, apellido FROM users WHERE id = $1`, [req.user.id]
+      );
+      const host = hostRes.rows[0] || {};
+      emitirNuevaPropiedad({
+        id: nuevaPropiedad.id,
+        titulo: nuevaPropiedad.titulo,
+        tipo: tipoFinal,
+        barrio: nuevaPropiedad.barrio || null,
+        ciudad: ciudadFinal,
+        campus_cercano: campus_cercano || null,
+        capacidad: nuevaPropiedad.capacidad,
+        host_id: req.user.id,
+        host_nombre: `${host.nombre || ''} ${host.apellido || ''}`.trim(),
+        created_at: nuevaPropiedad.created_at
+      });
+    } catch (sseErr) {
+      console.warn('[SSE] Error emitiendo evento de nueva propiedad:', sseErr.message);
+    }
 
     // Registrar actividad para monitoreo y alertas del panel de administración
     try {

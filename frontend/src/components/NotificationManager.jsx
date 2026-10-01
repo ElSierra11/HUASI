@@ -153,7 +153,7 @@ export default function NotificationManager() {
     return () => clearInterval(interval);
   }, [user]);
 
-  // Escuchar evento personalizado de publicación inmediata
+  // Escuchar evento personalizado local y canal SSE en tiempo real de nuevas publicaciones
   useEffect(() => {
     const handleImmediatePropPublished = (e) => {
       const p = e.detail;
@@ -168,8 +168,39 @@ export default function NotificationManager() {
       }
     };
     window.addEventListener('huasi:property-published', handleImmediatePropPublished);
-    return () => window.removeEventListener('huasi:property-published', handleImmediatePropPublished);
-  }, []);
+
+    // Conexión SSE en tiempo real con el backend de alojamientos
+    let eventSource = null;
+    try {
+      eventSource = new EventSource('/api/propiedades/stream/nueva-publicacion');
+      eventSource.addEventListener('nueva-propiedad', (e) => {
+        try {
+          const p = JSON.parse(e.data);
+          if (p && (!user || p.host_id !== user.id)) {
+            notifyNewProperty({
+              propertyId: p.id,
+              propertyTitle: p.titulo || 'Nuevo Alojamiento',
+              tipo: p.tipo || 'Habitación',
+              barrio: p.barrio || '',
+              ciudad: p.ciudad || 'Santa Marta'
+            });
+          }
+        } catch (parseErr) {
+          console.warn('[SSE] Error procesando nueva propiedad:', parseErr);
+        }
+      });
+    } catch (sseErr) {
+      console.warn('[SSE] No se pudo inicializar EventSource:', sseErr);
+    }
+
+    return () => {
+      window.removeEventListener('huasi:property-published', handleImmediatePropPublished);
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [user]);
+
 
   if (!showPrompt || permission !== 'default' || dismissed) {
     return null;

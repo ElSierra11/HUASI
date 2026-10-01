@@ -103,6 +103,15 @@ app.use('/api/resenas', createProxyMiddleware({
   onError: handleProxyError,
 }));
 
+// Booking Service - Notificaciones
+app.use('/api/notificaciones', createProxyMiddleware({
+  target: BOOKING_URL,
+  changeOrigin: true,
+  pathRewrite: { '^/api/notificaciones': '/notificaciones' },
+  onError: handleProxyError,
+}));
+
+
 // Chat Service - REST endpoints
 app.use('/api/chat', createProxyMiddleware({
   target: CHAT_URL,
