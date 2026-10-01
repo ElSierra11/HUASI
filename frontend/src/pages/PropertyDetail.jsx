@@ -366,6 +366,29 @@ export default function PropertyDetail() {
 
   const compScore = getCompatibilityScore();
 
+  const cuposDisponiblesFechas = (() => {
+    if (!booking.fecha_inicio || !booking.fecha_fin) {
+      return prop?.cupos_disponibles !== undefined ? prop.cupos_disponibles : (prop?.capacidad || 1);
+    }
+    const start = new Date(booking.fecha_inicio + 'T00:00:00');
+    const end = new Date(booking.fecha_fin + 'T00:00:00');
+    let maxOcupados = 0;
+    let curr = new Date(start);
+    while (curr < end) {
+      const occ = (prop?.reservas_aceptadas || []).reduce((sum, r) => {
+        const rStart = new Date(r.fecha_inicio + 'T00:00:00');
+        const rEnd = new Date(r.fecha_fin + 'T00:00:00');
+        if (curr >= rStart && curr < rEnd) {
+          return sum + (parseInt(r.num_huespedes, 10) || 1);
+        }
+        return sum;
+      }, 0);
+      if (occ > maxOcupados) maxOcupados = occ;
+      curr.setDate(curr.getDate() + 1);
+    }
+    return Math.max(0, (prop?.capacidad || 1) - maxOcupados);
+  })();
+
   const handleBooking = async (e) => {
     e.preventDefault();
     if (!user) {
@@ -373,6 +396,12 @@ export default function PropertyDetail() {
       HuasiAlert.info('Inicia sesión', 'Debes iniciar sesión con tu cuenta institucional para solicitar un hospedaje solidario.');
       return;
     }
+    if (booking.num_huespedes > cuposDisponiblesFechas) {
+      setError(`Solo quedan ${cuposDisponiblesFechas} cupo(s) disponible(s) para las fechas seleccionadas.`);
+      HuasiAlert.warning('Cupos insuficientes', `Solo quedan ${cuposDisponiblesFechas} cupo(s) de ${prop.capacidad} para esas fechas.`);
+      return;
+    }
+
     if (!user.verificado) {
       setError('Debes completar la verificación de tu correo institucional primero');
       HuasiAlert.warning('Cuenta no verificada', 'Debes verificar tu correo institucional antes de solicitar una reserva.');
@@ -454,11 +483,11 @@ export default function PropertyDetail() {
           <span><Users size={16} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> {prop.capacidad} {prop.capacidad === 1 ? 'huésped' : 'huéspedes'}</span>
           {prop.esta_lleno ? (
             <span className="badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(239, 68, 68, 0.12)', color: '#b91c1c', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 700, fontSize: '0.78rem' }}>
-              <Clock size={14} /> Cupos Llenos (No disponible hoy)
+              <Clock size={14} /> Cupos Llenos
             </span>
           ) : prop.capacidad > 1 ? (
             <span className="badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(2, 132, 199, 0.12)', color: '#0369a1', border: '1px solid rgba(2, 132, 199, 0.3)', fontWeight: 700, fontSize: '0.78rem' }}>
-              <Users size={14} /> {prop.cupos_disponibles !== undefined ? prop.cupos_disponibles : prop.capacidad} cupos disponibles hoy
+              <Users size={14} /> {prop.cupos_disponibles !== undefined ? prop.cupos_disponibles : prop.capacidad} cupos disponibles {prop.cupos_disponibles !== undefined && prop.cupos_disponibles < prop.capacidad ? `(${prop.capacidad - prop.cupos_disponibles} reservado${prop.capacidad - prop.cupos_disponibles > 1 ? 's' : ''})` : ''}
             </span>
           ) : null}
           {prop.campus_cercano && (
@@ -813,10 +842,45 @@ export default function PropertyDetail() {
                       value={booking.fecha_fin} onChange={e => setBooking(b => ({ ...b, fecha_fin: e.target.value }))} />
                   </div>
                 </div>
+
+                {booking.fecha_inicio && booking.fecha_fin && (
+                  <div style={{
+                    margin: '4px 0 14px',
+                    padding: '10px 14px',
+                    borderRadius: 10,
+                    background: cuposDisponiblesFechas > 0 ? 'rgba(2, 132, 199, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                    border: `1px solid ${cuposDisponiblesFechas > 0 ? 'rgba(2, 132, 199, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                    color: cuposDisponiblesFechas > 0 ? '#0369a1' : '#b91c1c',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 6
+                  }}>
+                    <span>
+                      {cuposDisponiblesFechas > 0 
+                        ? `🛏️ ${cuposDisponiblesFechas} de ${prop.capacidad} cupos disponibles para estas fechas.`
+                        : '⚠️ Todos los cupos están ocupados para este rango de fechas.'}
+                    </span>
+                    {cuposDisponiblesFechas > 0 && cuposDisponiblesFechas < prop.capacidad && (
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0284c7' }}>
+                        ({prop.capacidad - cuposDisponiblesFechas} ya reservado{prop.capacidad - cuposDisponiblesFechas > 1 ? 's' : ''})
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <div className="form-group">
-                  <label>Huéspedes (Máx. {prop.capacidad || 1})</label>
-                  <input type="number" className="form-control" min="1" max={prop.capacidad || 1} required
+                  <label>Huéspedes (Máx. {cuposDisponiblesFechas || 1})</label>
+                  <input type="number" className="form-control" min="1" max={cuposDisponiblesFechas || 1} required
                     value={booking.num_huespedes} onChange={e => setBooking(b => ({ ...b, num_huespedes: parseInt(e.target.value) || 1 }))} />
+                  {cuposDisponiblesFechas < (prop.capacidad || 1) && (
+                    <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'block', marginTop: 4 }}>
+                      Disponible para reservar hasta {cuposDisponiblesFechas} cama(s) simultáneas en este rango.
+                    </small>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Evento académico</label>

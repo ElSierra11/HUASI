@@ -252,33 +252,72 @@ router.get('/', async (req, res) => {
   try {
     const { tipo, capacidad_min, barrio, ciudad, campus, fecha_inicio, fecha_fin, busqueda, es_pago, host_id, limit = 20, offset = 0 } = req.query;
 
+    let occupancySelect = '';
+    let fechaFinSelect = '';
+    const params = [];
+    let paramIndex = 1;
+
+    if (fecha_inicio && fecha_fin) {
+      occupancySelect = `COALESCE((
+        SELECT SUM(res.num_huespedes)
+        FROM reservas res
+        WHERE res.propiedad_id = p.id
+          AND res.estado = 'aceptada'
+          AND res.fecha_inicio < $${paramIndex}
+          AND res.fecha_fin > $${paramIndex + 1}
+      ), 0) AS huespedes_actuales,`;
+      fechaFinSelect = `(
+        SELECT MAX(res.fecha_fin)
+        FROM reservas res
+        WHERE res.propiedad_id = p.id
+          AND res.estado = 'aceptada'
+          AND res.fecha_inicio < $${paramIndex}
+          AND res.fecha_fin > $${paramIndex + 1}
+      ) AS fecha_fin_estadia_actual`;
+      params.push(fecha_fin, fecha_inicio);
+      paramIndex += 2;
+    } else {
+      occupancySelect = `COALESCE((
+        SELECT SUM(res.num_huespedes)
+        FROM reservas res
+        WHERE res.propiedad_id = p.id
+          AND res.estado = 'aceptada'
+          AND CURRENT_DATE >= res.fecha_inicio
+          AND CURRENT_DATE < res.fecha_fin
+      ), (
+        SELECT SUM(res.num_huespedes)
+        FROM reservas res
+        WHERE res.propiedad_id = p.id
+          AND res.estado = 'aceptada'
+          AND res.fecha_fin >= CURRENT_DATE
+          AND res.fecha_inicio = (
+            SELECT MIN(r2.fecha_inicio)
+            FROM reservas r2
+            WHERE r2.propiedad_id = p.id
+              AND r2.estado = 'aceptada'
+              AND r2.fecha_fin >= CURRENT_DATE
+          )
+      ), 0) AS huespedes_actuales,`;
+      fechaFinSelect = `(
+        SELECT MAX(res.fecha_fin)
+        FROM reservas res
+        WHERE res.propiedad_id = p.id
+          AND res.estado = 'aceptada'
+          AND res.fecha_fin >= CURRENT_DATE
+      ) AS fecha_fin_estadia_actual`;
+    }
+
     let query = `
       SELECT p.*, u.nombre AS host_nombre, u.apellido AS host_apellido, u.foto_perfil AS host_foto,
              COALESCE(AVG(r.calificacion), 0) AS calificacion_promedio,
              COUNT(DISTINCT r.id) AS num_resenas,
-             COALESCE((
-               SELECT SUM(res.num_huespedes)
-               FROM reservas res
-               WHERE res.propiedad_id = p.id
-                 AND res.estado = 'aceptada'
-                 AND CURRENT_DATE >= res.fecha_inicio
-                 AND CURRENT_DATE < res.fecha_fin
-             ), 0) AS huespedes_actuales,
-             (
-               SELECT MAX(res.fecha_fin)
-               FROM reservas res
-               WHERE res.propiedad_id = p.id
-                 AND res.estado = 'aceptada'
-                 AND CURRENT_DATE >= res.fecha_inicio
-                 AND CURRENT_DATE < res.fecha_fin
-             ) AS fecha_fin_estadia_actual
+             ${occupancySelect}
+             ${fechaFinSelect}
        FROM propiedades p
        JOIN users u ON p.host_id = u.id
        LEFT JOIN resenas r ON r.propiedad_id = p.id
        WHERE p.activo = TRUE AND (p.estado_aprobacion = 'aprobado' OR p.estado_aprobacion IS NULL)
     `;
-    const params = [];
-    let paramIndex = 1;
 
     // Filtro por host_id
     if (host_id) {
@@ -317,14 +356,17 @@ router.get('/', async (req, res) => {
       paramIndex++;
     }
 
-    // Filtrar por disponibilidad si se pasan fechas (sin ocultar del menú las ocupadas, para indicar su estado)
+    // Filtrar por disponibilidad si se pasan fechas (si la propiedad no tiene rangos definidos, se considera abierta)
     if (fecha_inicio && fecha_fin) {
-      query += ` AND EXISTS (
-        SELECT 1 FROM disponibilidad d
-        WHERE d.propiedad_id = p.id
-        AND d.disponible = TRUE
-        AND d.fecha_inicio <= $${paramIndex}
-        AND d.fecha_fin >= $${paramIndex + 1}
+      query += ` AND (
+        NOT EXISTS (SELECT 1 FROM disponibilidad d WHERE d.propiedad_id = p.id)
+        OR EXISTS (
+          SELECT 1 FROM disponibilidad d
+          WHERE d.propiedad_id = p.id
+          AND d.disponible = TRUE
+          AND d.fecha_inicio <= $${paramIndex}
+          AND d.fecha_fin >= $${paramIndex + 1}
+        )
       )`;
       params.push(fecha_inicio, fecha_fin);
       paramIndex += 2;
@@ -384,14 +426,26 @@ router.get('/:id', async (req, res) => {
                     AND res.estado = 'aceptada'
                     AND CURRENT_DATE >= res.fecha_inicio
                     AND CURRENT_DATE < res.fecha_fin
+                ), (
+                  SELECT SUM(res.num_huespedes)
+                  FROM reservas res
+                  WHERE res.propiedad_id = p.id
+                    AND res.estado = 'aceptada'
+                    AND res.fecha_fin >= CURRENT_DATE
+                    AND res.fecha_inicio = (
+                      SELECT MIN(r2.fecha_inicio)
+                      FROM reservas r2
+                      WHERE r2.propiedad_id = p.id
+                        AND r2.estado = 'aceptada'
+                        AND r2.fecha_fin >= CURRENT_DATE
+                    )
                 ), 0) AS huespedes_actuales,
                 (
                   SELECT MAX(res.fecha_fin)
                   FROM reservas res
                   WHERE res.propiedad_id = p.id
                     AND res.estado = 'aceptada'
-                    AND CURRENT_DATE >= res.fecha_inicio
-                    AND CURRENT_DATE < res.fecha_fin
+                    AND res.fecha_fin >= CURRENT_DATE
                 ) AS fecha_fin_estadia_actual
          FROM propiedades p
          JOIN users u ON p.host_id = u.id
@@ -415,14 +469,26 @@ router.get('/:id', async (req, res) => {
                     AND res.estado = 'aceptada'
                     AND CURRENT_DATE >= res.fecha_inicio
                     AND CURRENT_DATE < res.fecha_fin
+                ), (
+                  SELECT SUM(res.num_huespedes)
+                  FROM reservas res
+                  WHERE res.propiedad_id = p.id
+                    AND res.estado = 'aceptada'
+                    AND res.fecha_fin >= CURRENT_DATE
+                    AND res.fecha_inicio = (
+                      SELECT MIN(r2.fecha_inicio)
+                      FROM reservas r2
+                      WHERE r2.propiedad_id = p.id
+                        AND r2.estado = 'aceptada'
+                        AND r2.fecha_fin >= CURRENT_DATE
+                    )
                 ), 0) AS huespedes_actuales,
                 (
                   SELECT MAX(res.fecha_fin)
                   FROM reservas res
                   WHERE res.propiedad_id = p.id
                     AND res.estado = 'aceptada'
-                    AND CURRENT_DATE >= res.fecha_inicio
-                    AND CURRENT_DATE < res.fecha_fin
+                    AND res.fecha_fin >= CURRENT_DATE
                 ) AS fecha_fin_estadia_actual
          FROM propiedades p
          JOIN users u ON p.host_id = u.id

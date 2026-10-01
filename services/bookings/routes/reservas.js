@@ -406,10 +406,10 @@ router.patch('/:id', async (req, res) => {
 
     const updatedRes = result.rows[0];
 
-    // Archivar publicación automáticamente si se acepta
-    if (estadoNormalizado === 'aceptada') {
-      await pool.query(`UPDATE propiedades SET activo = FALSE WHERE id = $1`, [res_data.propiedad_id]);
-    }
+    // Nota: Las propiedades NO se desactivan al aceptar una reserva. 
+    // Los alojamientos (especialmente compartidos o con múltiples camas/cupos) deben permanecer visibles 
+    // para que otros estudiantes puedan reservar los cupos restantes en las mismas u otras fechas.
+
 
     // Enviar correo de notificación por cambio de estado
     try {
