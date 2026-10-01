@@ -521,11 +521,6 @@ router.post('/chat/command', async (req, res) => {
       );
       updated = result.rows[0];
 
-      // Archivar publicación automáticamente si se acepta
-      if (action === 'aceptar') {
-        await pool.query(`UPDATE propiedades SET activo = FALSE WHERE id = $1`, [reserva.propiedad_id]);
-      }
-
       // Enviar correo de notificación
       try {
         const guestQuery = await pool.query('SELECT email, nombre FROM users WHERE id = $1', [reserva.guest_id]);
@@ -543,6 +538,19 @@ router.post('/chat/command', async (req, res) => {
           });
           console.log(`Notificación de cambio de estado enviada al guest (${guest.email}).`);
         }
+
+        // Notificación in-app para el huésped
+        await crearNotificacion({
+          user_id: reserva.guest_id,
+          tipo: 'reserva_estado',
+          titulo: nuevoEstado === 'aceptada' ? '✅ Reserva aceptada' : '❌ Solicitud rechazada',
+          cuerpo: nuevoEstado === 'aceptada'
+            ? `El anfitrión ${host?.nombre || ''} aceptó tu solicitud para "${reserva.propiedad_titulo}". ¡Disfruta tu estadía!`
+            : `El anfitrión no pudo aceptar tu solicitud para "${reserva.propiedad_titulo}". Explora otros alojamientos.`,
+          url: '/mis-reservas',
+          icono: nuevoEstado === 'aceptada' ? 'check' : 'x',
+          datos: { reserva_id: reservationId, estado: nuevoEstado }
+        });
       } catch (mailErr) {
         console.error('Error enviando correo de cambio de estado de reserva desde chat:', mailErr);
       }
