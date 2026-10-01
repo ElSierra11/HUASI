@@ -821,7 +821,29 @@ router.get('/host/mis', async (req, res) => {
               u_rev.nombre AS revisor_nombre, u_rev.apellido AS revisor_apellido,
               COALESCE(AVG(r.calificacion), 0) AS calificacion_promedio,
               COUNT(DISTINCT r.id) AS num_resenas,
-              COUNT(DISTINCT CASE WHEN res.estado = 'pendiente' THEN res.id END) AS reservas_pendientes
+              COUNT(DISTINCT CASE WHEN res.estado = 'pendiente' THEN res.id END) AS reservas_pendientes,
+              COALESCE((
+                SELECT json_agg(json_build_object(
+                  'reserva_id', r_conf.id,
+                  'guest_id', r_conf.guest_id,
+                  'guest_nombre', u_g.nombre,
+                  'guest_apellido', u_g.apellido,
+                  'guest_foto', u_g.foto_perfil,
+                  'guest_email', u_g.email,
+                  'guest_telefono', u_g.telefono,
+                  'fecha_inicio', r_conf.fecha_inicio,
+                  'fecha_fin', r_conf.fecha_fin,
+                  'num_huespedes', r_conf.num_huespedes,
+                  'evento', r_conf.evento,
+                  'mensaje', r_conf.mensaje,
+                  'es_activo_hoy', (CURRENT_DATE >= r_conf.fecha_inicio AND CURRENT_DATE < r_conf.fecha_fin)
+                ) ORDER BY r_conf.fecha_inicio ASC)
+                FROM reservas r_conf
+                JOIN users u_g ON r_conf.guest_id = u_g.id
+                WHERE r_conf.propiedad_id = p.id
+                  AND r_conf.estado = 'aceptada'
+                  AND r_conf.fecha_fin >= CURRENT_DATE
+              ), '[]'::json) AS huespedes_confirmados
        FROM propiedades p
        LEFT JOIN users u_rev ON p.revisado_por = u_rev.id
        LEFT JOIN resenas r ON r.propiedad_id = p.id
@@ -832,7 +854,24 @@ router.get('/host/mis', async (req, res) => {
       [req.user.id]
     );
 
-    res.json(result.rows);
+    const propiedadesList = result.rows.map(p => {
+      const confirmados = Array.isArray(p.huespedes_confirmados) ? p.huespedes_confirmados : [];
+      const totalOcupados = confirmados.reduce((sum, h) => sum + (parseInt(h.num_huespedes, 10) || 1), 0);
+      const huespedesHoy = confirmados
+        .filter(h => h.es_activo_hoy)
+        .reduce((sum, h) => sum + (parseInt(h.num_huespedes, 10) || 1), 0);
+
+      return {
+        ...p,
+        huespedes_confirmados: confirmados,
+        huespedes_ocupados_total: totalOcupados,
+        huespedes_hospedados_hoy: huespedesHoy,
+        cupos_disponibles: Math.max(0, p.capacidad - totalOcupados)
+      };
+    });
+
+    res.json(propiedadesList);
+
   } catch (err) {
     console.error('Error listando mis propiedades:', err);
     res.status(500).json({ error: 'Error interno del servidor' });

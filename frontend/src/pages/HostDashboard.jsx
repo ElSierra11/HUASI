@@ -18,7 +18,10 @@ import {
   Clock,
   AlertTriangle,
   XCircle,
-  Trash2
+  Trash2,
+  Users,
+  UserCheck,
+  Calendar
 } from 'lucide-react';
 import { ReservationCardSkeleton } from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
@@ -83,6 +86,8 @@ export default function HostDashboard() {
   }, []);
 
   const totalPendientes = propiedades.reduce((sum, p) => sum + (parseInt(p.reservas_pendientes) || 0), 0);
+  const totalHuespedesConfirmados = propiedades.reduce((sum, p) => sum + (p.huespedes_ocupados_total || 0), 0);
+  const totalHuespedesHoy = propiedades.reduce((sum, p) => sum + (p.huespedes_hospedados_hoy || 0), 0);
   
   // Calcular promedio global de reseñas del anfitrión
   const totalResenasCount = resenas.length;
@@ -132,6 +137,21 @@ export default function HostDashboard() {
       return String(dateStr);
     } catch {
       return 'Reciente';
+    }
+  };
+
+  const formatDateRange = (startStr, endStr) => {
+    if (!startStr) return '';
+    try {
+      const start = new Date(startStr);
+      const end = endStr ? new Date(endStr) : null;
+      const opt = { day: 'numeric', month: 'short' };
+      if (end && !isNaN(end.getTime())) {
+        return `${start.toLocaleDateString('es-CO', opt)} - ${end.toLocaleDateString('es-CO', opt)}`;
+      }
+      return start.toLocaleDateString('es-CO', opt);
+    } catch {
+      return `${startStr} - ${endStr}`;
     }
   };
 
@@ -208,6 +228,16 @@ export default function HostDashboard() {
           <div className="stat-content">
             <div className="stat-value">{propiedades.filter(p => p.activo && p.estado_aprobacion === 'aprobado').length}</div>
             <div className="stat-label">Aprobadas y activas</div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon" style={{ color: '#0284c7', background: 'rgba(2, 132, 199, 0.12)' }}><Users size={24} /></div>
+          <div className="stat-content">
+            <div className="stat-value">{totalHuespedesConfirmados}</div>
+            <div className="stat-label">
+              {totalHuespedesHoy > 0 ? `${totalHuespedesHoy} en estadía hoy` : 'Huéspedes confirmados'}
+            </div>
           </div>
         </div>
 
@@ -328,14 +358,52 @@ export default function HostDashboard() {
                       </div>
 
                       <p style={{ margin: '0 0 4px 0', fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <MapPin size={14} /> {p.barrio || p.direccion} · {p.campus_cercano || 'Santa Marta'} · {p.tipo} · {p.capacidad} huéspedes
+                        <MapPin size={14} /> {p.barrio || p.direccion} · {p.campus_cercano || 'Santa Marta'} · {p.tipo}
                       </p>
 
-                      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}>
-                        <Star size={14} fill="#d97706" color="#d97706" />
-                        <strong>{parseFloat(p.calificacion_promedio) > 0 ? parseFloat(p.calificacion_promedio).toFixed(1) : 'Nuevo'}</strong>
-                        <span style={{ color: 'var(--text-muted)' }}>({p.num_resenas || 0} reseñas)</span>
-                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', margin: '4px 0' }}>
+                        <span style={{
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          background: (p.huespedes_ocupados_total || 0) > 0 ? 'rgba(59, 130, 246, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                          color: (p.huespedes_ocupados_total || 0) > 0 ? '#1d4ed8' : '#047857',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5
+                        }}>
+                          <Bed size={14} />
+                          <strong>{p.cupos_disponibles ?? p.capacidad}</strong> de {p.capacidad} cupos disponibles
+                          {(p.huespedes_ocupados_total || 0) > 0 && (
+                            <span style={{ fontWeight: 500, opacity: 0.9 }}>
+                              ({p.huespedes_ocupados_total} reservado{p.huespedes_ocupados_total > 1 ? 's' : ''})
+                            </span>
+                          )}
+                        </span>
+
+                        {p.huespedes_hospedados_hoy > 0 && (
+                          <span style={{
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            background: 'rgba(16, 185, 129, 0.15)',
+                            color: '#065f46',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}>
+                            🟢 {p.huespedes_hospedados_hoy} hospedado(s) hoy
+                          </span>
+                        )}
+
+                        <span style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}>
+                          <Star size={14} fill="#d97706" color="#d97706" />
+                          <strong>{parseFloat(p.calificacion_promedio) > 0 ? parseFloat(p.calificacion_promedio).toFixed(1) : 'Nuevo'}</strong>
+                          <span style={{ color: 'var(--text-muted)' }}>({p.num_resenas || 0} reseñas)</span>
+                        </span>
+                      </div>
                     </div>
 
                     <div className="list-card-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -359,6 +427,118 @@ export default function HostDashboard() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Sección de Huéspedes Hospedados y Confirmados */}
+                  {p.huespedes_confirmados && p.huespedes_confirmados.length > 0 ? (
+                    <div style={{
+                      marginTop: 14,
+                      background: 'rgba(241, 245, 249, 0.65)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 10,
+                      padding: '12px 16px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                          <Users size={17} color="var(--primary)" />
+                          <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)' }}>
+                            Huéspedes con reserva confirmada en este alojamiento ({p.huespedes_confirmados.length})
+                          </span>
+                        </div>
+                        <Link to="/host/reservas" style={{ fontSize: '0.82rem', color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>
+                          Gestionar todas las reservas →
+                        </Link>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+                        {p.huespedes_confirmados.map(h => (
+                          <div key={h.reserva_id} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '10px 14px',
+                            background: h.es_activo_hoy ? 'rgba(16, 185, 129, 0.08)' : 'white',
+                            border: `1px solid ${h.es_activo_hoy ? 'rgba(16, 185, 129, 0.4)' : 'var(--border)'}`,
+                            borderRadius: 8,
+                            gap: 12,
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                              {h.guest_foto ? (
+                                <img src={h.guest_foto} alt={h.guest_nombre} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                              ) : (
+                                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.92rem', flexShrink: 0 }}>
+                                  {(h.guest_nombre || 'H').charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                              <div style={{ minWidth: 0, flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                  <strong style={{ fontSize: '0.9rem', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {h.guest_nombre} {h.guest_apellido || ''}
+                                  </strong>
+                                  {h.es_activo_hoy ? (
+                                    <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: 4, background: '#10b981', color: 'white', fontWeight: 700 }}>
+                                      🟢 En estadía hoy
+                                    </span>
+                                  ) : (
+                                    <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: 4, background: '#3b82f6', color: 'white', fontWeight: 600 }}>
+                                      Próxima estadía
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                                  <Calendar size={13} /> {formatDateRange(h.fecha_inicio, h.fecha_fin)} · <strong>{h.num_huespedes || 1}</strong> {(h.num_huespedes || 1) === 1 ? 'cama reservada' : 'camas reservadas'}
+                                </div>
+                                {h.evento && (
+                                  <div style={{ fontSize: '0.74rem', color: 'var(--primary)', fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {h.evento}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  window.dispatchEvent(new CustomEvent('open-chat', { detail: { userId: h.guest_id } }));
+                                }}
+                                className="btn btn-sm"
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: '0.78rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                  background: 'var(--primary)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: 6,
+                                  cursor: 'pointer',
+                                  fontWeight: 600
+                                }}
+                                title={`Abrir chat con ${h.guest_nombre}`}
+                              >
+                                <MessageSquare size={13} /> Chat
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{
+                      marginTop: 12,
+                      paddingTop: 8,
+                      borderTop: '1px dashed var(--border)',
+                      fontSize: '0.8rem',
+                      color: 'var(--text-muted)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}>
+                      <UserCheck size={14} /> Sin huéspedes confirmados actualmente · Todos los {p.capacidad} cupos están disponibles
+                    </div>
+                  )}
 
                   {/* Banner de Observaciones de la Universidad si está en corrección o rechazada */}
                   {p.notas_revision && (p.estado_aprobacion === 'en_correccion' || p.estado_aprobacion === 'rechazado') && (
