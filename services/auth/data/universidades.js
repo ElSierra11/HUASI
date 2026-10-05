@@ -45,6 +45,7 @@ const UNIVERSIDADES = [
   { id: 'ucundinamarca', nombre: 'Universidad de Cundinamarca', dominios: ['ucundinamarca.edu.co'] },
   { id: 'itm', nombre: 'Instituto Tecnológico Metropolitano', dominios: ['itm.edu.co'] },
   { id: 'elpoli', nombre: 'Politécnico Colombiano Jaime Isaza Cadavid', dominios: ['elpoli.edu.co'] },
+  { id: 'itc', nombre: 'Escuela Tecnológica Instituto Técnico Central', dominios: ['itc.edu.co'] },
 
   // ---- Privadas ----
   { id: 'uniandes', nombre: 'Universidad de los Andes', dominios: ['uniandes.edu.co'] },

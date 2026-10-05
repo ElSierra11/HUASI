@@ -96,11 +96,12 @@ export default function Register() {
     }));
   }, [form.email]);
 
-  // Autoseleccionar la universidad según el dominio del correo (si aún no eligió una)
+  // Autoseleccionar inteligentemente la universidad según el dominio del correo institucional
   useEffect(() => {
+    if (!form.email || !form.email.includes('@')) return;
     const uni = getUniversidadPorCorreo(form.email);
     if (uni) {
-      setForm(f => (f.universidad_id ? f : { ...f, universidad_id: uni.id }));
+      setForm(f => (f.universidad_id !== uni.id ? { ...f, universidad_id: uni.id, otra_universidad: '' } : f));
     }
   }, [form.email]);
 

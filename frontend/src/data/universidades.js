@@ -48,6 +48,7 @@ export const UNIVERSIDADES = [
   { id: 'ucundinamarca', nombre: 'Universidad de Cundinamarca', sigla: 'UDEC', dominios: ['ucundinamarca.edu.co'] },
   { id: 'itm', nombre: 'Instituto Tecnológico Metropolitano', sigla: 'ITM', dominios: ['itm.edu.co'] },
   { id: 'elpoli', nombre: 'Politécnico Colombiano Jaime Isaza Cadavid', sigla: 'Poli JIC', dominios: ['elpoli.edu.co'] },
+  { id: 'itc', nombre: 'Escuela Tecnológica Instituto Técnico Central', sigla: 'ETITC', dominios: ['itc.edu.co'] },
 
   // ---- Privadas ----
   { id: 'uniandes', nombre: 'Universidad de los Andes', sigla: 'Uniandes', dominios: ['uniandes.edu.co'] },
