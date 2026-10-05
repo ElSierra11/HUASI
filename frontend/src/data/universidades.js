@@ -128,5 +128,10 @@ export const getUniversidadPorCorreo = (email) => {
   return UNIVERSIDADES.find(u => dominioCoincide(dominio, u.dominios)) || null;
 };
 
-// ¿El correo pertenece a CUALQUIER universidad habilitada? (login / recuperar contraseña)
-export const esCorreoInstitucionalValido = (email) => !!getUniversidadPorCorreo(email);
+// ¿El correo pertenece a CUALQUIER universidad habilitada o dominio institucional (.edu.co/.edu)? (login / recuperar contraseña)
+export const esCorreoInstitucionalValido = (email) => {
+  if (!email || !email.includes('@')) return false;
+  if (getUniversidadPorCorreo(email)) return true;
+  const domain = email.split('@')[1]?.toLowerCase() || '';
+  return domain.endsWith('.edu.co') || domain.includes('.edu');
+};

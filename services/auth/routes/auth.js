@@ -499,7 +499,7 @@ const getOtpStatus = (user) => {
 // ============ REGISTER ============
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, nombre, apellido, telefono, tipo_documento, numero_documento, role, campus, rol_universitario, universidad_id } = req.body;
+    const { email, password, nombre, apellido, telefono, tipo_documento, numero_documento, role, campus, rol_universitario, universidad_id, otra_universidad } = req.body;
 
     if (!email || !password || !nombre || !apellido) {
       return res.status(400).json({ error: 'Email, contraseña, nombre y apellido son obligatorios' });
@@ -524,17 +524,31 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Debes ingresar un correo electrónico válido' });
     }
 
-    // Validar universidad y que el dominio del correo corresponda a ESA universidad
-    const universidadSel = getUniversidadById(universidad_id);
-    if (!universidadSel) {
-      return res.status(400).json({ error: 'Debes seleccionar tu universidad' });
+    // Validar universidad y que el dominio del correo corresponda
+    let universidadNombre = '';
+    if (universidad_id === 'otro') {
+      if (!otra_universidad || !String(otra_universidad).trim()) {
+        return res.status(400).json({ error: 'Debes indicar el nombre de tu universidad o institución' });
+      }
+      const domain = cleanEmail.split('@')[1] || '';
+      if (!domain.endsWith('.edu.co') && !domain.includes('.edu')) {
+        return res.status(400).json({
+          error: 'Debes ingresar un correo institucional terminado en .edu.co (o dominio educativo oficial)'
+        });
+      }
+      universidadNombre = String(otra_universidad).trim();
+    } else {
+      const universidadSel = getUniversidadById(universidad_id);
+      if (!universidadSel) {
+        return res.status(400).json({ error: 'Debes seleccionar tu universidad' });
+      }
+      if (!correoPerteneceAUniversidad(cleanEmail, universidadSel.id)) {
+        return res.status(400).json({
+          error: `El correo debe ser institucional de ${universidadSel.nombre} (${universidadSel.dominios.map(d => '@' + d).join(', ')})`
+        });
+      }
+      universidadNombre = universidadSel.nombre;
     }
-    if (!correoPerteneceAUniversidad(cleanEmail, universidadSel.id)) {
-      return res.status(400).json({
-        error: `El correo debe ser institucional de ${universidadSel.nombre} (${universidadSel.dominios.map(d => '@' + d).join(', ')})`
-      });
-    }
-    const universidadNombre = universidadSel.nombre;
 
     if (!campus) {
       return res.status(400).json({ error: 'La ciudad es obligatoria' });
@@ -846,10 +860,14 @@ router.post('/olvido-password', async (req, res) => {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Validar que sea un correo institucional de una universidad habilitada
-    if (!getUniversidadPorCorreo(cleanEmail)) {
+    // Validar que sea un correo institucional de una universidad habilitada o usuario ya registrado
+    const esDeLista = !!getUniversidadPorCorreo(cleanEmail);
+    const domain = cleanEmail.split('@')[1] || '';
+    const esEdu = domain.endsWith('.edu.co') || domain.includes('.edu');
+
+    if (!esDeLista && !esEdu) {
       return res.status(400).json({
-        error: 'El correo debe ser institucional de una universidad colombiana habilitada en HUASI'
+        error: 'El correo debe ser institucional de una universidad o institución educativa'
       });
     }
 
