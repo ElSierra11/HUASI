@@ -18,6 +18,7 @@
     "react-dom": "^19.2.5",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^6.30.3",
+    "react-select": "^5.10.2",
     "socket.io-client": "^4.8.3",
     "sweetalert2": "^11.26.25"
   },
