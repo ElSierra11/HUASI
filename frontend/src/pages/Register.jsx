@@ -4,12 +4,15 @@ import { useToast } from '../components/Toast';
 import { Link, useNavigate } from 'react-router-dom';
 import { Clock, CheckCircle, ArrowRight, Loader2, ShieldCheck, RefreshCw, HelpCircle, AlertTriangle, Eye, EyeOff, Lock, Check, Phone, CreditCard, CheckCircle2, XCircle, GraduationCap } from 'lucide-react';
 import HuasiAlert from '../utils/alerts';
+import { UNIVERSIDADES, CIUDADES, getUniversidadById, getUniversidadPorCorreo, correoPerteneceAUniversidad } from '../data/universidades';
+
+const UNIVERSIDADES_ORDENADAS = [...UNIVERSIDADES].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 
 export default function Register() {
   const { register, verifyOtp } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '', nombre: '', apellido: '', campus: '', telefono: '', tipo_documento: 'cedula', numero_documento: '', rol_universitario: 'estudiante' });
+  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '', nombre: '', apellido: '', campus: '', universidad_id: '', telefono: '', tipo_documento: 'cedula', numero_documento: '', rol_universitario: 'estudiante' });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otp, setOtp] = useState('');
@@ -94,6 +97,18 @@ export default function Register() {
     }));
   }, [form.email]);
 
+  // Autoseleccionar la universidad según el dominio del correo (si aún no eligió una)
+  useEffect(() => {
+    const uni = getUniversidadPorCorreo(form.email);
+    if (uni) {
+      setForm(f => (f.universidad_id ? f : { ...f, universidad_id: uni.id }));
+    }
+  }, [form.email]);
+
+  const universidadSel = getUniversidadById(form.universidad_id);
+  const emailPlaceholder = universidadSel ? `usuario@${universidadSel.dominios[0]}` : 'usuario@tuuniversidad.edu.co';
+  const emailDomainOk = !form.email.includes('@') || !universidadSel || correoPerteneceAUniversidad(form.email, universidadSel.id);
+
   // Cooldown del botón de reenvío de OTP (30s)
   useEffect(() => {
     let timer;
@@ -122,29 +137,29 @@ export default function Register() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const ALLOWED_DOMAINS = ['campusucc.edu.co', 'ucc.edu.co'];
-
-  const isValidDomain = (email) => {
-    if (!email || !email.includes('@')) return false;
-    const domain = email.split('@')[1]?.toLowerCase();
-    return ALLOWED_DOMAINS.includes(domain);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!isValidDomain(form.email)) {
-      const msg = 'Solo se permiten correos institucionales con dominio @campusucc.edu.co o @ucc.edu.co.';
+    if (!universidadSel) {
+      const msg = 'Debes seleccionar tu universidad.';
+      setError(msg);
+      HuasiAlert.warning('Universidad requerida', msg);
+      return;
+    }
+
+    if (!correoPerteneceAUniversidad(form.email, universidadSel.id)) {
+      const dominios = universidadSel.dominios.map(d => '@' + d).join(' o ');
+      const msg = `Debes usar tu correo institucional de ${universidadSel.nombre} (${dominios}).`;
       setError(msg);
       HuasiAlert.warning('Dominio no permitido', msg);
       return;
     }
 
     if (!form.campus) {
-      const msg = 'Debes seleccionar tu campus o sede universitaria.';
+      const msg = 'Debes seleccionar la ciudad donde estudias.';
       setError(msg);
-      HuasiAlert.warning('Campus requerido', msg);
+      HuasiAlert.warning('Ciudad requerida', msg);
       return;
     }
 
@@ -560,14 +575,47 @@ export default function Register() {
               </div>
             )}
             <div className="form-group">
+              <label>Universidad *</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <GraduationCap size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none', zIndex: 1 }} />
+                <select
+                  id="register-universidad"
+                  required
+                  className="form-control"
+                  style={{ paddingLeft: 44 }}
+                  value={form.universidad_id}
+                  onChange={e => setForm(f => ({ ...f, universidad_id: e.target.value }))}
+                >
+                  <option value="">Selecciona tu universidad...</option>
+                  {UNIVERSIDADES_ORDENADAS.map(u => (
+                    <option key={u.id} value={u.id}>{u.nombre}{u.sigla ? ` (${u.sigla})` : ''}</option>
+                  ))}
+                </select>
+              </div>
+              <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                HUASI está abierto a estudiantes y personal de universidades de toda Colombia.
+              </small>
+            </div>
+
+            <div className="form-group">
               <label>Correo Electrónico Institucional</label>
-              <input type="email" required className="form-control"
-                placeholder="usuario@campusucc.edu.co"
+              <input id="register-email" type="email" required className="form-control"
+                placeholder={emailPlaceholder}
                 autoComplete="email"
                 inputMode="email"
+                style={!emailDomainOk ? { borderColor: '#ef4444' } : undefined}
                 value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
-              <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
-                Solo correos <strong>@campusucc.edu.co</strong> o <strong>@ucc.edu.co</strong>
+              <small style={{ color: emailDomainOk ? 'var(--text-muted)' : '#dc2626', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                {universidadSel ? (
+                  <>
+                    {emailDomainOk ? 'Usa tu correo ' : 'El correo debe terminar en '}
+                    {universidadSel.dominios.map((d, i) => (
+                      <span key={d}>{i > 0 && ' o '}<strong>@{d}</strong></span>
+                    ))}
+                  </>
+                ) : (
+                  'Primero selecciona tu universidad (o escribe tu correo y la detectamos).'
+                )}
               </small>
             </div>
 
@@ -605,22 +653,12 @@ export default function Register() {
             </div>
 
             <div className="form-group" style={{ marginBottom: 16 }}>
-              <label>Campus / Sede Universitaria</label>
-              <select required className="form-control" value={form.campus} onChange={e => setForm(f => ({ ...f, campus: e.target.value }))}>
-                <option value="">Selecciona tu sede...</option>
-                <option value="Santa Marta">Santa Marta</option>
-                <option value="Bogotá">Bogotá</option>
-                <option value="Medellín">Medellín</option>
-                <option value="Bucaramanga">Bucaramanga</option>
-                <option value="Cali">Cali</option>
-                <option value="Ibagué">Ibagué</option>
-                <option value="Pasto">Pasto</option>
-                <option value="Popayán">Popayán</option>
-                <option value="Villavicencio">Villavicencio</option>
-                <option value="Montería">Montería</option>
-                <option value="Arauca">Arauca</option>
-                <option value="Barrancabermeja">Barrancabermeja</option>
-                <option value="Neiva">Neiva</option>
+              <label>Ciudad donde estudias</label>
+              <select id="register-ciudad" required className="form-control" value={form.campus} onChange={e => setForm(f => ({ ...f, campus: e.target.value }))}>
+                <option value="">Selecciona tu ciudad...</option>
+                {CIUDADES.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
             </div>
 

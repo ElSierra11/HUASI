@@ -19,6 +19,15 @@ pool.query(`
     ADD COLUMN IF NOT EXISTS campus VARCHAR(100);
 `).catch(err => console.warn('Aviso al verificar columnas de documento:', err.message));
 
+// Auto-migrar columna de universidad (apertura a universidades de toda Colombia)
+pool.query(`
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS universidad VARCHAR(150);
+  UPDATE users SET universidad = 'Universidad Cooperativa de Colombia'
+    WHERE universidad IS NULL AND (LOWER(email) LIKE '%@campusucc.edu.co' OR LOWER(email) LIKE '%@ucc.edu.co');
+`).catch(err => console.warn('Aviso al verificar columna universidad:', err.message));
+
+const { getUniversidadById, getUniversidadPorCorreo, correoPerteneceAUniversidad } = require('../data/universidades');
+
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
@@ -95,7 +104,7 @@ const sendViaBrevo = async (toEmail, toName, subject, htmlContent) => {
     },
     body: JSON.stringify({
       sender: { name: 'HUASI — Hospedaje Solidario UCC', email: senderEmail },
-      to: [{ email: toEmail, name: toName || 'Estudiante UCC' }],
+      to: [{ email: toEmail, name: toName || 'Estudiante' }],
       subject: subject,
       htmlContent: htmlContent
     })
@@ -138,7 +147,7 @@ const sendOtpEmail = async (email, nombre, otp) => {
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
       <div style="text-align: center; margin-bottom: 20px;">
         <h2 style="color: #0d7c3d; margin: 0; font-size: 22px;">HUASI — Hospedaje Solidario</h2>
-        <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Verificación de Correo Institucional UCC</p>
+        <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Verificación de Correo Institucional Universitario</p>
       </div>
       <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 20px;">
         <p style="color: #166534; font-size: 14px; margin: 0 0 8px 0; font-weight: bold;">Tu código de verificación es:</p>
@@ -490,7 +499,7 @@ const getOtpStatus = (user) => {
 // ============ REGISTER ============
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, nombre, apellido, telefono, tipo_documento, numero_documento, role, campus, rol_universitario } = req.body;
+    const { email, password, nombre, apellido, telefono, tipo_documento, numero_documento, role, campus, rol_universitario, universidad_id } = req.body;
 
     if (!email || !password || !nombre || !apellido) {
       return res.status(400).json({ error: 'Email, contraseña, nombre y apellido son obligatorios' });
@@ -515,8 +524,20 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Debes ingresar un correo electrónico válido' });
     }
 
+    // Validar universidad y que el dominio del correo corresponda a ESA universidad
+    const universidadSel = getUniversidadById(universidad_id);
+    if (!universidadSel) {
+      return res.status(400).json({ error: 'Debes seleccionar tu universidad' });
+    }
+    if (!correoPerteneceAUniversidad(cleanEmail, universidadSel.id)) {
+      return res.status(400).json({
+        error: `El correo debe ser institucional de ${universidadSel.nombre} (${universidadSel.dominios.map(d => '@' + d).join(', ')})`
+      });
+    }
+    const universidadNombre = universidadSel.nombre;
+
     if (!campus) {
-      return res.status(400).json({ error: 'El campus o sede es obligatorio' });
+      return res.status(400).json({ error: 'La ciudad es obligatoria' });
     }
 
     if (typeof password !== 'string' || password.length < 8) {
@@ -562,10 +583,10 @@ router.post('/register', async (req, res) => {
       await pool.query(
         `UPDATE users 
          SET password_hash = $1, nombre = $2, apellido = $3, telefono = $4, role = $5, campus = $6, otp_code = $7, otp_expires_at = $8,
-             tipo_documento = $10, numero_documento = $11, rol_universitario = $12,
+             tipo_documento = $10, numero_documento = $11, rol_universitario = $12, universidad = $13,
              otp_attempts = 0, otp_locked_until = NULL, otp_last_sent_at = NOW(), otp_resend_count = COALESCE(otp_resend_count, 0) + 1
          WHERE LOWER(email) = $9`,
-        [password_hash, nombre, apellido, telefono || null, role === 'admin' ? 'admin' : 'user', campus, otp, otp_expires_at, cleanEmail, tipo_documento || 'cedula', numero_documento || null, safeRolUniv]
+        [password_hash, nombre, apellido, telefono || null, role === 'admin' ? 'admin' : 'user', campus, otp, otp_expires_at, cleanEmail, tipo_documento || 'cedula', numero_documento || null, safeRolUniv, universidadNombre]
       );
 
       // Enviar OTP y esperar resultado
@@ -589,10 +610,10 @@ router.post('/register', async (req, res) => {
 
     // Insertar usuario no verificado con OTP
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, nombre, apellido, telefono, role, email_verificado, verificado, campus, tipo_documento, numero_documento, otp_code, otp_expires_at, otp_attempts, otp_locked_until, otp_last_sent_at, otp_resend_count, rol_universitario)
-       VALUES ($1, $2, $3, $4, $5, $6, FALSE, FALSE, $7, $8, $9, $10, $11, 0, NULL, NOW(), 1, $12)
-       RETURNING id, email, nombre, apellido, role, campus, rol_universitario`,
-      [cleanEmail, password_hash, nombre, apellido, telefono || null, userRole, campus, tipo_documento || 'cedula', numero_documento || null, otp, otp_expires_at, safeRolUniv]
+      `INSERT INTO users (email, password_hash, nombre, apellido, telefono, role, email_verificado, verificado, campus, tipo_documento, numero_documento, otp_code, otp_expires_at, otp_attempts, otp_locked_until, otp_last_sent_at, otp_resend_count, rol_universitario, universidad)
+       VALUES ($1, $2, $3, $4, $5, $6, FALSE, FALSE, $7, $8, $9, $10, $11, 0, NULL, NOW(), 1, $12, $13)
+       RETURNING id, email, nombre, apellido, role, campus, rol_universitario, universidad`,
+      [cleanEmail, password_hash, nombre, apellido, telefono || null, userRole, campus, tipo_documento || 'cedula', numero_documento || null, otp, otp_expires_at, safeRolUniv, universidadNombre]
     );
 
     const newUser = result.rows[0];
@@ -604,8 +625,8 @@ router.post('/register', async (req, res) => {
          VALUES ($1, 'registro', $2, '/registro', 'Web', $3)`,
         [
           newUser.id,
-          `Nuevo usuario registrado: ${newUser.nombre} ${newUser.apellido} (${newUser.email}) - Sede ${newUser.campus} [${newUser.rol_universitario}]`,
-          JSON.stringify({ campus: newUser.campus, role: newUser.role, rol_universitario: newUser.rol_universitario, email: newUser.email, telefono: telefono || null })
+          `Nuevo usuario registrado: ${newUser.nombre} ${newUser.apellido} (${newUser.email}) - ${newUser.universidad} · ${newUser.campus} [${newUser.rol_universitario}]`,
+          JSON.stringify({ campus: newUser.campus, universidad: newUser.universidad, role: newUser.role, rol_universitario: newUser.rol_universitario, email: newUser.email, telefono: telefono || null })
         ]
       );
     } catch (actErr) {
@@ -825,12 +846,10 @@ router.post('/olvido-password', async (req, res) => {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Validar formato de correo institucional
-    const allowedDomains = ['campusucc.edu.co', 'ucc.edu.co'];
-    const domain = cleanEmail.split('@')[1];
-    if (!allowedDomains.includes(domain)) {
+    // Validar que sea un correo institucional de una universidad habilitada
+    if (!getUniversidadPorCorreo(cleanEmail)) {
       return res.status(400).json({
-        error: 'El correo debe pertenecer a @campusucc.edu.co o @ucc.edu.co'
+        error: 'El correo debe ser institucional de una universidad colombiana habilitada en HUASI'
       });
     }
 
@@ -960,7 +979,7 @@ router.get('/me', async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, email, nombre, apellido, telefono, role, foto_perfil, verificado, created_at, campus, soles_balance, preferencias_convivencia, COALESCE(rol_universitario, 'estudiante') AS rol_universitario
+      `SELECT id, email, nombre, apellido, telefono, role, foto_perfil, verificado, created_at, campus, universidad, soles_balance, preferencias_convivencia, COALESCE(rol_universitario, 'estudiante') AS rol_universitario
        FROM users WHERE id = $1`,
       [req.user.id]
     );
@@ -1054,7 +1073,7 @@ router.get('/admin/usuarios', async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, email, nombre, apellido, telefono, role, foto_perfil, verificado, email_verificado, campus, bloqueado, motivo_bloqueo, bloqueado_en, created_at, COALESCE(rol_universitario, 'estudiante') AS rol_universitario
+      `SELECT id, email, nombre, apellido, telefono, role, foto_perfil, verificado, email_verificado, campus, universidad, bloqueado, motivo_bloqueo, bloqueado_en, created_at, COALESCE(rol_universitario, 'estudiante') AS rol_universitario
        FROM users
        ORDER BY created_at DESC`
     );

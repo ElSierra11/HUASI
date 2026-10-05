@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle2, AlertTriangle, Send, Clock } from 'lucide-react';
 import api from '../api';
 import HuasiAlert from '../utils/alerts';
+import { esCorreoInstitucionalValido } from '../data/universidades';
 
 export default function OlvidoPassword() {
   const [email, setEmail] = useState('');
@@ -10,20 +11,12 @@ export default function OlvidoPassword() {
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const ALLOWED_DOMAINS = ['campusucc.edu.co', 'ucc.edu.co'];
-
-  const isValidDomain = (emailStr) => {
-    if (!emailStr || !emailStr.includes('@')) return false;
-    const domain = emailStr.split('@')[1]?.toLowerCase();
-    return ALLOWED_DOMAINS.includes(domain);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!isValidDomain(email)) {
-      const msg = 'Solo se permiten correos institucionales con dominio @campusucc.edu.co o @ucc.edu.co.';
+    if (!esCorreoInstitucionalValido(email)) {
+      const msg = 'Usa el correo institucional de tu universidad (ej. usuario@tuuniversidad.edu.co).';
       setError(msg);
       HuasiAlert.warning('Correo no permitido', msg);
       return;
@@ -134,7 +127,7 @@ export default function OlvidoPassword() {
                   required
                   autoFocus
                   className="form-control"
-                  placeholder="usuario@campusucc.edu.co"
+                  placeholder="usuario@tuuniversidad.edu.co"
                   style={{ paddingLeft: 44 }}
                   value={email}
                   onChange={e => setEmail(e.target.value)}

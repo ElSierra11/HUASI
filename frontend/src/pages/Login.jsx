@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, LogIn, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import HuasiAlert from '../utils/alerts';
+import { esCorreoInstitucionalValido } from '../data/universidades';
 
 export default function Login() {
   const { login } = useAuth();
@@ -12,20 +13,12 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const ALLOWED_DOMAINS = ['campusucc.edu.co', 'ucc.edu.co'];
-
-  const isValidDomain = (email) => {
-    if (!email || !email.includes('@')) return false;
-    const domain = email.split('@')[1]?.toLowerCase();
-    return ALLOWED_DOMAINS.includes(domain);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!isValidDomain(form.email)) {
-      const msg = 'Solo se permiten correos institucionales con dominio @campusucc.edu.co o @ucc.edu.co.';
+    if (!esCorreoInstitucionalValido(form.email)) {
+      const msg = 'Usa el correo institucional de tu universidad (ej. usuario@tuuniversidad.edu.co).';
       setError(msg);
       HuasiAlert.warning('Correo no permitido', msg);
       return;
@@ -83,7 +76,7 @@ export default function Login() {
                 type="email"
                 required
                 className="form-control"
-                placeholder="usuario@campusucc.edu.co"
+                placeholder="usuario@tuuniversidad.edu.co"
                 style={{ paddingLeft: 44 }}
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
@@ -177,7 +170,7 @@ export default function Login() {
         }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}>
             <Lock size={14} style={{ color: 'var(--text-muted)' }} />
-            <span>Solo correos <strong>@campusucc.edu.co</strong> o <strong>@ucc.edu.co</strong></span>
+            <span>Solo correos institucionales de <strong>universidades colombianas</strong></span>
           </span>
         </div>
       </div>
