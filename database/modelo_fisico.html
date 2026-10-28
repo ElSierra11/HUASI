@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HUASI · Modelo Físico de Base de Datos</title>
+<meta name="description" content="Modelo físico (diagrama EER) de la base de datos PostgreSQL de HUASI: tablas, columnas, tipos de datos, claves primarias y foráneas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1220; --panel: rgba(22, 29, 46, .78); --line: #263150;
+    --txt: #e7ecf6; --mut: #8d99b3; --acc: #5b9cf5; --acc2: #8b5cf6;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; font-family: Outfit, system-ui, sans-serif; color: var(--txt);
+    background: radial-gradient(1100px 600px at 0% -10%, #1c2a4f 0, transparent 60%),
+                radial-gradient(900px 500px at 100% 110%, #2a1d4f 0, transparent 60%), var(--bg);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  header {
+    display: flex; align-items: center; gap: 18px; padding: 12px 22px;
+    background: var(--panel); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--acc), var(--acc2)); font-weight: 700;
+    box-shadow: 0 8px 24px rgba(91, 156, 245, .35);
+  }
+  h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: .2px; }
+  .sub { font-size: 12px; color: var(--mut); margin-top: 2px; }
+  .chips { display: flex; gap: 8px; }
+  .chip {
+    font-size: 12px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line);
+    background: rgba(255,255,255,.03); color: var(--mut);
+  }
+  .chip b { color: var(--txt); font-weight: 600; }
+  .spacer { flex: 1; }
+  .tools { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    font: inherit; font-size: 13px; color: var(--txt); cursor: pointer;
+    padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line);
+    background: rgba(255,255,255,.04); transition: all .18s ease;
+  }
+  .btn:hover { background: rgba(255,255,255,.09); transform: translateY(-1px); border-color: #3a4870; }
+  .btn.primary {
+    border: none; background: linear-gradient(135deg, var(--acc), var(--acc2));
+    box-shadow: 0 6px 20px rgba(91, 156, 245, .3);
+  }
+  .btn.primary:hover { box-shadow: 0 10px 26px rgba(139, 92, 246, .4); }
+  .btn.icon { width: 36px; padding: 8px 0; text-align: center; }
+  #zoomLbl { font-size: 12px; color: var(--mut); width: 44px; text-align: center; }
+  main { flex: 1; overflow: auto; }
+  #stage { padding: 28px; display: inline-block; min-width: 100%; }
+  #diagram {
+    display: block; border-radius: 6px; box-shadow: 0 24px 70px rgba(0,0,0,.5);
+    background-color: #fff;
+    background-image: linear-gradient(#eef1f5 1px, transparent 1px), linear-gradient(90deg, #eef1f5 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+  .tbl { cursor: grab; transition: opacity .15s; }
+  .tbl.dragging { cursor: grabbing; }
+  .rel { transition: opacity .15s; }
+  .dim { opacity: .13; }
+  .hl .wire { stroke: #1a73e8; stroke-width: 1.8; stroke-dasharray: none; }
+  .hl .mk { stroke: #1a73e8; stroke-width: 1.5; }
+  footer {
+    display: flex; gap: 22px; align-items: center; flex-wrap: wrap; padding: 9px 22px;
+    font-size: 12px; color: var(--mut); background: var(--panel); border-top: 1px solid var(--line);
+  }
+  footer span { display: inline-flex; align-items: center; gap: 6px; }
+  footer .hint { margin-left: auto; opacity: .8; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">H</div>
+    <div>
+      <h1>HUASI · Modelo físico</h1>
+      <div class="sub">PostgreSQL · esquema consolidado (init.sql + migraciones)</div>
+    </div>
+  </div>
+  <div class="chips">
+    <div class="chip"><b id="stTables">0</b> tablas</div>
+    <div class="chip"><b id="stCols">0</b> columnas</div>
+    <div class="chip"><b id="stRels">0</b> relaciones</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="tools">
+    <button class="btn icon" id="btnZoomOut" title="Alejar">−</button>
+    <span id="zoomLbl">100%</span>
+    <button class="btn icon" id="btnZoomIn" title="Acercar">+</button>
+    <button class="btn" id="btnFit">Ajustar</button>
+    <button class="btn" id="btnReset">Restablecer diseño</button>
+    <button class="btn" id="btnSvg">Exportar SVG</button>
+    <button class="btn primary" id="btnPng">Exportar PNG</button>
+  </div>
+</header>
+
+<main id="viewport">
+  <div id="stage"><svg id="diagram" xmlns="http://www.w3.org/2000/svg"></svg></div>
+</main>
+
+<footer>
+  <span><svg width="14" height="12"><circle cx="4" cy="6" r="2.8" fill="#f4c430" stroke="#a8820c" stroke-width=".8"/><rect x="6" y="5.1" width="7" height="1.8" fill="#f4c430" stroke="#a8820c" stroke-width=".6"/></svg>Clave primaria</span>
+  <span><svg width="12" height="12"><path d="M6 1.5L10.5 6L6 10.5L1.5 6Z" fill="#e0605a" stroke="#a33a35"/></svg>Clave foránea</span>
+  <span><svg width="12" height="12"><path d="M6 1.5L10.5 6L6 10.5L1.5 6Z" fill="#3fb6d8" stroke="#2a93b3"/></svg>NOT NULL</span>
+  <span><svg width="12" height="12"><path d="M6 1.5L10.5 6L6 10.5L1.5 6Z" fill="#fff" stroke="#2a93b3"/></svg>Nullable</span>
+  <span><svg width="34" height="14"><path d="M2 7H32M4 2V12M8 2V12" stroke="#444" fill="none"/></svg>Uno (padre)</span>
+  <span><svg width="34" height="14"><path d="M2 7H32M20 7L32 1M20 7L32 13M14 2V12" stroke="#444" fill="none"/></svg>Uno a muchos (obligatorio)</span>
+  <span><svg width="34" height="14"><path d="M2 7H11M17 7H32M20 7L32 1M20 7L32 13" stroke="#444" fill="none"/><circle cx="14" cy="7" r="3" fill="#fff" stroke="#444"/></svg>Cero a muchos</span>
+  <span class="hint">Arrastra las tablas para reorganizar · pasa el cursor para resaltar relaciones · Ctrl + rueda para zoom</span>
+</footer>
+
+<script>
+/* =====================================================================
+   Esquema HUASI consolidado (database/init.sql + migrate_*.sql +
+   migraciones automáticas en services/auth). Formato: "nombre TIPO FLAGS"
+   FLAGS: PK = clave primaria, FK = clave foránea, NN = NOT NULL, UQ = UNIQUE
+   ===================================================================== */
+const SCHEMA = {
+  users: [
+    'id SERIAL PK', 'email VARCHAR(255) NN UQ', 'password_hash VARCHAR(255) NN',
+    'nombre VARCHAR(100) NN', 'apellido VARCHAR(100) NN', 'telefono VARCHAR(20)',
+    'role VARCHAR(20) NN', 'rol_universitario VARCHAR(50)', 'tipo_documento VARCHAR(30)',
+    'numero_documento VARCHAR(30)', 'universidad VARCHAR(150)', 'campus VARCHAR(100)',
+    'foto_perfil TEXT', 'email_verificado BOOLEAN', 'verificado BOOLEAN',
+    'otp_code VARCHAR(6)', 'otp_expires_at TIMESTAMP', 'otp_attempts INTEGER',
+    'otp_locked_until TIMESTAMP', 'otp_last_sent_at TIMESTAMP', 'otp_resend_count INTEGER',
+    'reset_password_token VARCHAR(255)', 'reset_password_expires_at TIMESTAMP',
+    'bloqueado BOOLEAN', 'motivo_bloqueo TEXT', 'bloqueado_en TIMESTAMP',
+    'soles_balance INTEGER', 'preferencias_convivencia JSONB', 'ultimo_acceso TIMESTAMPTZ',
+    'ultima_ruta VARCHAR(255)', 'dispositivo VARCHAR(50)', 'created_at TIMESTAMP', 'updated_at TIMESTAMP'
+  ],
+  verificaciones: [
+    'id SERIAL PK', 'user_id INTEGER FK', 'universidad VARCHAR(200) NN', 'tipo VARCHAR(20) NN',
+    'carnet_url TEXT NN', 'documento_url TEXT', 'estado VARCHAR(20)', 'revisado_por INTEGER FK',
+    'notas TEXT', 'created_at TIMESTAMP', 'updated_at TIMESTAMP'
+  ],
+  notificaciones: [
+    'id SERIAL PK', 'user_id INTEGER FK NN', 'tipo VARCHAR(50) NN', 'titulo VARCHAR(255) NN',
+    'cuerpo TEXT NN', 'url VARCHAR(500)', 'leida BOOLEAN NN', 'icono VARCHAR(50)',
+    'datos JSONB', 'created_at TIMESTAMPTZ NN'
+  ],
+  push_subscriptions: [
+    'id SERIAL PK', 'user_id INTEGER FK NN', 'endpoint TEXT NN UQ', 'p256dh TEXT NN',
+    'auth TEXT NN', 'user_agent TEXT', 'created_at TIMESTAMPTZ NN'
+  ],
+  user_actividades: [
+    'id SERIAL PK', 'user_id INTEGER FK', 'tipo_evento VARCHAR(50) NN', 'descripcion TEXT NN',
+    'ruta VARCHAR(255)', 'dispositivo VARCHAR(50)', 'metadata JSONB', 'created_at TIMESTAMPTZ'
+  ],
+  archivos: [
+    'id SERIAL PK', 'nombre VARCHAR(255) NN', 'mimetype VARCHAR(100) NN', 'datos BYTEA NN', 'created_at TIMESTAMP'
+  ],
+  conversaciones: [
+    'id SERIAL PK', 'user1_id INTEGER FK', 'user2_id INTEGER FK', 'created_at TIMESTAMP', 'updated_at TIMESTAMP'
+  ],
+  mensajes: [
+    'id SERIAL PK', 'conversacion_id INTEGER FK', 'sender_id INTEGER FK', 'contenido TEXT NN',
+    'tipo VARCHAR(20) NN', 'metadata JSONB', 'leido BOOLEAN', 'entregado BOOLEAN', 'created_at TIMESTAMP'
+  ],
+  soles_transacciones: [
+    'id SERIAL PK', 'user_id INTEGER FK', 'reserva_id INTEGER FK', 'cantidad INTEGER NN',
+    'motivo VARCHAR(100) NN', 'created_at TIMESTAMP'
+  ],
+  reportes: [
+    'id SERIAL PK', 'reportador_id INTEGER FK', 'reportado_id INTEGER FK', 'propiedad_id INTEGER FK',
+    'motivo VARCHAR(100) NN', 'descripcion TEXT', 'estado VARCHAR(20)', 'revisado_por INTEGER FK',
+    'notas_admin TEXT', 'created_at TIMESTAMP', 'updated_at TIMESTAMP'
+  ],
+  propiedades: [
+    'id SERIAL PK', 'host_id INTEGER FK', 'titulo VARCHAR(200) NN', 'descripcion TEXT',
+    'tipo VARCHAR(50) NN', 'direccion VARCHAR(300) NN', 'barrio VARCHAR(100)', 'ciudad VARCHAR(100)',
+    'latitud DECIMAL(10,8)', 'longitud DECIMAL(11,8)', 'campus_cercano VARCHAR(100)',
+    'capacidad INTEGER NN', 'duracion_maxima INTEGER', 'amenidades TEXT[]', 'reglas TEXT',
+    'fotos TEXT[]', 'es_pago BOOLEAN NN', 'precio_por_noche DECIMAL(12,2)', 'soles_por_noche INTEGER',
+    'activo BOOLEAN', 'estado_aprobacion VARCHAR(30)', 'revisado_por INTEGER FK',
+    'fecha_revision TIMESTAMP', 'notas_revision TEXT', 'checklist_evaluacion JSONB',
+    'created_at TIMESTAMP', 'updated_at TIMESTAMP'
+  ],
+  reservas: [
+    'id SERIAL PK', 'propiedad_id INTEGER FK', 'guest_id INTEGER FK', 'fecha_inicio DATE NN',
+    'fecha_fin DATE NN', 'estado VARCHAR(20)', 'mensaje TEXT', 'evento VARCHAR(200)',
+    'num_huespedes INTEGER', 'created_at TIMESTAMP', 'updated_at TIMESTAMP'
+  ],
+  resenas: [
+    'id SERIAL PK', 'reserva_id INTEGER FK', 'autor_id INTEGER FK', 'destino_id INTEGER FK',
+    'propiedad_id INTEGER FK', 'calificacion INTEGER', 'comentario TEXT', 'created_at TIMESTAMP'
+  ],
+  disponibilidad: [
+    'id SERIAL PK', 'propiedad_id INTEGER FK', 'fecha_inicio DATE NN', 'fecha_fin DATE NN', 'disponible BOOLEAN'
+  ]
+};
+
+/* [tabla hija, columna FK, tabla padre, ON DELETE] — todas referencian padre.id */
+const RELATIONS = [
+  ['verificaciones', 'user_id', 'users', 'CASCADE'],
+  ['verificaciones', 'revisado_por', 'users', 'NO ACTION'],
+  ['notificaciones', 'user_id', 'users', 'CASCADE'],
+  ['push_subscriptions', 'user_id', 'users', 'CASCADE'],
+  ['user_actividades', 'user_id', 'users', 'CASCADE'],
+  ['propiedades', 'host_id', 'users', 'CASCADE'],
+  ['propiedades', 'revisado_por', 'users', 'NO ACTION'],
+  ['conversaciones', 'user1_id', 'users', 'CASCADE'],
+  ['conversaciones', 'user2_id', 'users', 'CASCADE'],
+  ['mensajes', 'conversacion_id', 'conversaciones', 'CASCADE'],
+  ['mensajes', 'sender_id', 'users', 'CASCADE'],
+  ['soles_transacciones', 'user_id', 'users', 'CASCADE'],
+  ['soles_transacciones', 'reserva_id', 'reservas', 'SET NULL'],
+  ['reportes', 'reportador_id', 'users', 'CASCADE'],
+  ['reportes', 'reportado_id', 'users', 'CASCADE'],
+  ['reportes', 'propiedad_id', 'propiedades', 'SET NULL'],
+  ['reportes', 'revisado_por', 'users', 'NO ACTION'],
+  ['reservas', 'propiedad_id', 'propiedades', 'CASCADE'],
+  ['reservas', 'guest_id', 'users', 'CASCADE'],
+  ['resenas', 'reserva_id', 'reservas', 'CASCADE'],
+  ['resenas', 'autor_id', 'users', 'CASCADE'],
+  ['resenas', 'destino_id', 'users', 'NO ACTION'],
+  ['resenas', 'propiedad_id', 'propiedades', 'NO ACTION'],
+  ['disponibilidad', 'propiedad_id', 'propiedades', 'CASCADE']
+];
+
+/* Disposición inicial por columnas: separación horizontal + [tabla, y] */
+const INITIAL_LAYOUT = [
+  { gap: 24,  tables: [['verificaciones', 24], ['notificaciones', 296], ['push_subscriptions', 552], ['user_actividades', 760], ['archivos', 984]] },
+  { gap: 96,  tables: [['users', 192]] },
+  { gap: 144, tables: [['conversaciones', 24], ['mensajes', 200], ['soles_transacciones', 440], ['reportes', 632]] },
+  { gap: 104, tables: [['propiedades', 192]] },
+  { gap: 104, tables: [['reservas', 24], ['resenas', 304], ['disponibilidad', 528]] }
+];
+
+/* ---------------------------- Constantes ---------------------------- */
+const G = 8, HDR = 24, ROW = 16, FTR = 16, STUB = 24, MARGIN = 48;
+const TURN = 6, OVERLAP = 10, CROSS = 2;
+const FONT = "'Segoe UI', Tahoma, Arial, sans-serif";
+const NS = 'http://www.w3.org/2000/svg';
+const STORE_KEY = 'huasi-modelo-fisico-v1';
+
+const svg = document.getElementById('diagram');
+svg.setAttribute('font-family', FONT);
+const el = (tag, attrs = {}, parent) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+};
+const snap = v => Math.round(v / G) * G;
+
+/* ------------------------------ Modelo ------------------------------ */
+const tables = {};
+for (const [name, cols] of Object.entries(SCHEMA)) {
+  tables[name] = {
+    name, x: 0, y: 0, w: 0, h: HDR + cols.length * ROW + FTR,
+    rows: cols.map(c => {
+      const [n, type, ...flags] = c.split(' ');
+      return { name: n, type, pk: flags.includes('PK'), fk: flags.includes('FK'),
+               nn: flags.includes('PK') || flags.includes('NN') };
+    })
+  };
+}
+const edges = RELATIONS.map(([child, col, parent, del]) => {
+  const rowIdx = tables[child].rows.findIndex(r => r.name === col);
+  return { child, col, parent, del, rowIdx, nn: tables[child].rows[rowIdx].nn };
+});
+
+/* ----------------------------- Defs SVG ----------------------------- */
+const defs = el('defs', {}, svg);
+const hg = el('linearGradient', { id: 'hdrGrad', x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+el('stop', { offset: '0', 'stop-color': '#c3d8f1' }, hg);
+el('stop', { offset: '1', 'stop-color': '#8eb0d9' }, hg);
+const fg = el('linearGradient', { id: 'ftrGrad', x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+el('stop', { offset: '0', 'stop-color': '#d4d4d4' }, fg);
+el('stop', { offset: '1', 'stop-color': '#b3b3b3' }, fg);
+
+const bgRect = el('rect', { x: 0, y: 0, fill: 'transparent', class: 'bg' }, svg);
+const gEdges = el('g', { id: 'edges' }, svg);
+const gTables = el('g', { id: 'tables' }, svg);
+
+const measurer = el('text', { 'font-size': 11, visibility: 'hidden' }, svg);
+function measure(str, bold) {
+  measurer.setAttribute('font-weight', bold ? '700' : '400');
+  measurer.textContent = str;
+  return measurer.getComputedTextLength();
+}
+
+function drawIcon(g, x, cy, row) {
+  if (row.pk) {
+    el('circle', { cx: x + 3, cy, r: 2.8, fill: '#f4c430', stroke: '#a8820c', 'stroke-width': .8 }, g);
+    el('path', { d: `M${x + 5.6} ${cy - .9}h6v1.8h-1.2v1.8h-1.4v-1.8h-3.4z`, fill: '#f4c430', stroke: '#a8820c', 'stroke-width': .6 }, g);
+    return;
+  }
+  const fk = row.fk;
+  const fill = fk ? (row.nn ? '#e0605a' : '#fbe3e2') : (row.nn ? '#3fb6d8' : '#ffffff');
+  const stroke = fk ? '#a33a35' : '#2a93b3';
+  el('path', { d: `M${x + 5} ${cy - 4.5}L${x + 9.5} ${cy}L${x + 5} ${cy + 4.5}L${x + .5} ${cy}Z`, fill, stroke, 'stroke-width': .9 }, g);
+}
+
+function buildTable(t) {
+  let w = measure(t.name, true) + 44;
+  t.rows.forEach(r => { w = Math.max(w, 26 + measure(`${r.name} ${r.type}`) + 16); });
+  t.w = Math.ceil(Math.max(w, 168) / G) * G;
+
+  const g = el('g', { class: 'tbl', 'data-t': t.name }, gTables);
+  t.g = g;
+  el('rect', { x: 2, y: 3, width: t.w, height: t.h, fill: 'rgba(0,0,0,.13)', rx: 2 }, g);
+  el('rect', { x: 0, y: 0, width: t.w, height: t.h, fill: '#fff', stroke: '#7f9cc0', rx: 2 }, g);
+  el('rect', { x: .5, y: .5, width: t.w - 1, height: HDR, fill: 'url(#hdrGrad)' }, g);
+  el('line', { x1: 0, y1: HDR + .5, x2: t.w, y2: HDR + .5, stroke: '#7f9cc0' }, g);
+  el('text', { x: 8, y: 16, 'font-size': 11.5, 'font-weight': 700, fill: '#1b2a3d' }, g).textContent = t.name;
+  el('polygon', { points: `${t.w - 15},10 ${t.w - 7},10 ${t.w - 11},15`, fill: '#4a6a93' }, g);
+
+  t.rows.forEach((r, i) => {
+    const y0 = HDR + i * ROW;
+    drawIcon(g, 8, y0 + ROW / 2 + .5, r);
+    const tx = el('text', { x: 24, y: y0 + 12, 'font-size': 11 }, g);
+    el('tspan', { fill: '#1f2937' }, tx).textContent = r.name + ' ';
+    el('tspan', { fill: '#5f6b7a' }, tx).textContent = r.type;
+  });
+
+  el('rect', { x: .5, y: t.h - FTR, width: t.w - 1, height: FTR - .5, fill: 'url(#ftrGrad)' }, g);
+  el('text', { x: 8, y: t.h - 4.5, 'font-size': 10, 'font-weight': 700, fill: '#fff' }, g).textContent = 'Indexes';
+  el('polygon', { points: `${t.w - 12},${t.h - 12} ${t.w - 12},${t.h - 4} ${t.w - 7},${t.h - 8}`, fill: '#fff' }, g);
+}
+
+function placeTable(t) { t.g.setAttribute('transform', `translate(${t.x},${t.y})`); }
+
+/* ---------------------------- Disposición --------------------------- */
+function applyInitialLayout() {
+  let x = 0;
+  for (const col of INITIAL_LAYOUT) {
+    x += col.gap;
+    let maxW = 0;
+    for (const [name, y] of col.tables) {
+      const t = tables[name];
+      t.x = snap(x); t.y = y;
+      maxW = Math.max(maxW, t.w);
+    }
+    x += maxW;
+  }
+}
+function saveLayout() {
+  const data = {};
+  for (const t of Object.values(tables)) data[t.name] = [t.x, t.y];
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+}
+function loadLayout() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    if (!data) return false;
+    for (const t of Object.values(tables)) if (data[t.name]) [t.x, t.y] = data[t.name];
+    return true;
+  } catch { return false; }
+}
+
+/* ------------------------ Enrutamiento (A*) ------------------------- */
+let cols = 0, rows = 0, blocked, usedH, usedV, gScore, cameFrom, closed;
+const DX = [1, 0, -1, 0], DY = [0, 1, 0, -1];
+
+class Heap {
+  constructor() { this.k = []; this.v = []; }
+  get size() { return this.k.length; }
+  push(v, k) {
+    const K = this.k, V = this.v; let i = K.length; K.push(k); V.push(v);
+    while (i > 0) { const p = (i - 1) >> 1; if (K[p] <= k) break; K[i] = K[p]; V[i] = V[p]; i = p; }
+    K[i] = k; V[i] = v;
+  }
+  pop() {
+    const K = this.k, V = this.v, top = V[0], lk = K.pop(), lv = V.pop(), n = K.length;
+    if (n) {
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1; if (l >= n) break;
+        const r = l + 1, m = (r < n && K[r] < K[l]) ? r : l;
+        if (K[m] >= lk) break;
+        K[i] = K[m]; V[i] = V[m]; i = m;
+      }
+      K[i] = lk; V[i] = lv;
+    }
+    return top;
+  }
+}
+
+function buildGrid(W, H) {
+  cols = Math.ceil(W / G) + 1; rows = Math.ceil(H / G) + 1;
+  const N = cols * rows;
+  blocked = new Uint8Array(N); usedH = new Uint8Array(N); usedV = new Uint8Array(N);
+  if (!gScore || gScore.length < N * 4) {
+    gScore = new Float32Array(N * 4); cameFrom = new Int32Array(N * 4); closed = new Uint8Array(N * 4);
+  }
+  for (const t of Object.values(tables)) {
+    const i0 = Math.max(0, Math.floor((t.x - G) / G)), i1 = Math.min(cols - 1, Math.ceil((t.x + t.w + G) / G));
+    const j0 = Math.max(0, Math.floor((t.y - G) / G)), j1 = Math.min(rows - 1, Math.ceil((t.y + t.h + G) / G));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) blocked[j * cols + i] = 1;
+  }
+}
+
+function astar(si, sj, sd, ei, ej, ed) {
+  const N4 = cols * rows * 4;
+  gScore.fill(1e9, 0, N4); cameFrom.fill(-1, 0, N4); closed.fill(0, 0, N4);
+  const heap = new Heap(), goal = ej * cols + ei;
+  const s = (sj * cols + si) * 4 + sd;
+  gScore[s] = 0; heap.push(s, Math.abs(si - ei) + Math.abs(sj - ej));
+  while (heap.size) {
+    const st = heap.pop();
+    if (closed[st]) continue;
+    closed[st] = 1;
+    const cell = st >> 2, d = st & 3;
+    if (cell === goal) {
+      const path = []; let p = st;
+      while (p !== -1) { path.push(p >> 2); p = cameFrom[p]; }
+      return path.reverse();
+    }
+    const i = cell % cols, j = (cell / cols) | 0, g0 = gScore[st];
+    for (let nd = 0; nd < 4; nd++) {
+      if (nd === ((d + 2) & 3)) continue;
+      const ni = i + DX[nd], nj = j + DY[nd];
+      if (ni < 0 || nj < 0 || ni >= cols || nj >= rows) continue;
+      const nc = nj * cols + ni;
+      if (blocked[nc] && nc !== goal) continue;
+      const horiz = (nd & 1) === 0;
+      let cost = 1 + (nd !== d ? TURN : 0);
+      cost += horiz ? usedH[nc] * OVERLAP + usedV[nc] * CROSS : usedV[nc] * OVERLAP + usedH[nc] * CROSS;
+      if (nc === goal && nd !== ed) cost += TURN;
+      const ns = nc * 4 + nd, ng = g0 + cost;
+      if (ng < gScore[ns]) {
+        gScore[ns] = ng; cameFrom[ns] = st;
+        heap.push(ns, ng + Math.abs(ni - ei) + Math.abs(nj - ej));
+      }
+    }
+  }
+  return null;
+}
+
+function markUsed(path) {
+  for (let k = 1; k < path.length; k++) {
+    const a = path[k - 1], b = path[k];
+    const arr = (b - a === 1 || a - b === 1) ? usedH : usedV;
+    if (arr[a] < 250) arr[a]++;
+    if (arr[b] < 250) arr[b]++;
+  }
+}
+
+function simplify(pts) {
+  const out = [pts[0]];
+  for (let k = 1; k < pts.length - 1; k++) {
+    const a = out[out.length - 1], b = pts[k], c = pts[k + 1];
+    if ((a.x === b.x && b.x === c.x) || (a.y === b.y && b.y === c.y)) continue;
+    out.push(b);
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
+}
+
+/* --------------------------- Relaciones ----------------------------- */
+function computeAnchors() {
+  for (const e of edges) {
+    const c = tables[e.child], p = tables[e.parent];
+    const overlap = c.x < p.x + p.w + 2 * STUB && p.x < c.x + c.w + 2 * STUB;
+    if (overlap) { e.cs = 'R'; e.ps = 'R'; }
+    else if (c.x + c.w / 2 < p.x + p.w / 2) { e.cs = 'R'; e.ps = 'L'; }
+    else { e.cs = 'L'; e.ps = 'R'; }
+    e.cx = e.cs === 'R' ? c.x + c.w : c.x;
+    e.cy = c.y + HDR + e.rowIdx * ROW + ROW / 2;
+  }
+  const groups = {};
+  for (const e of edges) (groups[e.parent + e.ps] ||= []).push(e);
+  for (const list of Object.values(groups)) {
+    const p = tables[list[0].parent];
+    list.sort((a, b) => a.cy - b.cy || a.cx - b.cx);
+    const top = p.y + HDR + G, bottom = p.y + p.h - FTR - G, n = list.length;
+    let prev = -Infinity;
+    list.forEach((e, i) => {
+      let y = snap(top + (bottom - top) * (i + .5) / n);
+      if (y <= prev) y = prev + G;
+      prev = y;
+      e.py = y;
+      e.px = e.ps === 'R' ? p.x + p.w : p.x;
+    });
+  }
+}
+
+function canvasSize() {
+  let W = 0, H = 0;
+  for (const t of Object.values(tables)) { W = Math.max(W, t.x + t.w); H = Math.max(H, t.y + t.h); }
+  return { W: W + MARGIN, H: H + MARGIN };
+}
+
+function routeAll() {
+  const { W, H } = canvasSize();
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  bgRect.setAttribute('width', W); bgRect.setAttribute('height', H);
+  applyZoom(W, H);
+  buildGrid(W, H);
+  computeAnchors();
+  gEdges.replaceChildren();
+
+  const order = [...edges].sort((a, b) =>
+    (Math.abs(a.cx - a.px) + Math.abs(a.cy - a.py)) - (Math.abs(b.cx - b.px) + Math.abs(b.cy - b.py)));
+
+  for (const e of order) {
+    const oc = e.cs === 'R' ? 1 : -1, op = e.ps === 'R' ? 1 : -1;
+    const sx = e.cx + oc * STUB, ex = e.px + op * STUB;
+    const path = astar(sx / G, e.cy / G, oc > 0 ? 0 : 2, ex / G, e.py / G, op > 0 ? 2 : 0);
+    let pts;
+    if (path) {
+      markUsed(path);
+      pts = [{ x: e.cx, y: e.cy }, ...path.map(c => ({ x: (c % cols) * G, y: ((c / cols) | 0) * G })), { x: e.px, y: e.py }];
+    } else {
+      const mx = snap((sx + ex) / 2);
+      pts = [{ x: e.cx, y: e.cy }, { x: sx, y: e.cy }, { x: mx, y: e.cy }, { x: mx, y: e.py }, { x: ex, y: e.py }, { x: e.px, y: e.py }];
+    }
+    drawEdge(e, simplify(pts), oc, op);
+  }
+}
+
+function drawEdge(e, pts, oc, op) {
+  const g = el('g', { class: 'rel', 'data-c': e.child, 'data-p': e.parent }, gEdges);
+  el('title', {}, g).textContent = `${e.child}.${e.col} → ${e.parent}.id  (ON DELETE ${e.del})`;
+  const d = 'M' + pts.map(p => `${p.x} ${p.y}`).join(' L');
+  el('path', { d, fill: 'none', stroke: 'transparent', 'stroke-width': 9 }, g);
+  el('path', { class: 'wire', d, fill: 'none', stroke: '#555', 'stroke-width': 1, 'stroke-dasharray': '5 3' }, g);
+
+  // Extremo hijo: pata de gallo (muchos) + círculo (opcional) o barra (obligatorio)
+  const x = e.cx, y = e.cy, tip = x + oc * 12;
+  el('path', { class: 'mk', d: `M${tip} ${y}L${x} ${y - 6}M${tip} ${y}L${x} ${y}M${tip} ${y}L${x} ${y + 6}`, stroke: '#555', fill: 'none' }, g);
+  if (e.nn) el('line', { class: 'mk', x1: x + oc * 16, y1: y - 5, x2: x + oc * 16, y2: y + 5, stroke: '#555' }, g);
+  else el('circle', { class: 'mk', cx: x + oc * 17, cy: y, r: 3.2, fill: '#fff', stroke: '#555' }, g);
+
+  // Extremo padre: uno y solo uno
+  for (const off of [6, 10]) {
+    el('line', { class: 'mk', x1: e.px + op * off, y1: e.py - 5, x2: e.px + op * off, y2: e.py + 5, stroke: '#555' }, g);
+  }
+}
+
+/* --------------------------- Interacción ---------------------------- */
+let zoom = 1;
+const zoomLbl = document.getElementById('zoomLbl');
+function applyZoom(W, H) {
+  if (W === undefined) ({ W, H } = canvasSize());
+  svg.setAttribute('width', Math.round(W * zoom));
+  svg.setAttribute('height', Math.round(H * zoom));
+  zoomLbl.textContent = Math.round(zoom * 100) + '%';
+}
+let autoFit = true;
+function setZoom(z, manual = true) {
+  if (manual) autoFit = false;
+  zoom = Math.min(2.5, Math.max(.3, z)); applyZoom();
+}
+function fit() {
+  const { W } = canvasSize();
+  const vw = Math.max(document.getElementById('viewport').clientWidth, window.innerWidth * .6);
+  setZoom(Math.min(1.25, (vw - 56) / W), false);
+  autoFit = true;
+}
+window.addEventListener('resize', () => { if (autoFit) fit(); });
+
+function svgPoint(ev) {
+  const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+function highlight(name) {
+  const related = new Set([name]);
+  gEdges.querySelectorAll('.rel').forEach(r => {
+    const on = r.dataset.c === name || r.dataset.p === name;
+    r.classList.toggle('hl', on); r.classList.toggle('dim', !on);
+    if (on) { related.add(r.dataset.c); related.add(r.dataset.p); }
+  });
+  gTables.querySelectorAll('.tbl').forEach(t => t.classList.toggle('dim', !related.has(t.dataset.t)));
+}
+function clearHighlight() {
+  svg.querySelectorAll('.hl, .dim').forEach(n => n.classList.remove('hl', 'dim'));
+}
+
+let drag = null, rafPending = false;
+function scheduleRoute() {
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => { rafPending = false; routeAll(); if (drag) highlight(drag.t.name); });
+}
+
+function attachInteractions(t) {
+  t.g.addEventListener('mouseenter', () => { if (!drag) highlight(t.name); });
+  t.g.addEventListener('mouseleave', () => { if (!drag) clearHighlight(); });
+  t.g.addEventListener('pointerdown', ev => {
+    ev.preventDefault();
+    const p = svgPoint(ev);
+    drag = { t, ox: p.x - t.x, oy: p.y - t.y };
+    t.g.classList.add('dragging');
+    gTables.appendChild(t.g);
+  });
+}
+window.addEventListener('pointermove', ev => {
+  if (!drag) return;
+  const p = svgPoint(ev), t = drag.t;
+  const nx = Math.max(G * 3, snap(p.x - drag.ox)), ny = Math.max(G * 2, snap(p.y - drag.oy));
+  if (nx === t.x && ny === t.y) return;
+  t.x = nx; t.y = ny; placeTable(t); scheduleRoute();
+});
+window.addEventListener('pointerup', () => {
+  if (!drag) return;
+  drag.t.g.classList.remove('dragging');
+  drag = null; saveLayout(); clearHighlight();
+});
+
+document.getElementById('viewport').addEventListener('wheel', ev => {
+  if (!ev.ctrlKey) return;
+  ev.preventDefault();
+  setZoom(zoom * (ev.deltaY < 0 ? 1.1 : 1 / 1.1));
+}, { passive: false });
+document.getElementById('btnZoomIn').onclick = () => setZoom(zoom * 1.15);
+document.getElementById('btnZoomOut').onclick = () => setZoom(zoom / 1.15);
+document.getElementById('btnFit').onclick = fit;
+document.getElementById('btnReset').onclick = () => {
+  localStorage.removeItem(STORE_KEY);
+  applyInitialLayout();
+  Object.values(tables).forEach(placeTable);
+  routeAll(); fit();
+};
+
+/* ---------------------------- Exportación --------------------------- */
+function exportMarkup() {
+  const { W, H } = canvasSize();
+  const clone = svg.cloneNode(true);
+  clone.querySelectorAll('.hl, .dim, .dragging').forEach(n => n.classList.remove('hl', 'dim', 'dragging'));
+  clone.querySelectorAll('text[visibility="hidden"]').forEach(n => n.remove());
+  clone.setAttribute('width', W); clone.setAttribute('height', H);
+  clone.removeAttribute('style');
+  clone.querySelector('.bg').setAttribute('fill', '#ffffff');
+  return { markup: new XMLSerializer().serializeToString(clone), W, H };
+}
+function download(url, name) {
+  const a = document.createElement('a'); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+document.getElementById('btnSvg').onclick = () => {
+  const { markup } = exportMarkup();
+  const url = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml' }));
+  download(url, 'HUASI_modelo_fisico.svg');
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+document.getElementById('btnPng').onclick = () => {
+  const { markup, W, H } = exportMarkup();
+  const scale = 3, img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = W * scale; c.height = H * scale;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.scale(scale, scale); ctx.drawImage(img, 0, 0, W, H);
+    c.toBlob(b => {
+      const url = URL.createObjectURL(b);
+      download(url, 'HUASI_modelo_fisico.png');
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, 'image/png');
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(markup);
+};
+
+/* ------------------------------ Inicio ------------------------------ */
+Object.values(tables).forEach(buildTable);
+applyInitialLayout();
+loadLayout();
+Object.values(tables).forEach(t => { placeTable(t); attachInteractions(t); });
+document.getElementById('stTables').textContent = Object.keys(tables).length;
+document.getElementById('stCols').textContent = Object.values(tables).reduce((s, t) => s + t.rows.length, 0);
+document.getElementById('stRels').textContent = edges.length;
+routeAll();
+fit();
+</script>
+</body>
+</html>

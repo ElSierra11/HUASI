@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="1060" viewBox="0 0 780 1060" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" orient="auto">
+      <path d="M1,1 L11,6 L1,11" fill="none" stroke="#1F3A5F" stroke-width="1.6"/>
+    </marker>
+    <style>
+      .box { fill: #FFFFFF; stroke: #1F3A5F; stroke-width: 1.6; }
+      .head { fill: #DCE6F2; stroke: #1F3A5F; stroke-width: 1.6; }
+      .div { stroke: #1F3A5F; stroke-width: 1.2; }
+      .title { font-size: 16px; font-weight: bold; fill: #1F3A5F; text-anchor: middle; }
+      .item { font-size: 14px; fill: #222222; }
+      .mult { font-size: 14px; fill: #1F3A5F; font-weight: bold; }
+      .assoc { stroke: #1F3A5F; stroke-width: 1.6; fill: none; }
+      .caption { font-size: 16px; fill: #222222; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect width="780" height="1060" fill="#FFFFFF"/>
+
+  <!-- ================= Usuario ================= -->
+  <rect class="box" x="80" y="80" width="260" height="258"/>
+  <rect class="head" x="80" y="80" width="260" height="36"/>
+  <text class="title" x="210" y="103">Usuario</text>
+  <text class="item" x="92" y="138">idUsuario</text>
+  <text class="item" x="92" y="160">nombre</text>
+  <text class="item" x="92" y="182">correo</text>
+  <text class="item" x="92" y="204">contraseña</text>
+  <text class="item" x="92" y="226">rol</text>
+  <text class="item" x="92" y="248">estado</text>
+  <line class="div" x1="80" y1="260" x2="340" y2="260"/>
+  <text class="item" x="92" y="282">registrarse()</text>
+  <text class="item" x="92" y="304">iniciarSesion()</text>
+  <text class="item" x="92" y="326">actualizarPerfil()</text>
+
+  <!-- ================= Alojamiento ================= -->
+  <rect class="box" x="80" y="418" width="260" height="258"/>
+  <rect class="head" x="80" y="418" width="260" height="36"/>
+  <text class="title" x="210" y="441">Alojamiento</text>
+  <text class="item" x="92" y="476">idAlojamiento</text>
+  <text class="item" x="92" y="498">titulo</text>
+  <text class="item" x="92" y="520">descripcion</text>
+  <text class="item" x="92" y="542">ubicacion</text>
+  <text class="item" x="92" y="564">capacidad</text>
+  <text class="item" x="92" y="586">disponibilidad</text>
+  <line class="div" x1="80" y1="598" x2="340" y2="598"/>
+  <text class="item" x="92" y="620">publicar()</text>
+  <text class="item" x="92" y="642">actualizar()</text>
+  <text class="item" x="92" y="664">consultar()</text>
+
+  <!-- ================= Solicitud ================= -->
+  <rect class="box" x="80" y="756" width="260" height="236"/>
+  <rect class="head" x="80" y="756" width="260" height="36"/>
+  <text class="title" x="210" y="779">Solicitud</text>
+  <text class="item" x="92" y="814">idSolicitud</text>
+  <text class="item" x="92" y="836">fechaInicio</text>
+  <text class="item" x="92" y="858">fechaFin</text>
+  <text class="item" x="92" y="880">estado</text>
+  <line class="div" x1="80" y1="892" x2="340" y2="892"/>
+  <text class="item" x="92" y="914">crearSolicitud()</text>
+  <text class="item" x="92" y="936">aceptar()</text>
+  <text class="item" x="92" y="958">rechazar()</text>
+  <text class="item" x="92" y="980">cancelar()</text>
+
+  <!-- ================= Mensaje ================= -->
+  <rect class="box" x="440" y="80" width="260" height="214"/>
+  <rect class="head" x="440" y="80" width="260" height="36"/>
+  <text class="title" x="570" y="103">Mensaje</text>
+  <text class="item" x="452" y="138">idMensaje</text>
+  <text class="item" x="452" y="160">emisor</text>
+  <text class="item" x="452" y="182">receptor</text>
+  <text class="item" x="452" y="204">contenido</text>
+  <text class="item" x="452" y="226">fecha</text>
+  <line class="div" x1="440" y1="238" x2="700" y2="238"/>
+  <text class="item" x="452" y="260">enviar()</text>
+  <text class="item" x="452" y="282">consultarConversacion()</text>
+
+  <!-- ================= Validacion ================= -->
+  <rect class="box" x="440" y="418" width="260" height="192"/>
+  <rect class="head" x="440" y="418" width="260" height="36"/>
+  <text class="title" x="570" y="441">Validacion</text>
+  <text class="item" x="452" y="476">idValidacion</text>
+  <text class="item" x="452" y="498">tipo</text>
+  <text class="item" x="452" y="520">fecha</text>
+  <text class="item" x="452" y="542">estado</text>
+  <line class="div" x1="440" y1="554" x2="700" y2="554"/>
+  <text class="item" x="452" y="576">verificar()</text>
+  <text class="item" x="452" y="598">actualizarEstado()</text>
+
+  <!-- ================= Asociaciones ================= -->
+  <!-- Usuario 1 -> 0..* Alojamiento -->
+  <line class="assoc" x1="210" y1="338" x2="210" y2="417" marker-end="url(#arrow)"/>
+  <text class="mult" x="220" y="356">1</text>
+  <text class="mult" x="220" y="410">0..*</text>
+
+  <!-- Alojamiento 1 -> 0..* Solicitud -->
+  <line class="assoc" x1="210" y1="676" x2="210" y2="755" marker-end="url(#arrow)"/>
+  <text class="mult" x="220" y="694">1</text>
+  <text class="mult" x="220" y="748">0..*</text>
+
+  <!-- Pie de figura -->
+  <text class="caption" x="390" y="1040"><tspan font-weight="bold">Figura X.</tspan> Diagrama de clases conceptual de HUASI</text>
+</svg>

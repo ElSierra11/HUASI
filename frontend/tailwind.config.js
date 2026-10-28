@@ -20,10 +20,23 @@ export default {
           text: '#1a2e1f',
           muted: '#4a6358',
           border: '#c8ddd2'
+        },
+        huasi: {
+          green: '#0d7c3d',
+          emerald: '#059669',
+          teal: '#0d9488',
+          turquoise: '#0284c7',
+          navy: '#0a1324',
+          night: '#050a14',
+          cream: '#faf8f5',
+          sand: '#f5eee6',
+          warm: '#fdfbf7',
         }
       },
       fontFamily: {
-        heading: ['Sora', 'system-ui', 'sans-serif'],
+        editorial: ['Fraunces', 'Playfair Display', 'Georgia', 'serif'],
+        serif: ['Playfair Display', 'Georgia', 'serif'],
+        heading: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
         body: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
       },
       borderRadius: {

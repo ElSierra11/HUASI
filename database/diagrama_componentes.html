@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HUASI · Diagrama de Componentes (Vista de Implementación)</title>
+<meta name="description" content="Diagrama de Componentes UML de HUASI (Sección 4.3.1.1 Vista de Implementación) con arquitectura de microservicios, clientes web/admin y persistencia.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1220;
+    --panel: rgba(22, 29, 46, 0.85);
+    --line: #263150;
+    --txt: #e7ecf6;
+    --mut: #8d99b3;
+    --acc: #5b9cf5;
+    --acc2: #8b5cf6;
+    --comp-fill: #a5f3fc;
+    --comp-header: #38bdf8;
+    --comp-border: #0284c7;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: Outfit, system-ui, sans-serif;
+    color: var(--txt);
+    background: radial-gradient(1100px 600px at 0% -10%, #1c2a4f 0, transparent 60%),
+                radial-gradient(900px 500px at 100% 110%, #2a1d4f 0, transparent 60%), var(--bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 24px;
+    background: var(--panel);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+    font-weight: 700; font-size: 18px;
+    box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+  }
+  h1 { margin: 0; font-size: 17px; font-weight: 600; }
+  .sub { font-size: 12px; color: var(--mut); margin-top: 2px; }
+  .chips { display: flex; gap: 8px; margin-left: 12px; }
+  .chip {
+    font-size: 12px; padding: 5px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: rgba(255,255,255,0.03); color: var(--mut);
+  }
+  .chip b { color: var(--txt); font-weight: 600; }
+  .spacer { flex: 1; }
+  .tools { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    font: inherit; font-size: 13px; color: var(--txt); cursor: pointer;
+    padding: 8px 14px; border-radius: 9px; border: 1px solid var(--line);
+    background: rgba(255,255,255,0.04); transition: all .18s ease;
+  }
+  .btn:hover { background: rgba(255,255,255,0.09); border-color: #3b82f6; transform: translateY(-1px); }
+  .btn.primary {
+    border: none;
+    background: linear-gradient(135deg, #0284c7, #2563eb);
+    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35);
+  }
+  .btn.primary:hover { box-shadow: 0 8px 24px rgba(37, 99, 235, 0.5); }
+  .btn.icon { width: 36px; padding: 8px 0; text-align: center; }
+  #zoomLbl { font-size: 12px; color: var(--mut); width: 44px; text-align: center; font-family: 'JetBrains Mono', monospace; }
+  
+  main {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+    background: radial-gradient(#1e293b 1px, transparent 1px);
+    background-size: 20px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+  }
+  
+  #canvasContainer {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.45);
+    padding: 20px;
+    overflow: hidden;
+    transition: transform 0.15s ease-out;
+    transform-origin: center center;
+  }
+  
+  svg#diagram {
+    display: block;
+    background-color: #ffffff;
+    background-image: linear-gradient(#f1f5f9 1px, transparent 1px), linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  /* Estilos de elementos UML */
+  .uml-title {
+    font-family: Outfit, sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    fill: #0f172a;
+  }
+  .uml-subtitle {
+    font-family: Outfit, sans-serif;
+    font-size: 13px;
+    fill: #64748b;
+  }
+  .uml-section-box {
+    fill: #f8fafc;
+    stroke: #cbd5e1;
+    stroke-width: 1.5;
+    stroke-dasharray: 6 4;
+    rx: 8;
+  }
+  .uml-section-label {
+    font-family: Outfit, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    fill: #475569;
+    text-transform: uppercase;
+  }
+  
+  /* Component box styles estilo RUP/UML del documento */
+  .comp-rect {
+    fill: #bbf7d0;
+    stroke: #86efac;
+    stroke-width: 1.5;
+  }
+  .comp-tag {
+    fill: #86efac;
+    stroke: #4ade80;
+    stroke-width: 1.2;
+  }
+  .comp-text {
+    font-family: Outfit, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    fill: #064e3b;
+    text-anchor: middle;
+  }
+  .comp-subtext {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    fill: #047857;
+    text-anchor: middle;
+  }
+
+  /* Microservicios cyan como el ejemplo */
+  .svc-comp-rect {
+    fill: #a5f3fc;
+    stroke: #0284c7;
+    stroke-width: 1.8;
+    filter: drop-shadow(0 2px 4px rgba(2, 132, 199, 0.15));
+  }
+  .svc-comp-tag {
+    fill: #67e8f9;
+    stroke: #0284c7;
+    stroke-width: 1.5;
+  }
+  .svc-comp-text {
+    font-family: Outfit, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    fill: #0f172a;
+    text-anchor: middle;
+  }
+  .svc-comp-subtext {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    fill: #0369a1;
+    text-anchor: middle;
+  }
+
+  /* UI Component (Teléfono / Pantalla web) */
+  .ui-device {
+    fill: #e0f2fe;
+    stroke: #0284c7;
+    stroke-width: 2;
+    rx: 6;
+  }
+  .ui-screen-hdr {
+    fill: #38bdf8;
+    stroke: #0284c7;
+    stroke-width: 1.5;
+  }
+
+  /* BD NoSQL / BD Relacional Cilindro */
+  .db-cylinder-body {
+    fill: #a5f3fc;
+    stroke: #0284c7;
+    stroke-width: 1.8;
+  }
+  .db-cylinder-top {
+    fill: #67e8f9;
+    stroke: #0284c7;
+    stroke-width: 1.8;
+  }
+
+  /* Dependencias (líneas punteadas rojas con flecha abierta como en el PDF) */
+  .dep-line {
+    stroke: #dc2626;
+    stroke-width: 1.8;
+    stroke-dasharray: 4 3;
+    fill: none;
+  }
+  .dep-line-blue {
+    stroke: #2563eb;
+    stroke-width: 1.8;
+    stroke-dasharray: 4 3;
+    fill: none;
+  }
+  .dep-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    fill: #991b1b;
+    font-weight: 600;
+    background: #fff;
+  }
+
+  footer {
+    display: flex; gap: 24px; align-items: center; padding: 10px 24px;
+    font-size: 12px; color: var(--mut); background: var(--panel); border-top: 1px solid var(--line);
+  }
+  footer span { display: inline-flex; align-items: center; gap: 6px; }
+  footer .legend-box { width: 14px; height: 10px; border-radius: 2px; }
+  footer .hint { margin-left: auto; opacity: .8; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">H</div>
+    <div>
+      <h1>HUASI · 4.3.1.1. Diagrama de componentes</h1>
+      <div class="sub">Fase de construcción · Vista de Implementación UML (Microservicios + Frontend + DB)</div>
+    </div>
+  </div>
+  <div class="chips">
+    <div class="chip">Arquitectura: <b>Microservicios + API Gateway</b></div>
+    <div class="chip">Frontends: <b>Web (Vite/React) & Admin Panel</b></div>
+    <div class="chip">BD: <b>PostgreSQL Relacional</b></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="tools">
+    <button class="btn icon" id="btnZoomOut" title="Alejar">−</button>
+    <span id="zoomLbl">100%</span>
+    <button class="btn icon" id="btnZoomIn" title="Acercar">+</button>
+    <button class="btn" id="btnFit">Ajustar</button>
+    <button class="btn" id="btnSvg">Exportar SVG</button>
+    <button class="btn primary" id="btnPng">Exportar PNG (Alta resolución)</button>
+  </div>
+</header>
+
+<main id="viewport">
+  <div id="canvasContainer">
+    <svg id="diagram" width="1260" height="720" viewBox="0 0 1260 720" xmlns="http://www.w3.org/2000/svg">
+      <!-- Marcadores de Flechas UML (línea punteada con flecha abierta roja/azul) -->
+      <defs>
+        <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 9 5 L 0 9" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </marker>
+        <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 9 5 L 0 9" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </marker>
+      </defs>
+
+      <!-- Título y Encabezado del Diagrama Documental -->
+      <text x="40" y="44" class="uml-title">4.3.1.1. Diagrama de componentes — Sistema HUASI</text>
+      <text x="40" y="66" class="uml-subtitle">Vista de Implementación: Empaquetado físico, microservicios Node.js/Express, clientes y persistencia</text>
+
+      <!-- SECCIÓN 1: Capa de Presentación (Clientes) -->
+      <rect x="30" y="90" width="200" height="590" class="uml-section-box" />
+      <text x="45" y="114" class="uml-section-label">Capa de Presentación</text>
+
+      <!-- 1.1 Web App Cliente (Estudiante / Host) estilo dispositivo móvil/web del PDF -->
+      <g transform="translate(60, 140)">
+        <text x="0" y="-12" font-family="Outfit, sans-serif" font-size="13" font-weight="600" fill="#0f172a">Aplicación Web / Móvil</text>
+        <text x="0" y="2" font-family="'JetBrains Mono', monospace" font-size="11" fill="#64748b">(React + Vite SPA)</text>
+        <!-- Rectángulo dispositivo -->
+        <rect x="10" y="14" width="120" height="200" class="ui-device" />
+        <rect x="10" y="14" width="120" height="36" class="ui-screen-hdr" rx="6" />
+        <line x1="20" y1="32" x2="60" y2="32" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+        <circle cx="110" cy="32" r="4" fill="#ffffff" />
+        <!-- Mock de contenido interno -->
+        <rect x="22" y="62" width="96" height="40" fill="#ffffff" stroke="#bae6fd" rx="4" />
+        <rect x="22" y="112" width="96" height="40" fill="#ffffff" stroke="#bae6fd" rx="4" />
+        <circle cx="70" cy="192" r="8" fill="#bae6fd" stroke="#0284c7" stroke-width="1.5" />
+      </g>
+
+      <!-- 1.2 Panel de Administración Web -->
+      <g transform="translate(60, 420)">
+        <text x="0" y="-12" font-family="Outfit, sans-serif" font-size="13" font-weight="600" fill="#0f172a">Panel de Administración</text>
+        <text x="0" y="2" font-family="'JetBrains Mono', monospace" font-size="11" fill="#64748b">(admin-panel / React)</text>
+        <!-- Rectángulo monitor/dashboard -->
+        <rect x="10" y="14" width="120" height="180" class="ui-device" />
+        <rect x="10" y="14" width="120" height="30" class="ui-screen-hdr" rx="6" />
+        <rect x="20" y="24" width="14" height="10" fill="#ffffff" rx="2" />
+        <line x1="40" y1="29" x2="90" y2="29" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+        <!-- Layout sidebar + table -->
+        <rect x="18" y="52" width="24" height="130" fill="#bae6fd" rx="2" />
+        <rect x="48" y="52" width="74" height="34" fill="#ffffff" stroke="#bae6fd" rx="3" />
+        <rect x="48" y="94" width="74" height="88" fill="#ffffff" stroke="#bae6fd" rx="3" />
+      </g>
+
+
+      <!-- SECCIÓN 2: Capa de Enrutamiento / Web (API Gateway) -->
+      <rect x="260" y="90" width="220" height="590" class="uml-section-box" />
+      <text x="275" y="114" class="uml-section-label">Services.web (API Gateway)</text>
+
+      <!-- Componente UML Estándar: Services.web (Gateway Proxy) -->
+      <g transform="translate(290, 310)">
+        <!-- Orejetas UML tradicionales a la izquierda -->
+        <rect x="-18" y="22" width="28" height="18" class="svc-comp-tag" rx="1" />
+        <rect x="-18" y="64" width="28" height="18" class="svc-comp-tag" rx="1" />
+        <!-- Cuerpo del componente -->
+        <rect x="0" y="0" width="160" height="105" class="svc-comp-rect" rx="2" />
+        <text x="80" y="38" class="svc-comp-text">Services.web</text>
+        <text x="80" y="56" class="svc-comp-subtext">&laquo;componente&raquo;</text>
+        <text x="80" y="74" class="svc-comp-subtext">API Gateway</text>
+        <text x="80" y="90" font-family="'JetBrains Mono', monospace" font-size="10" fill="#0369a1" text-anchor="middle">Port :4000 (HTTP/WS)</text>
+      </g>
+
+
+      <!-- SECCIÓN 3: Capa de Negocio (Services.business - Microservicios) -->
+      <rect x="520" y="90" width="440" height="590" class="uml-section-box" />
+      <text x="535" y="114" class="uml-section-label">Services.business (Microservicios de Lógica)</text>
+
+      <!-- Componente 3.1: Auth Service (Usuarios, OTP, Roles, Verificaciones) -->
+      <g transform="translate(560, 130)">
+        <rect x="-16" y="16" width="24" height="16" class="svc-comp-tag" rx="1" />
+        <rect x="-16" y="50" width="24" height="16" class="svc-comp-tag" rx="1" />
+        <rect x="0" y="0" width="165" height="85" class="svc-comp-rect" rx="2" />
+        <text x="82" y="32" class="svc-comp-text">Auth.service</text>
+        <text x="82" y="50" class="svc-comp-subtext">&laquo;business logic&raquo;</text>
+        <text x="82" y="68" font-family="'JetBrains Mono', monospace" font-size="10" fill="#0369a1" text-anchor="middle">Auth / OTP / Verif (:4001)</text>
+      </g>
+
+      <!-- Componente 3.2: Hosts Service (Alojamientos, Aprobación, Disponibilidad) -->
+      <g transform="translate(760, 130)">
+        <rect x="-16" y="16" width="24" height="16" class="svc-comp-tag" rx="1" />
+        <rect x="-16" y="50" width="24" height="16" class="svc-comp-tag" rx="1" />
+        <rect x="0" y="0" width="165" height="85" class="svc-comp-rect" rx="2" />
+        <text x="82" y="32" class="svc-comp-text">Hosts.service</text>
+        <text x="82" y="50" class="svc-comp-subtext">&laquo;business logic&raquo;</text>
+        <text x="82" y="68" font-family="'JetBrains Mono', monospace" font-size="10" fill="#0369a1" text-anchor="middle">Propiedades / Cupos (:4002)</text>
+      </g>
+
+      <!-- Componente 3.3: Bookings Service (Reservas, Soles, Reseñas, Push) -->
+      <g transform="translate(560, 420)">
+        <rect x="-16" y="16" width="24" height="16" class="svc-comp-tag" rx="1" />
+        <rect x="-16" y="50" width="24" height="16" class="svc-comp-tag" rx="1" />
+        <rect x="0" y="0" width="165" height="85" class="svc-comp-rect" rx="2" />
+        <text x="82" y="32" class="svc-comp-text">Bookings.service</text>
+        <text x="82" y="50" class="svc-comp-subtext">&laquo;business logic&raquo;</text>
+        <text x="82" y="68" font-family="'JetBrains Mono', monospace" font-size="10" fill="#0369a1" text-anchor="middle">Reservas / Notif (:4003)</text>
+      </g>
+
+      <!-- Componente 3.4: Chat Service (Mensajería en tiempo real, WS) -->
+      <g transform="translate(760, 420)">
+        <rect x="-16" y="16" width="24" height="16" class="svc-comp-tag" rx="1" />
+        <rect x="-16" y="50" width="24" height="16" class="svc-comp-tag" rx="1" />
+        <rect x="0" y="0" width="165" height="85" class="svc-comp-rect" rx="2" />
+        <text x="82" y="32" class="svc-comp-text">Chat.service</text>
+        <text x="82" y="50" class="svc-comp-subtext">&laquo;business logic&raquo;</text>
+        <text x="82" y="68" font-family="'JetBrains Mono', monospace" font-size="10" fill="#0369a1" text-anchor="middle">WebSocket / Chat (:4004)</text>
+      </g>
+
+
+      <!-- SECCIÓN 4: Capa de Datos / Persistencia (Services.data + PostgreSQL) -->
+      <rect x="990" y="90" width="240" height="590" class="uml-section-box" />
+      <text x="1005" y="114" class="uml-section-label">Services.data & Persistencia</text>
+
+      <!-- Componente 4.1: Services.data (Capa de Acceso a Datos / Pool PG) -->
+      <g transform="translate(1030, 240)">
+        <rect x="-16" y="16" width="24" height="16" class="svc-comp-tag" rx="1" />
+        <rect x="-16" y="50" width="24" height="16" class="svc-comp-tag" rx="1" />
+        <rect x="0" y="0" width="160" height="85" class="svc-comp-rect" rx="2" />
+        <text x="80" y="32" class="svc-comp-text">Services.data</text>
+        <text x="80" y="50" class="svc-comp-subtext">&laquo;componente&raquo;</text>
+        <text x="80" y="68" font-family="'JetBrains Mono', monospace" font-size="10" fill="#0369a1" text-anchor="middle">pg.Pool Adapter</text>
+      </g>
+
+      <!-- Cilindro BD Relacional PostgreSQL (estilo BD NoSQL del documento) -->
+      <g transform="translate(1055, 410)">
+        <!-- Cuerpo del cilindro -->
+        <path d="M 0 30 L 0 130 A 55 20 0 0 0 110 130 L 110 30 Z" class="db-cylinder-body" />
+        <ellipse cx="55" cy="130" rx="55" ry="18" fill="none" stroke="#0284c7" stroke-width="1.8" />
+        <ellipse cx="55" cy="30" rx="55" ry="18" class="db-cylinder-top" />
+        <text x="55" y="78" font-family="Outfit, sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">BD HUASI</text>
+        <text x="55" y="98" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#0369a1" text-anchor="middle">PostgreSQL</text>
+        <text x="55" y="172" font-family="Outfit, sans-serif" font-size="13" font-weight="700" fill="#0f172a" text-anchor="middle">BD Relacional</text>
+      </g>
+
+
+      <!-- ================= RELACIONES / DEPENDENCIAS (Líneas rojas punteadas UML) ================= -->
+
+      <!-- Clientes -> Services.web (API Gateway) -->
+      <path d="M 190 240 L 235 240 L 235 345 L 285 345" class="dep-line" marker-end="url(#arrow-red)" />
+      <text x="210" y="270" class="dep-label">HTTP / WS</text>
+
+      <path d="M 190 510 L 235 510 L 235 375 L 285 375" class="dep-line" marker-end="url(#arrow-red)" />
+      <text x="212" y="475" class="dep-label">REST</text>
+
+      <!-- Services.web -> Microservicios (Business) -->
+      <!-- Hacia Auth -->
+      <path d="M 450 330 L 505 330 L 505 172 L 555 172" class="dep-line" marker-end="url(#arrow-red)" />
+      <!-- Hacia Hosts -->
+      <path d="M 450 345 L 505 345 L 505 205 L 755 205" class="dep-line" marker-end="url(#arrow-red)" />
+      <!-- Hacia Bookings -->
+      <path d="M 450 375 L 505 375 L 505 462 L 555 462" class="dep-line" marker-end="url(#arrow-red)" />
+      <!-- Hacia Chat -->
+      <path d="M 450 395 L 505 395 L 505 490 L 755 490" class="dep-line" marker-end="url(#arrow-red)" />
+
+      <!-- Etiqueta sobre proxy reverso -->
+      <rect x="468" y="318" width="54" height="16" fill="#ffffff" rx="2" stroke="#e2e8f0" />
+      <text x="495" y="330" font-family="'JetBrains Mono', monospace" font-size="9" fill="#dc2626" font-weight="700" text-anchor="middle">Reverse Proxy</text>
+
+      <!-- Microservicios -> Services.data -->
+      <!-- Auth -> Data -->
+      <path d="M 725 150 L 975 150 L 975 260 L 1025 260" class="dep-line" marker-end="url(#arrow-red)" />
+      <!-- Hosts -> Data -->
+      <path d="M 925 172 L 975 172 L 975 275 L 1025 275" class="dep-line" marker-end="url(#arrow-red)" />
+      <!-- Bookings -> Data -->
+      <path d="M 725 460 L 975 460 L 975 300 L 1025 300" class="dep-line" marker-end="url(#arrow-red)" />
+      <!-- Chat -> Data -->
+      <path d="M 925 460 L 975 460 L 975 315 L 1025 315" class="dep-line" marker-end="url(#arrow-red)" />
+
+      <!-- Services.data -> Base de Datos PostgreSQL -->
+      <path d="M 1110 325 L 1110 405" class="dep-line" marker-end="url(#arrow-red)" />
+      <rect x="1080" y="355" width="60" height="16" fill="#ffffff" rx="2" stroke="#e2e8f0" />
+      <text x="1110" y="367" font-family="'JetBrains Mono', monospace" font-size="9.5" fill="#dc2626" font-weight="700" text-anchor="middle">TCP :5432</text>
+
+    </svg>
+  </div>
+</main>
+
+<footer>
+  <span>
+    <svg width="22" height="12"><path d="M 0 6 L 18 6" stroke="#dc2626" stroke-width="2" stroke-dasharray="3 3"/><path d="M 14 2 L 20 6 L 14 10" fill="none" stroke="#dc2626" stroke-width="1.5"/></svg>
+    Dependencia física / llamada remota
+  </span>
+  <span>
+    <div class="legend-box" style="background:#a5f3fc; border: 1px solid #0284c7;"></div>
+    Componente ejecutable / Microservicio
+  </span>
+  <span>
+    <div class="legend-box" style="background:#e0f2fe; border: 1px solid #0284c7;"></div>
+    Artefacto de interfaz de usuario
+  </span>
+  <span>
+    <div class="legend-box" style="background:#67e8f9; border: 1px solid #0284c7;"></div>
+    Almacenamiento persistente
+  </span>
+  <span class="hint">Compatible con la estructura de la Ilustración de la Guía RUP / UML · Exporta en PNG 3x nítido</span>
+</footer>
+
+<script>
+let zoom = 1;
+const zoomLbl = document.getElementById('zoomLbl');
+const container = document.getElementById('canvasContainer');
+const svg = document.getElementById('diagram');
+
+function updateZoom(z) {
+  zoom = Math.min(2.2, Math.max(0.4, z));
+  container.style.transform = `scale(${zoom})`;
+  zoomLbl.textContent = Math.round(zoom * 100) + '%';
+}
+
+document.getElementById('btnZoomIn').onclick = () => updateZoom(zoom + 0.15);
+document.getElementById('btnZoomOut').onclick = () => updateZoom(zoom - 0.15);
+
+function fit() {
+  const vp = document.getElementById('viewport');
+  const scale = Math.min((vp.clientWidth - 60) / 1260, (vp.clientHeight - 60) / 720, 1.1);
+  updateZoom(scale);
+}
+document.getElementById('btnFit').onclick = fit;
+window.addEventListener('resize', fit);
+fit();
+
+// Ctrl + Rueda para zoom
+document.getElementById('viewport').addEventListener('wheel', (ev) => {
+  if (!ev.ctrlKey) return;
+  ev.preventDefault();
+  updateZoom(zoom * (ev.deltaY < 0 ? 1.1 : 0.9));
+}, { passive: false });
+
+// Exportar SVG
+document.getElementById('btnSvg').onclick = () => {
+  const clone = svg.cloneNode(true);
+  const markup = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([markup], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'HUASI_diagrama_componentes.svg';
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+// Exportar PNG de alta resolución (3x)
+document.getElementById('btnPng').onclick = () => {
+  const clone = svg.cloneNode(true);
+  const markup = new XMLSerializer().serializeToString(clone);
+  const scale = 3;
+  const W = 1260;
+  const H = 720;
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = W * scale;
+    canvas.height = H * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0, W, H);
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'HUASI_diagrama_componentes.png';
+      a.click();
+      URL.revokeObjectURL(url);
+    }, 'image/png');
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(markup);
+};
+</script>
+</body>
+</html>

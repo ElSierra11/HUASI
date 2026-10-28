@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Star, Users, Home, Bed, Sofa, Trees, Coins, Sparkles, HelpCircle, DollarSign, Heart, ShieldCheck, Clock } from 'lucide-react';
+import { MapPin, Star, Users, Home, Bed, Sofa, Trees, Coins, HelpCircle, ShieldCheck, Clock, ArrowRight } from 'lucide-react';
 
 const TIPO_LABELS = {
   cama: 'Cama individual',
@@ -9,7 +9,7 @@ const TIPO_LABELS = {
   habitacion: 'Habitación Privada',
   habitacion_compartida: 'Habitación Compartida',
   alquiler: 'Alquiler',
-  otro: 'Otros',
+  otro: 'Espacio Solidario',
   'Habitación Privada': 'Habitación Privada',
   'Sofá Cama': 'Sofá Cama',
   'Habitación Compartida': 'Habitación Compartida'
@@ -27,174 +27,122 @@ const getNormalizedTipo = (tipo) => {
   return 'otro';
 };
 
-const TIPO_ICON = {
-  cama: <Bed size={48} />,
-  sofa: <Sofa size={48} />,
-  hamaca: <Trees size={48} />,
-  habitacion: <Home size={48} />,
-  habitacion_compartida: <Users size={48} />,
-  alquiler: <Coins size={48} />,
-  otro: <HelpCircle size={48} />
-};
-
-const TIPO_ICON_SMALL = {
-  cama: <Bed size={14} />,
-  sofa: <Sofa size={14} />,
-  hamaca: <Trees size={14} />,
-  habitacion: <Home size={14} />,
-  habitacion_compartida: <Users size={14} />,
-  alquiler: <Coins size={14} />,
-  otro: <HelpCircle size={14} />
-};
-
-const TIPO_THEMES = {
-  cama: {
-    gradient: 'linear-gradient(135deg, #10b981, #047857)',
-    colorClass: 'text-emerald-500',
-    dotClass: 'bg-emerald-500'
-  },
-  sofa: {
-    gradient: 'linear-gradient(135deg, #f59e0b, #d97706)', // Naranja / Sofá
-    colorClass: 'text-amber-600',
-    dotClass: 'bg-amber-500'
-  },
-  hamaca: {
-    gradient: 'linear-gradient(135deg, #84cc16, #15803d)', // Lime a Verde oscuro
-    colorClass: 'text-lime-600',
-    dotClass: 'bg-lime-500'
-  },
-  habitacion: {
-    gradient: 'linear-gradient(135deg, #0d7c3d, #059669)', // Verde UCC
-    colorClass: 'text-ucc-green',
-    dotClass: 'bg-ucc-green'
-  },
-  habitacion_compartida: {
-    gradient: 'linear-gradient(135deg, #0284c7, #0369a1)', // Azul / Compartida
-    colorClass: 'text-sky-600',
-    dotClass: 'bg-sky-500'
-  },
-  alquiler: {
-    gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)', // Cyan
-    colorClass: 'text-cyan-600',
-    dotClass: 'bg-cyan-500'
-  },
-  otro: {
-    gradient: 'linear-gradient(135deg, #1a3a5c, #334155)', // Navy / Pizarra
-    colorClass: 'text-ucc-navy',
-    dotClass: 'bg-ucc-navy'
-  }
+const FALLBACK_PHOTOS = {
+  habitacion: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
+  habitacion_compartida: 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=800&q=80',
+  cama: 'https://images.unsplash.com/photo-1540518614846-7ede433c4ef7?auto=format&fit=crop&w=800&q=80',
+  sofa: 'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=800&q=80',
+  hamaca: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80',
+  otro: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80'
 };
 
 export default function PropertyCard({ propiedad }) {
   const navigate = useNavigate();
   const rating = parseFloat(propiedad.calificacion_promedio) || 0;
   const normalizedTipo = getNormalizedTipo(propiedad.tipo);
-  const theme = TIPO_THEMES[normalizedTipo] || TIPO_THEMES.otro;
-  const icon = TIPO_ICON[normalizedTipo] || TIPO_ICON.otro;
-  const smallIcon = TIPO_ICON_SMALL[normalizedTipo] || TIPO_ICON_SMALL.otro;
+  
+  // Foto real si existe, o fallback fotográfico cinematográfico cálido
+  const foto = propiedad.foto_principal || 
+    (Array.isArray(propiedad.fotos) && propiedad.fotos[0]) || 
+    propiedad.imagen_url || 
+    FALLBACK_PHOTOS[normalizedTipo] || 
+    FALLBACK_PHOTOS.otro;
 
-  const getTipoLabel = (tipo) => {
-    return TIPO_LABELS[tipo] || tipo || 'Alojamiento';
-  };
+  const tipoLabel = TIPO_LABELS[propiedad.tipo] || propiedad.tipo || 'Alojamiento';
 
   return (
-    <div 
-      className="group bg-white dark:bg-slate-800/90 rounded-xl-custom border border-ucc-border/50 dark:border-slate-700/60 hover:border-ucc-green/40 dark:hover:border-emerald-500/40 shadow-custom-sm hover:shadow-custom-md hover:-translate-y-1.5 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col h-full" 
+    <article 
+      className="group editorial-card flex flex-col h-full cursor-pointer transition-all duration-300"
       onClick={() => navigate(`/propiedad/${propiedad.id}`)}
     >
-      {/* Icon Card Header */}
-      <div 
-        className="relative aspect-[16/10] overflow-hidden flex items-center justify-center transition-all duration-300 group-hover:brightness-[1.03]" 
-        style={{ background: theme.gradient }}
-      >
-        {/* Badge Indicator: tipo */}
-        <span 
-          className="absolute top-3 left-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3.5 py-1 rounded-full text-[0.68rem] font-extrabold tracking-wider uppercase border border-ucc-border/40 dark:border-slate-700/60 shadow-custom-sm flex items-center gap-1.5 z-10 text-ucc-navy dark:text-white"
-        >
-          <span className={`w-1.5 h-1.5 rounded-full ${theme.dotClass} animate-pulse-dot`} />
-          {getTipoLabel(propiedad.tipo)}
+      {/* Contenedor de Fotografía Protagonista */}
+      <div className="relative aspect-[16/10] overflow-hidden bg-slate-900">
+        <img 
+          src={foto} 
+          alt={propiedad.titulo} 
+          loading="lazy"
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+        />
+
+        {/* Gradiente sutil para legibilidad del badge */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+
+        {/* Badge de Tipo de Espacio */}
+        <span className="absolute top-3 left-3 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-slate-800 dark:text-slate-100 shadow-sm">
+          {tipoLabel}
         </span>
 
-        {/* Verification / Full capacity badge */}
+        {/* Badge de Disponibilidad / Verificación */}
         {propiedad.esta_lleno ? (
-          <span className="absolute top-3 right-3 bg-red-600/95 text-white backdrop-blur-md px-2.5 py-1 rounded-full text-[0.65rem] font-bold shadow-custom-sm flex items-center gap-1 z-10">
-            <Clock size={12} className="text-white" /> Cupos Llenos
+          <span className="absolute top-3 right-3 bg-red-600/90 text-white backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium shadow-sm flex items-center gap-1">
+            <Clock size={12} /> Ocupado
           </span>
         ) : (
-          <span className="absolute top-3 right-3 bg-emerald-600/90 text-white backdrop-blur-md px-2.5 py-1 rounded-full text-[0.65rem] font-bold shadow-custom-sm flex items-center gap-1 z-10">
-            <ShieldCheck size={12} className="text-white" /> Verificado
+          <span className="absolute top-3 right-3 bg-emerald-600/90 text-white backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium shadow-sm flex items-center gap-1">
+            <ShieldCheck size={12} /> Verificado
           </span>
         )}
 
-        {/* Big Icon */}
-        <div className="text-white flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-          {React.cloneElement(icon, { size: 56, className: "filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.2)]" })}
+        {/* Capacidad en el pie de la imagen */}
+        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs text-white/90 font-medium">
+          <span className="flex items-center gap-1.5 drop-shadow-sm">
+            <MapPin size={13} className="text-emerald-400" />
+            <span className="truncate max-w-[200px]">{propiedad.ciudad || 'Colombia'}</span>
+          </span>
+          <span className="flex items-center gap-1 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full">
+            <Users size={12} />
+            <span>{propiedad.capacidad} {propiedad.capacidad === 1 ? 'huésped' : 'huéspedes'}</span>
+          </span>
         </div>
       </div>
 
-      {/* Card Details */}
-      <div className="p-5 flex flex-col flex-1">
-        {/* Title Group */}
-        <div className="flex items-center gap-2.5 mb-3">
-          <div 
-            className="inline-flex items-center justify-center text-white rounded-lg p-1.5 shadow-custom-sm flex-shrink-0" 
-            style={{ background: theme.gradient }}
-          >
-            {React.cloneElement(smallIcon, { size: 14, className: "text-white" })}
-          </div>
-          <span 
-            className="font-heading font-black text-[1.05rem] text-ucc-navy dark:text-white group-hover:text-ucc-green dark:group-hover:text-emerald-400 transition-colors truncate" 
+      {/* Contenido Editorial de la Tarjeta */}
+      <div className="p-5 flex flex-col flex-1 justify-between bg-white dark:bg-[#0d1829]">
+        <div>
+          <h3 
+            className="font-heading font-bold text-lg text-slate-900 dark:text-white leading-snug mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1" 
             title={propiedad.titulo}
           >
             {propiedad.titulo}
-          </span>
-        </div>
-        
-        {/* Location Info */}
-        <div className="text-ucc-muted dark:text-slate-400 text-xs font-semibold mb-3 flex items-center gap-1.5">
-          <MapPin size={13} className="text-ucc-muted/70 dark:text-slate-400 flex-shrink-0" /> 
-          <span className="truncate">{propiedad.barrio || propiedad.direccion}, {propiedad.ciudad}</span>
-        </div>
+          </h3>
 
-        {/* Status indicator: Full / Available spots */}
-        {propiedad.esta_lleno ? (
-          <div className="mb-3 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-400 text-xs font-semibold flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <Clock size={13} className="text-red-500 flex-shrink-0" />
-              <span>No disponible por el momento</span>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 line-clamp-2 leading-relaxed">
+            {propiedad.descripcion || `${tipoLabel} solidario disponible para actividades y movilidad académica.`}
+          </p>
+
+          {/* Anfitrión o Ubicación detallada */}
+          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <span className="truncate">
+              {propiedad.barrio ? `Sector ${propiedad.barrio}` : propiedad.ciudad}
             </span>
-            {propiedad.fecha_fin_estadia_actual && (
-              <span className="text-[0.7rem] font-bold text-red-600 dark:text-red-300">
-                Libre desde {new Date(propiedad.fecha_fin_estadia_actual).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
+            {propiedad.campus && (
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold truncate ml-2">
+                Sede {propiedad.campus}
               </span>
             )}
           </div>
-        ) : propiedad.capacidad > 1 ? (
-          <div className="mb-3 px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/60 text-sky-700 dark:text-sky-300 text-xs font-semibold flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <Users size={13} className="text-sky-600 flex-shrink-0" />
-              <span>{propiedad.cupos_disponibles !== undefined ? propiedad.cupos_disponibles : propiedad.capacidad} cupos disponibles</span>
-            </span>
-            <span className="text-[0.7rem] font-bold text-sky-600 dark:text-sky-400">
-              Total {propiedad.capacidad}
-            </span>
-          </div>
-        ) : null}
+        </div>
 
-        {/* Meta Line */}
-        <div className="flex items-center justify-between mt-auto pt-3.5 border-t border-ucc-border/40 text-[0.8rem] font-bold text-ucc-navy">
-          <div className="flex items-center gap-1">
-            <Star size={13} className="text-amber-500 fill-amber-500 flex-shrink-0" /> 
+        {/* Pie de Tarjeta: Calificación y Botón */}
+        <div className="flex items-center justify-between pt-4 mt-2">
+          <div className="flex items-center gap-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+            <Star size={14} className="text-amber-500 fill-amber-500" />
             <span>{rating > 0 ? rating.toFixed(1) : 'Nuevo'}</span>
             {propiedad.num_resenas > 0 && (
-              <span className="text-ucc-muted/70 font-semibold">({propiedad.num_resenas})</span>
+              <span className="text-xs text-slate-400 font-normal">({propiedad.num_resenas})</span>
             )}
           </div>
-          <span className="flex items-center gap-1 text-ucc-muted/80 font-semibold">
-            <Users size={13} className="flex-shrink-0" /> {propiedad.capacidad} {propiedad.capacidad === 1 ? 'huésped' : 'huéspedes'}
-          </span>
+
+          <button 
+            type="button"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 group-hover:translate-x-1 transition-all"
+          >
+            <span>Ver detalles</span>
+            <ArrowRight size={14} />
+          </button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
+

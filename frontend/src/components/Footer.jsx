@@ -5,9 +5,9 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#061510] text-slate-300 border-t border-ucc-green/30 pt-12 pb-20 md:pb-12 relative overflow-hidden">
-      {/* Glow effect in footer background */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[150px] bg-gradient-to-r from-ucc-green/10 via-emerald-500/10 to-transparent filter blur-[80px] pointer-events-none z-0" />
+    <footer className="bg-[#080f1d] text-slate-300 border-t border-white/10 pt-16 pb-20 md:pb-12 relative overflow-hidden font-body">
+      {/* Subtle Warm Gradient in footer background */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[180px] bg-emerald-500/5 filter blur-[100px] pointer-events-none z-0" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">

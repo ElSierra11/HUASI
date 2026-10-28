@@ -222,7 +222,7 @@ router.get('/metricas/globales', async (req, res) => {
       `SELECT COUNT(DISTINCT campus_cercano) as total FROM propiedades WHERE activo = TRUE AND campus_cercano IS NOT NULL`
     );
 
-    let resenasStats = { promedio: 5.0, total: 0 };
+    let resenasStats = { promedio: null, total: 0 };
     try {
       const resQuery = await pool.query(
         `SELECT ROUND(AVG(calificacion)::numeric, 1) as promedio, COUNT(*) as total FROM resenas`
@@ -238,7 +238,7 @@ router.get('/metricas/globales', async (req, res) => {
     res.json({
       alojamientos_disponibles: parseInt(propsRes.rows[0].total, 10) || 0,
       campus_cubiertos: Math.max(13, parseInt(campusRes.rows[0].total, 10) || 13),
-      calificacion_promedio: resenasStats.total > 0 ? resenasStats.promedio.toFixed(1) : '5.0',
+      calificacion_promedio: resenasStats.total > 0 && resenasStats.promedio !== null ? resenasStats.promedio.toFixed(1) : null,
       total_resenas: resenasStats.total,
       comunidad_solidaria: '100%'
     });
