@@ -10,7 +10,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') !== 'light');
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     if (darkMode) {
@@ -78,17 +78,17 @@ export default function Navbar() {
       {/* Brand & Sponsors */}
       <div className="flex items-center gap-2">
         {/* HUASI Logo */}
-        <Link to="/" className="navbar-brand flex items-center gap-2.5 no-underline select-none mr-2 huasi-brand-container group">
+        <Link to="/" className="navbar-brand flex items-center gap-2.5 no-underline select-none mr-2 huasi-brand-container">
           <img 
             src="/huasi-monograma.png" 
             alt="HUASI Monograma" 
-            className="h-[36px] w-[36px] object-contain transition-transform duration-300 group-hover:scale-105"
+            className="h-[38px] w-[38px] object-contain huasi-brand-monogram max-[480px]:h-[32px] max-[480px]:w-[32px]"
           />
-          <span className="font-editorial font-bold text-xl md:text-2xl text-white tracking-wide">HUASI</span>
+          <span className="font-heading font-black text-2xl text-ucc-navy dark:text-white tracking-tight huasi-brand-text">HUASI</span>
         </Link>
 
         {/* Logos institucionales — solo desktop */}
-        <div className="hidden lg:flex items-center gap-3.5 pl-3.5 border-l border-white/10">
+        <div className="hidden lg:flex items-center gap-3.5 pl-3.5 border-l border-ucc-border/60 dark:border-slate-700">
           <a
             href="https://www.ucc.edu.co/indesco"
             target="_blank"
@@ -101,7 +101,7 @@ export default function Navbar() {
               alt="INDESCO"
               loading="lazy"
               decoding="async"
-              className="h-6 w-auto object-contain brightness-0 invert opacity-70 hover:opacity-100 transition-opacity"
+              className="h-8 w-auto object-contain dark:brightness-0 dark:invert opacity-90 hover:opacity-100 transition-all"
             />
           </a>
           <a
@@ -116,7 +116,7 @@ export default function Navbar() {
               alt="Universidad Cooperativa de Colombia"
               loading="lazy"
               decoding="async"
-              className="h-6 w-auto object-contain brightness-0 invert opacity-70 hover:opacity-100 transition-opacity"
+              className="h-8 w-auto object-contain dark:brightness-0 dark:invert opacity-90 hover:opacity-100 transition-all"
             />
           </a>
           <a
@@ -131,7 +131,7 @@ export default function Navbar() {
               alt="Territorios Solidarios UCC"
               loading="lazy"
               decoding="async"
-              className="h-6 w-auto object-contain brightness-0 invert opacity-70 hover:opacity-100 transition-opacity"
+              className="h-8 w-auto object-contain dark:brightness-0 dark:invert opacity-90 hover:opacity-100 transition-all"
             />
           </a>
         </div>
@@ -141,10 +141,10 @@ export default function Navbar() {
       <div className="navbar-links flex items-center gap-2 md:gap-3">
         <Link
           to="/"
-          className={`px-3.5 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-200 ${
+          className={`px-4 py-2 rounded-full font-body text-sm font-semibold transition-all duration-200 ${
             isActive('/') 
-              ? 'bg-white/15 text-white font-semibold' 
-              : 'text-slate-300 hover:text-white hover:bg-white/5'
+              ? 'bg-ucc-green-light text-ucc-green' 
+              : 'text-ucc-muted hover:bg-ucc-green-light hover:text-ucc-green'
           }`}
         >
           Explorar
@@ -152,10 +152,10 @@ export default function Navbar() {
 
         <Link
           to="/quienes-somos"
-          className={`px-3.5 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-200 ${
+          className={`px-4 py-2 rounded-full font-body text-sm font-semibold transition-all duration-200 ${
             isActive('/quienes-somos') 
-              ? 'bg-white/15 text-white font-semibold' 
-              : 'text-slate-300 hover:text-white hover:bg-white/5'
+              ? 'bg-ucc-green-light text-ucc-green' 
+              : 'text-ucc-muted hover:bg-ucc-green-light hover:text-ucc-green'
           }`}
         >
           ¿Quiénes Somos?
@@ -164,7 +164,7 @@ export default function Navbar() {
         {user ? (
           <>
             {user.verificado && (
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-semibold">
+              <span className="hidden sm:inline-flex items-center gap-1 bg-ucc-green-light text-ucc-green px-3 py-1 rounded-full text-xs font-bold border border-ucc-green/20">
                 <CheckCircle2 size={12} className="stroke-[2.5]" /> Verificado
               </span>
             )}
@@ -175,18 +175,18 @@ export default function Navbar() {
                 href="https://huasi-mdp5.vercel.app/login"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 bg-emerald-700/80 hover:bg-emerald-600 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 shadow-sm"
+                className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-ucc-green text-white px-4 py-1.5 rounded-full text-xs font-bold hover:shadow-custom transition-all duration-200"
               >
-                <ShieldCheck size={13} /> Admin
+                <ShieldCheck size={14} /> Admin
               </a>
             )}
 
             <Link
               to="/mis-reservas"
-              className={`px-3.5 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-200 ${
+              className={`px-4 py-2 rounded-full font-body text-sm font-semibold transition-all duration-200 ${
                 isActive('/mis-reservas') 
-                  ? 'bg-white/15 text-white font-semibold' 
-                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  ? 'bg-ucc-green-light text-ucc-green' 
+                  : 'text-ucc-muted hover:bg-ucc-green-light hover:text-ucc-green'
               }`}
             >
               Mis reservas
@@ -194,42 +194,43 @@ export default function Navbar() {
 
             <Link
               to="/host"
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-200 ${
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-body text-sm font-semibold transition-all duration-200 ${
                 isActive('/host') 
-                  ? 'bg-white/15 text-white font-semibold' 
-                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  ? 'bg-ucc-green-light text-ucc-green' 
+                  : 'text-ucc-muted hover:bg-ucc-green-light hover:text-ucc-green'
               }`}
             >
-              <Building size={13} /> Anfitrión
+              <Building size={14} /> Anfitrión
             </Link>
+
 
             <NotificationBell />
 
             <Link
               to="/perfil"
-              className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/15 border border-white/10 px-3.5 py-1.5 rounded-full text-xs font-semibold text-white transition-all duration-200"
+              className="inline-flex items-center gap-1.5 bg-ucc-bg border border-ucc-border px-4 py-2 rounded-full font-body text-sm font-bold text-ucc-navy hover:bg-ucc-green-light hover:border-ucc-green/20 transition-all duration-200"
             >
-              <User size={13} /> {user?.nombre ? user.nombre.split(' ')[0] : 'Perfil'}
+              <User size={14} /> {user?.nombre ? user.nombre.split(' ')[0] : 'Perfil'}
             </Link>
 
             <button 
               onClick={handleLogout} 
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-body text-sm font-semibold text-ucc-muted hover:bg-red-50 hover:text-red-600 transition-all duration-200"
             >
-              <LogOut size={13} /> Salir
+              <LogOut size={14} /> Salir
             </button>
           </>
         ) : (
           <>
             <Link 
               to="/login" 
-              className="px-4 py-2 text-xs md:text-sm font-medium text-slate-300 hover:text-white transition-colors"
+              className="px-4 py-2 rounded-full font-body text-sm font-semibold text-ucc-muted hover:bg-ucc-green-light hover:text-ucc-green transition-all duration-200"
             >
               Ingresar
             </Link>
             <Link 
               to="/registro" 
-              className="inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-semibold bg-[#0d7c3d] hover:bg-[#0b6833] text-white shadow-sm transition-all duration-200"
+              className="bg-gradient-to-r from-ucc-green to-emerald-600 hover:from-ucc-green-hover hover:to-emerald-700 text-white px-5 py-2 rounded-full font-body text-sm font-bold shadow-custom hover:shadow-custom-md hover:-translate-y-0.5 transition-all duration-200"
             >
               Registrarse
             </Link>

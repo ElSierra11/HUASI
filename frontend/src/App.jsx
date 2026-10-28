@@ -36,7 +36,7 @@ function App() {
   useActivityTracker();
 
   return (
-    <div className={`app ${isChatRoute ? 'pb-0' : 'pb-16 md:pb-0'} flex flex-col min-h-screen bg-[#0a1324] text-slate-100`}>
+    <div className={`app ${isChatRoute ? 'pb-0' : 'pb-16 md:pb-0'} flex flex-col min-h-screen`}>
       {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
       <Navbar />
       <main className="main-content flex-1">

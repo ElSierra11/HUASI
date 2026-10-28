@@ -90,24 +90,24 @@ export default function PwaInstallBanner() {
 
   return (
     <>
-      {/* Banner flotante discreto de instalación rápida */}
+      {/* Banner flotante discreto de instalación rápida (ubicado a la izquierda para no chocar con PQR ni chat) */}
       <div className="fixed bottom-24 md:bottom-6 left-4 right-4 md:right-auto md:left-6 md:max-w-sm z-40 animate-fade-in">
-        <div className="bg-[#071526]/95 backdrop-blur-xl p-3.5 rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-cyan-500/30 flex items-center justify-between gap-3 text-white">
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3.5 rounded-2xl shadow-2xl border border-emerald-500/30 flex items-center justify-between gap-3 text-slate-800 dark:text-white">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-sm bg-[#030914] p-1 shadow-md flex items-center justify-center shrink-0 border border-cyan-500/30">
-              <img src="/huasi-monograma.png" alt="HUASI" className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(0,240,255,0.3)]" />
+            <div className="w-11 h-11 rounded-xl bg-white p-1 shadow-md flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-800">
+              <img src="/huasi-monograma.png" alt="HUASI" className="w-full h-full object-contain" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="font-rajdhani font-bold text-sm text-white uppercase tracking-wider leading-tight">
+                <span className="font-heading font-extrabold text-sm text-slate-900 dark:text-white leading-tight">
                   Instalar HUASI
                 </span>
-                <span className="bg-cyan-950/80 text-cyan-300 border border-cyan-500/30 text-[9px] font-mono px-1.5 py-0.5 rounded-sm uppercase">
-                  PWA
+                <span className="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  Gratis
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-space truncate mt-0.5">
-                Acceso directo a tus alojamientos
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                Acceso directo rápido a tus alojamientos
               </p>
             </div>
           </div>
@@ -115,17 +115,17 @@ export default function PwaInstallBanner() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleInstallClick}
-              className="btn-tactical btn-tactical--emerald py-1.5 px-3 text-xs"
+              className="btn btn-primary btn-sm py-1.5 px-3 text-xs font-bold flex items-center gap-1.5 shadow-sm rounded-xl"
             >
-              <Download size={13} />
+              <Download size={14} />
               <span>Instalar</span>
             </button>
             <button
               onClick={handleDismiss}
-              className="p-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
               title="Cerrar aviso"
             >
-              <X size={15} />
+              <X size={16} />
             </button>
           </div>
         </div>
