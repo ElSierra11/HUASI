@@ -25,10 +25,12 @@ import {
   GraduationCap,
   Briefcase,
   Award,
-  BookOpen
+  BookOpen,
+  MessageCircle
 } from 'lucide-react';
 import api from '../api';
 import Modal from '../components/Modal';
+import WhatsappSurveyModal from '../components/WhatsappSurveyModal';
 import { useToast } from '../components/Toast';
 
 export default function Usuarios({ onActionFinished }) {
@@ -80,6 +82,7 @@ export default function Usuarios({ onActionFinished }) {
   const [submittingReset, setSubmittingReset] = useState(false);
   const [resetResult, setResetResult] = useState(null); // { nueva_password, usuario_email }
   const [copied, setCopied] = useState(false);
+  const [isWhatsappModalOpen, setIsWhatsappModalOpen] = useState(false);
 
   useEffect(() => {
     fetchUsuarios();
@@ -363,6 +366,29 @@ export default function Usuarios({ onActionFinished }) {
           >
             <Download size={15} className="text-ucc-green" />
             <span>CSV</span>
+          </button>
+
+          <button
+            onClick={() => setIsWhatsappModalOpen(true)}
+            className="btn toolbar-btn"
+            style={{
+              height: 38,
+              padding: '0 16px',
+              fontSize: '0.85rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              borderRadius: 8,
+              border: 'none',
+              background: '#16a34a',
+              color: 'white',
+              cursor: 'pointer',
+              fontWeight: 700
+            }}
+            title="Enviar encuesta de Google Forms por WhatsApp a los usuarios registrados"
+          >
+            <MessageCircle size={15} />
+            <span>Encuesta WhatsApp</span>
           </button>
         </div>
       </div>
@@ -973,6 +999,14 @@ export default function Usuarios({ onActionFinished }) {
           </p>
         )}
       </Modal>
+
+      {/* Modal de Campaña de Encuesta por WhatsApp */}
+      <WhatsappSurveyModal
+        isOpen={isWhatsappModalOpen}
+        onClose={() => setIsWhatsappModalOpen(false)}
+        usuarios={usuarios}
+        showToast={showToast}
+      />
     </div>
   );
 }
