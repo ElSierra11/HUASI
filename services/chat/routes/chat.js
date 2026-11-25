@@ -64,7 +64,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (/jpeg|jpg|png|gif|webp|heic/.test(file.mimetype)) cb(null, true);
     else cb(new Error('Solo se permiten imágenes'));
@@ -73,7 +73,7 @@ const upload = multer({
 
 const uploadAudio = multer({
   storage,
-  limits: { fileSize: 25 * 1024 * 1024 },
+  limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (/audio|video\/webm|video\/mp4/.test(file.mimetype) || file.originalname.match(/\.(webm|ogg|wav|mp3|m4a|aac|mp4)$/i)) {
       cb(null, true);

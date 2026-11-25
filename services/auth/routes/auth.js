@@ -30,6 +30,8 @@ const { getUniversidadById, getUniversidadPorCorreo, correoPerteneceAUniversidad
 
 const router = express.Router();
 
+const safeLog = (val) => String(val ?? '').replace(/[\r\n\t]/g, '_');
+
 const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
 const isProd = process.env.NODE_ENV === 'production' || !!process.env.DATABASE_URL || !!process.env.RENDER;
 
@@ -82,7 +84,7 @@ const getGmailAccessToken = async () => {
   });
   const data = await res.json();
   if (!res.ok) {
-    console.error('❌ [Google OAuth2 Error Details]:', data);
+    console.error('❌ [Google OAuth2 Error Details]:', safeLog(data?.error_description || data?.error));
     const detail = data.error_description || data.error || 'Error desconocido al renovar access token';
     throw new Error(`Google OAuth falló (${data.error || 'error'}): ${detail}`);
   }
@@ -92,7 +94,7 @@ const getGmailAccessToken = async () => {
 // Enviar vía Brevo HTTP REST API (Puerto 443 HTTPS - Funciona 100% en Render y no requiere verificar dominio)
 const sendViaBrevo = async (toEmail, toName, subject, htmlContent) => {
   if (!process.env.BREVO_API_KEY) return null;
-  console.log(`  [Brevo API] Enviando email a ${toEmail} vía HTTPS (puerto 443)...`);
+  console.log(`  [Brevo API] Enviando email a ${safeLog(toEmail)} vía HTTPS (puerto 443)...`);
   const senderEmail = process.env.BREVO_SENDER || process.env.SMTP_USER || process.env.GMAIL_USER || 'huasicorrespondencia@gmail.com';
   
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -114,14 +116,14 @@ const sendViaBrevo = async (toEmail, toName, subject, htmlContent) => {
   if (!res.ok) {
     throw new Error(data.message || 'Error enviando correo vía Brevo API');
   }
-  console.log(`✅ [Brevo API] Email enviado con éxito. MessageId: ${data.messageId}`);
+  console.log(`✅ [Brevo API] Email enviado con éxito. MessageId: ${safeLog(data.messageId)}`);
   return data;
 };
 
 // Enviar vía Resend HTTP API (Puerto 443 HTTPS)
 const sendViaResend = async (toEmail, toName, subject, htmlContent) => {
   if (!process.env.RESEND_API_KEY) return null;
-  console.log(`  [Resend API] Enviando email a ${toEmail} vía HTTPS...`);
+  console.log(`  [Resend API] Enviando email a ${safeLog(toEmail)} vía HTTPS...`);
   const { Resend } = require('resend');
   const resend = new Resend(process.env.RESEND_API_KEY);
   const sender = process.env.RESEND_FROM || 'HUASI <onboarding@resend.dev>';
@@ -136,12 +138,12 @@ const sendViaResend = async (toEmail, toName, subject, htmlContent) => {
   if (error) {
     throw new Error(error.message || 'Error enviando correo vía Resend');
   }
-  console.log(`✅ [Resend API] Email enviado con éxito. Id: ${data?.id}`);
+  console.log(`✅ [Resend API] Email enviado con éxito. Id: ${safeLog(data?.id)}`);
   return data;
 };
 
 const sendOtpEmail = async (email, nombre, otp) => {
-  console.log(`📧 [Email Sending] Enviando código OTP a: ${email}`);
+  console.log(`📧 [Email Sending] Enviando código OTP a: ${safeLog(email)}`);
 
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
@@ -169,7 +171,7 @@ const sendOtpEmail = async (email, nombre, otp) => {
     try {
       return await sendViaBrevo(email, nombre, 'Código de Verificación OTP - HUASI UCC', htmlBody);
     } catch (brevoErr) {
-      console.warn(`⚠️ [Brevo API Error] ${brevoErr.message}`);
+      console.warn(`⚠️ [Brevo API Error] ${safeLog(brevoErr.message)}`);
     }
   }
 
@@ -217,10 +219,10 @@ const sendOtpEmail = async (email, nombre, otp) => {
         throw new Error(result.error?.message || 'Error enviando email via Gmail API');
       }
 
-      console.log(`✅ [Gmail OAuth2 API] Email enviado. Id: ${result.id}`);
+      console.log(`✅ [Gmail OAuth2 API] Email enviado. Id: ${safeLog(result.id)}`);
       return result;
     } catch (oauthErr) {
-      console.warn(`⚠️ [OAuth2 Error] ${oauthErr.message}`);
+      console.warn(`⚠️ [OAuth2 Error] ${safeLog(oauthErr.message)}`);
     }
   }
 
@@ -243,7 +245,7 @@ const sendOtpEmail = async (email, nombre, otp) => {
     );
 
     const info = await Promise.race([sendPromise, timeoutPromise]);
-    console.log(`✅ [SMTP] Email OTP enviado a ${email}. Id: ${info.messageId}`);
+    console.log(`✅ [SMTP] Email OTP enviado a ${safeLog(email)}. Id: ${safeLog(info.messageId)}`);
     return info;
   } catch (smtpErr) {
     console.error(`❌ [SMTP Error] ${smtpErr.message}`);
@@ -269,7 +271,7 @@ const sendOtpEmailBackground = async (email, nombre, otp) => {
 };
 
 const sendResetPasswordEmail = async (email, nombre, resetLink) => {
-  console.log(`📧 [Email Sending] Enviando enlace de recuperación a: ${email}`);
+  console.log(`📧 [Email Sending] Enviando enlace de recuperación a: ${safeLog(email)}`);
 
   const htmlBody = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
@@ -316,7 +318,7 @@ const sendResetPasswordEmail = async (email, nombre, resetLink) => {
     try {
       return await sendViaBrevo(email, nombre, '🔑 Recuperación de Contraseña - HUASI UCC', htmlBody);
     } catch (brevoErr) {
-      console.warn(`⚠️ [Brevo Error] ${brevoErr.message}`);
+      console.warn(`⚠️ [Brevo Error] ${safeLog(brevoErr.message)}`);
     }
   }
 
@@ -364,10 +366,10 @@ const sendResetPasswordEmail = async (email, nombre, resetLink) => {
         throw new Error(result.error?.message || 'Error enviando email via Gmail API');
       }
 
-      console.log(`✅ [Gmail OAuth2 API] Email de recuperación enviado con éxito. Id: ${result.id}`);
+      console.log(`✅ [Gmail OAuth2 API] Email de recuperación enviado con éxito. Id: ${safeLog(result.id)}`);
       return result;
     } catch (oauthErr) {
-      console.warn(`⚠️ [OAuth2 Error] ${oauthErr.message}`);
+      console.warn(`⚠️ [OAuth2 Error] ${safeLog(oauthErr.message)}`);
     }
   }
 
@@ -389,7 +391,7 @@ const sendResetPasswordEmail = async (email, nombre, resetLink) => {
     );
 
     const info = await Promise.race([sendPromise, timeoutPromise]);
-    console.log(`✅ [SMTP] Email de recuperación enviado a ${email}. Id: ${info.messageId}`);
+    console.log(`✅ [SMTP] Email de recuperación enviado a ${safeLog(email)}. Id: ${safeLog(info.messageId)}`);
     return info;
   } catch (smtpErr) {
     console.error(`❌ [SMTP Error] ${smtpErr.message}`);
@@ -477,7 +479,7 @@ router.post('/admin/verificar-email', async (req, res) => {
       return res.status(404).json({ error: `No se encontró ningún usuario con el correo: ${cleanEmail}` });
     }
 
-    console.log(`✅ [ADMIN VERIFY] Usuario ${cleanEmail} verificado manualmente.`);
+    console.log(`✅ [ADMIN VERIFY] Usuario ${safeLog(cleanEmail)} verificado manualmente.`);
     res.json({
       success: true,
       message: `Cuenta de ${cleanEmail} verificada exitosamente. Ya puede iniciar sesión en HUASI.`,
@@ -904,7 +906,7 @@ router.post('/olvido-password', async (req, res) => {
     }
 
     const resetLink = `${baseUrl}/recuperar-password?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
-    console.log(`🔗 [Reset Password Link] Enlace generado para ${cleanEmail}: ${resetLink}`);
+    console.log(`🔗 [Reset Password Link] Enlace generado para ${safeLog(cleanEmail)}: ${safeLog(resetLink)}`);
 
     // Enviar correo electrónico
     try {
@@ -967,7 +969,7 @@ router.post('/recuperar-password', async (req, res) => {
       [passwordHash, user.id]
     );
 
-    console.log(`✅ [Password Reset] Contraseña restablecida con éxito para ${cleanEmail}`);
+    console.log(`✅ [Password Reset] Contraseña restablecida con éxito para ${safeLog(cleanEmail)}`);
 
     res.json({ message: '¡Tu contraseña ha sido restablecida exitosamente! Ya puedes iniciar sesión con tu nueva clave.' });
   } catch (err) {

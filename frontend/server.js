@@ -34,10 +34,21 @@ const ALLOWED_PROXY_PREFIXES = ['/api', '/chat-socket', '/socket.io'];
 const FORBIDDEN_HEADER_KEYS = new Set(['__proto__', 'constructor', 'prototype', 'host', 'accept-encoding']);
 
 function buildSafeProxyPath(rawUrl) {
-  const parsed = new URL(rawUrl || '/', 'http://localhost');
-  const safePath = `${parsed.pathname}${parsed.search}`;
-  const isAllowed = ALLOWED_PROXY_PREFIXES.some((prefix) => parsed.pathname.startsWith(prefix));
-  return isAllowed ? safePath : null;
+  if (typeof rawUrl !== 'string' || !rawUrl.startsWith('/') || rawUrl.startsWith('//')) {
+    return null;
+  }
+  const parsed = new URL(rawUrl, 'http://localhost');
+  const matchedPrefix = ALLOWED_PROXY_PREFIXES.find((prefix) => parsed.pathname === prefix || parsed.pathname.startsWith(`${prefix}/`));
+  if (!matchedPrefix) {
+    return null;
+  }
+  const segments = parsed.pathname
+    .split('/')
+    .filter((seg) => seg !== '..' && seg !== '.')
+    .map((seg) => encodeURIComponent(decodeURIComponent(seg)));
+  const cleanPathname = `/${segments.filter(Boolean).join('/')}`;
+  const cleanQuery = parsed.searchParams.toString();
+  return cleanQuery ? `${cleanPathname}?${cleanQuery}` : cleanPathname;
 }
 
 function copySafeHeaders(sourceHeaders) {

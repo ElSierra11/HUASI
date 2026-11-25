@@ -563,6 +563,8 @@ export default function MapaAlojamientos({ propiedades = [] }) {
     } else {
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.integrity = 'sha256-P3opCcnRkJW2NdsRcxQfQ8JMq+ZZkRS1sdbfkVFBSgk=';
+      script.crossOrigin = 'anonymous';
       script.onload = initMap;
       document.body.appendChild(script);
     }

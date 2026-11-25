@@ -108,8 +108,23 @@ export function AuthProvider({ children }) {
 
   const refreshUser = async () => {
     const res = await api.get('/auth/me');
-    setUser(res.data);
-    localStorage.setItem('stayu_user', JSON.stringify(res.data));
+    const u = res.data || {};
+    const safeUser = {
+      id: Number(u.id),
+      nombre: String(u.nombre || ''),
+      apellido: String(u.apellido || ''),
+      email: String(u.email || ''),
+      role: String(u.role || 'guest'),
+      verificado: Boolean(u.verificado),
+      email_verificado: Boolean(u.email_verificado),
+      campus: u.campus ? String(u.campus) : null,
+      universidad: u.universidad ? String(u.universidad) : null,
+      rol_universitario: u.rol_universitario ? String(u.rol_universitario) : null,
+      telefono: u.telefono ? String(u.telefono) : null,
+      foto_perfil: u.foto_perfil ? String(u.foto_perfil) : null
+    };
+    setUser(safeUser);
+    localStorage.setItem('stayu_user', JSON.stringify(safeUser));
   };
 
   // Como ya no manejamos token manual, solo devolvemos si hay user autenticado

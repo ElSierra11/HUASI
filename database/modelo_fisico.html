@@ -415,7 +415,7 @@ function astar(si, sj, sd, ei, ej, ed) {
       while (p !== -1) { path.push(p >> 2); p = cameFrom[p]; }
       return path.reverse();
     }
-    const i = cell % cols, j = (cell / cols) | 0, g0 = gScore[st];
+    const i = cell % cols, j = Math.trunc(cell / cols), g0 = gScore[st];
     for (let nd = 0; nd < 4; nd++) {
       if (nd === ((d + 2) & 3)) continue;
       const ni = i + DX[nd], nj = j + DY[nd];
@@ -509,7 +509,7 @@ function routeAll() {
     let pts;
     if (path) {
       markUsed(path);
-      pts = [{ x: e.cx, y: e.cy }, ...path.map(c => ({ x: (c % cols) * G, y: ((c / cols) | 0) * G })), { x: e.px, y: e.py }];
+      pts = [{ x: e.cx, y: e.cy }, ...path.map(c => ({ x: (c % cols) * G, y: Math.trunc(c / cols) * G })), { x: e.px, y: e.py }];
     } else {
       const mx = snap((sx + ex) / 2);
       pts = [{ x: e.cx, y: e.cy }, { x: sx, y: e.cy }, { x: mx, y: e.cy }, { x: mx, y: e.py }, { x: ex, y: e.py }, { x: e.px, y: e.py }];

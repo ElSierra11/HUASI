@@ -163,7 +163,6 @@ export default function RecuperarPassword() {
                   id="new-password"
                   type={showPass ? 'text' : 'password'}
                   required
-                  autoFocus
                   className="form-control"
                   placeholder="••••••••"
                   style={{ paddingLeft: 44, paddingRight: 44 }}

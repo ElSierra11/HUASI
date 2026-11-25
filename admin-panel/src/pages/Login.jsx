@@ -18,7 +18,7 @@ export default function Login() {
     const emailTrim = form.email.trim();
     if (!emailTrim) {
       newErrors.email = 'El correo electrónico es obligatorio';
-    } else if (!/^\S+@\S+\.\S+$/.test(emailTrim)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) {
       newErrors.email = 'El formato del correo electrónico no es válido';
     }
     if (!form.password) {

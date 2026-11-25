@@ -125,7 +125,6 @@ export default function OlvidoPassword() {
                   id="reset-email"
                   type="email"
                   required
-                  autoFocus
                   className="form-control"
                   placeholder="usuario@tuuniversidad.edu.co"
                   style={{ paddingLeft: 44 }}

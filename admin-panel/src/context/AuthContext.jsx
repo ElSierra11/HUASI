@@ -29,8 +29,16 @@ export function AuthProvider({ children }) {
         if (res.data.role !== 'admin') {
           throw new Error('No es admin');
         }
-        setUser(res.data);
-        localStorage.setItem('stayu_admin_user', JSON.stringify(res.data));
+        const safeUser = {
+          id: Number(res.data.id),
+          nombre: String(res.data.nombre || ''),
+          apellido: String(res.data.apellido || ''),
+          email: String(res.data.email || ''),
+          role: String(res.data.role || ''),
+          verificado: Boolean(res.data.verificado)
+        };
+        setUser(safeUser);
+        localStorage.setItem('stayu_admin_user', JSON.stringify(safeUser));
       })
       .catch(() => {
         // Si /me falla, verificar si hay token válido (no expirado) en localStorage

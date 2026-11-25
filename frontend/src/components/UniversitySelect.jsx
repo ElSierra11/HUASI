@@ -347,7 +347,6 @@ export default function UniversitySelect({
               placeholder="Ej. Escuela Militar de Aviación, Colegio Mayor..."
               value={otroNombre}
               onChange={(e) => onOtroNombreChange && onOtroNombreChange(e.target.value)}
-              autoFocus
             />
           </div>
           <small

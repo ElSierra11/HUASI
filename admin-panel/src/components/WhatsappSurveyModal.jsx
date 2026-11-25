@@ -78,7 +78,8 @@ export default function WhatsappSurveyModal({ isOpen, onClose, usuarios = [], sh
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_MSG_KEY, template);
+      const sanitizedTemplate = String(template || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').slice(0, 2000);
+      localStorage.setItem(STORAGE_MSG_KEY, sanitizedTemplate);
     } catch {
       // Ignorar si localStorage no está disponible
     }
