@@ -292,7 +292,9 @@ export default function MisReservas() {
                     onClick={() => {
                       const printWin = window.open('', '_blank');
                       const origin = window.location.origin;
-                      const token = `HUASI-UCC-${r.id}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+                      const randBytes = new Uint32Array(1);
+                      globalThis.crypto.getRandomValues(randBytes);
+                      const token = `HUASI-UCC-${r.id}-${randBytes[0].toString(36).toUpperCase().padStart(6, '0').slice(0, 6)}`;
                       const fechaEmision = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
                       const fechaInicioFmt = formatDate(r.fecha_inicio);
                       const fechaFinFmt = formatDate(r.fecha_fin);

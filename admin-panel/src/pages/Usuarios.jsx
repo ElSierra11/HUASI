@@ -270,7 +270,7 @@ export default function Usuarios({ onActionFinished }) {
 
   const countSinVerificar = usuarios.filter(u => !u.verificado && !u.email_verificado).length;
 
-  const campusesDisponibles = Array.from(new Set(usuarios.map(u => u.campus).filter(Boolean))).sort();
+  const campusesDisponibles = Array.from(new Set(usuarios.map(u => u.campus).filter(Boolean))).sort((a, b) => a.localeCompare(b));
 
   const filteredUsuarios = usuarios.filter(u => {
     const searchString = `${u.nombre || ''} ${u.apellido || ''} ${u.email || ''} ${u.campus || ''} ${u.telefono || ''}`.toLowerCase();

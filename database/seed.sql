@@ -2,19 +2,17 @@
 -- StayU - Seed de Base de Datos (Datos de Prueba)
 -- ============================================
 
--- Nota: Todos los usuarios tienen la contraseña 'password' 
--- usando un hash simulado para desarrollo local.
--- Hash real para 'password' con bcrypt: $2b$10$.j.FbO/mDfdvK.xpPjwacuodARggzkIcdTU5D7IcUlStBOYUmurm2
+-- Nota: Para desarrollo local, asigne contraseñas mediante services/auth/reset_admin.js o /registro.
 
 -- Limpiar tablas (Opcional, pero util para no duplicar si se corre varias veces)
 TRUNCATE TABLE resenas, reservas, disponibilidad, propiedades, verificaciones, users CASCADE;
 
 -- Insertar Usuarios de Prueba (Hosts y Guests)
 INSERT INTO users (id, email, password_hash, nombre, apellido, telefono, role, verificado, email_verificado) VALUES
-(101, 'carlos@stayu.com', '$2b$10$.j.FbO/mDfdvK.xpPjwacuodARggzkIcdTU5D7IcUlStBOYUmurm2', 'Carlos', 'Perez', '3001234567', 'host', TRUE, TRUE),
-(102, 'maria@stayu.com', '$2b$10$.j.FbO/mDfdvK.xpPjwacuodARggzkIcdTU5D7IcUlStBOYUmurm2', 'Maria', 'Gomez', '3019876543', 'host', TRUE, TRUE),
-(103, 'juan@stayu.com', '$2b$10$.j.FbO/mDfdvK.xpPjwacuodARggzkIcdTU5D7IcUlStBOYUmurm2', 'Juan', 'Martinez', '3157778899', 'guest', TRUE, TRUE),
-(104, 'ana@stayu.com', '$2b$10$.j.FbO/mDfdvK.xpPjwacuodARggzkIcdTU5D7IcUlStBOYUmurm2', 'Ana', 'Torres', '3201112233', 'guest', FALSE, TRUE)
+(101, 'carlos@stayu.com', 'REPLACE_VIA_RESET_ADMIN_SCRIPT', 'Carlos', 'Perez', '3001234567', 'host', TRUE, TRUE),
+(102, 'maria@stayu.com', 'REPLACE_VIA_RESET_ADMIN_SCRIPT', 'Maria', 'Gomez', '3019876543', 'host', TRUE, TRUE),
+(103, 'juan@stayu.com', 'REPLACE_VIA_RESET_ADMIN_SCRIPT', 'Juan', 'Martinez', '3157778899', 'guest', TRUE, TRUE),
+(104, 'ana@stayu.com', 'REPLACE_VIA_RESET_ADMIN_SCRIPT', 'Ana', 'Torres', '3201112233', 'guest', FALSE, TRUE)
 ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;
 
 -- Ajustar la secuencia de ID de usuarios

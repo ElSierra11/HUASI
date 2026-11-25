@@ -30,29 +30,52 @@ const MIME_TYPES = {
   '.ttf': 'font/ttf'
 };
 
+const ALLOWED_PROXY_PREFIXES = ['/api', '/chat-socket', '/socket.io'];
+const FORBIDDEN_HEADER_KEYS = new Set(['__proto__', 'constructor', 'prototype', 'host', 'accept-encoding']);
+
+function buildSafeProxyPath(rawUrl) {
+  const parsed = new URL(rawUrl || '/', 'http://localhost');
+  const safePath = `${parsed.pathname}${parsed.search}`;
+  const isAllowed = ALLOWED_PROXY_PREFIXES.some((prefix) => parsed.pathname.startsWith(prefix));
+  return isAllowed ? safePath : null;
+}
+
+function copySafeHeaders(sourceHeaders) {
+  const clean = {};
+  for (const [key, value] of Object.entries(sourceHeaders || {})) {
+    const lower = key.toLowerCase();
+    if (FORBIDDEN_HEADER_KEYS.has(lower) || value === undefined) continue;
+    clean[key] = value;
+  }
+  return clean;
+}
+
 const server = http.createServer((req, res) => {
-  const urlPath = req.url.split('?')[0];
+  const urlPath = (req.url || '/').split('?')[0];
 
   // 1. Redirigir y hacer proxy de llamadas /api, /chat-socket y /socket.io al backend de Render
-  if (urlPath.startsWith('/api') || urlPath.startsWith('/chat-socket') || urlPath.startsWith('/socket.io')) {
+  const safeProxyPath = buildSafeProxyPath(req.url);
+  if (safeProxyPath) {
     const isHttps = backendTarget.protocol === 'https:';
     const client = isHttps ? https : http;
 
-    const proxyHeaders = { ...req.headers };
+    const proxyHeaders = copySafeHeaders(req.headers);
     proxyHeaders.host = backendTarget.hostname;
-    // Evitar problemas de compresión en el streaming del proxy si es necesario
-    delete proxyHeaders['accept-encoding'];
 
     const proxyReq = client.request({
       protocol: backendTarget.protocol,
       hostname: backendTarget.hostname,
       port: backendTarget.port || (isHttps ? 443 : 80),
       method: req.method,
-      path: req.url,
+      path: safeProxyPath,
       headers: proxyHeaders,
       timeout: 60000 // 60s timeout para soportar cold-starts en Render
     }, (proxyRes) => {
-      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      const responseHeaders = copySafeHeaders(proxyRes.headers);
+      if (typeof responseHeaders.location === 'string' && !responseHeaders.location.startsWith('/')) {
+        delete responseHeaders.location;
+      }
+      res.writeHead(proxyRes.statusCode || 502, responseHeaders);
       proxyRes.pipe(res);
     });
 
@@ -113,9 +136,10 @@ const server = http.createServer((req, res) => {
 
 // Proxy para conexiones WebSocket (chat)
 server.on('upgrade', (req, socket, head) => {
-  if (req.url.startsWith('/chat-socket') || req.url.startsWith('/socket.io')) {
+  const safeWsPath = buildSafeProxyPath(req.url);
+  if (safeWsPath && (safeWsPath.startsWith('/chat-socket') || safeWsPath.startsWith('/socket.io'))) {
     const isHttps = backendTarget.protocol === 'https:';
-    const proxyHeaders = { ...req.headers };
+    const proxyHeaders = copySafeHeaders(req.headers);
     proxyHeaders.host = backendTarget.hostname;
 
     const proxyReq = (isHttps ? https : http).request({
@@ -123,7 +147,7 @@ server.on('upgrade', (req, socket, head) => {
       hostname: backendTarget.hostname,
       port: backendTarget.port || (isHttps ? 443 : 80),
       method: 'GET',
-      path: req.url,
+      path: safeWsPath,
       headers: proxyHeaders,
     });
 

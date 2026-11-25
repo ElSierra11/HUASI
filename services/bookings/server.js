@@ -9,6 +9,7 @@ const resenasRoutes = require('./routes/resenas');
 const { router: notificacionesRouter } = require('./routes/notificaciones');
 
 const app = express();
+app.disable('x-powered-by');
 const PORT = process.env.BOOKING_PORT || 4003;
 const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
 

@@ -8,6 +8,7 @@ require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 const { authMiddleware } = require('./middleware/auth');
 
 const app = express();
+app.disable('x-powered-by');
 const PORT = process.env.PORT || process.env.GATEWAY_PORT || 4000;
 
 const AUTH_URL = process.env.AUTH_SERVICE_URL || `http://localhost:${process.env.AUTH_PORT || 4001}`;

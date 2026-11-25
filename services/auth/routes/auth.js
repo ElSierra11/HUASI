@@ -40,7 +40,7 @@ const MAX_OTP_ATTEMPTS = 5;
 const OTP_LOCKOUT_MINUTES = 5;
 const RESEND_COOLDOWN_SECONDS = 30;
 
-const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+const generateOtp = () => crypto.randomInt(100000, 1000000).toString();
 
 // ============ EMAIL CONFIG (Brevo HTTP API, Resend HTTP API, Gmail OAuth2 y Fallback SMTP) ============
 const nodemailer = require('nodemailer');
@@ -1624,7 +1624,7 @@ router.post('/admin/usuarios/:id/reset-password', async (req, res) => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
     let tempPassword = '';
     for (let i = 0; i < 10; i++) {
-      tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+      tempPassword += chars.charAt(crypto.randomInt(0, chars.length));
     }
 
     const hash = await bcrypt.hash(tempPassword, 10);

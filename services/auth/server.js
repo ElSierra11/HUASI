@@ -9,6 +9,7 @@ const verificacionRoutes = require('./routes/verificacion');
 const reportesRoutes = require('./routes/reportes');
 
 const app = express();
+app.disable('x-powered-by');
 const PORT = process.env.AUTH_PORT || 4001;
 const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
 

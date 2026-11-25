@@ -163,6 +163,9 @@ self.addEventListener('notificationclick', (event) => {
 
 // Mensajes desde la aplicación web cliente
 self.addEventListener('message', (event) => {
+  if (event.origin && event.origin !== self.location.origin) {
+    return;
+  }
   if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
     const { title, options } = event.data.payload || {};
     self.registration.showNotification(title || 'StayU Notificación', {

@@ -3,6 +3,7 @@ const pool = require('../db');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
@@ -57,7 +58,7 @@ const storage = multer.diskStorage({
       else if (file.mimetype.includes('mp3') || file.mimetype.includes('mpeg')) ext = '.mp3';
       else ext = '.bin';
     }
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+    cb(null, `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`);
   }
 });
 

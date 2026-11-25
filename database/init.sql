@@ -185,9 +185,9 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 
 CREATE INDEX IF NOT EXISTS idx_push_subs_user_id ON push_subscriptions(user_id);
 
--- Insertar usuario admin por defecto
+-- Insertar usuario admin por defecto (asignar contraseña ejecutando services/auth/reset_admin.js)
 INSERT INTO users (email, password_hash, nombre, apellido, role, verificado, email_verificado)
-VALUES ('admin@stayu.com', '$2b$10$.j.FbO/mDfdvK.xpPjwacuodARggzkIcdTU5D7IcUlStBOYUmurm2', 'Admin', 'StayU', 'admin', TRUE, TRUE)
+VALUES ('admin@stayu.com', 'REPLACE_VIA_RESET_ADMIN_SCRIPT', 'Admin', 'StayU', 'admin', TRUE, TRUE)
 ON CONFLICT (email) DO NOTHING;
 
 

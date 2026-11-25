@@ -11,6 +11,7 @@ const disponibilidadRoutes = require('./routes/disponibilidad');
 
 
 const app = express();
+app.disable('x-powered-by');
 const PORT = process.env.HOST_PORT || 4002;
 const JWT_SECRET = process.env.JWT_SECRET || 'stayu_secret_key';
 
