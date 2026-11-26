@@ -115,7 +115,7 @@ function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], capacid
       const end = new Date(r.fecha_fin + 'T00:00:00');
       // If the date falls within the booked stay (up to check-out morning)
       if (date >= start && date < end) {
-        return total + (parseInt(r.num_huespedes, 10) || 1);
+        return total + (Number.parseInt(r.num_huespedes, 10) || 1);
       }
       return total;
     }, 0);
@@ -260,9 +260,12 @@ function PropertyCalendar({ disponibilidad = [], reservasAceptadas = [], capacid
           return (
             <div
               key={`day-${day}`}
+              role="button"
+              tabIndex={0}
               className={`cal-day ${statusClass} ${selected ? 'cal-selected' : ''}`}
               title={tooltip}
               onClick={() => handleDayClick(day)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDayClick(day); } }}
             >
               {day}
             </div>
@@ -328,7 +331,7 @@ export default function PropertyDetail() {
     if (!booking.fecha_inicio || !booking.fecha_fin) return 0;
     const start = new Date(booking.fecha_inicio + 'T00:00:00');
     const end = new Date(booking.fecha_fin + 'T00:00:00');
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) return 0;
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) return 0;
     const diffTime = Math.abs(end - start);
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
@@ -379,7 +382,7 @@ export default function PropertyDetail() {
         const rStart = new Date(r.fecha_inicio + 'T00:00:00');
         const rEnd = new Date(r.fecha_fin + 'T00:00:00');
         if (curr >= rStart && curr < rEnd) {
-          return sum + (parseInt(r.num_huespedes, 10) || 1);
+          return sum + (Number.parseInt(r.num_huespedes, 10) || 1);
         }
         return sum;
       }, 0);
@@ -421,7 +424,7 @@ export default function PropertyDetail() {
     setBookingLoading(true);
     setError('');
     try {
-      const res = await api.post('/reservas', { propiedad_id: parseInt(id), ...booking });
+      const res = await api.post('/reservas', { propiedad_id: Number.parseInt(id), ...booking });
       setSuccess('¡Solicitud de reserva enviada!');
       HuasiAlert.success(
         '¡Solicitud Enviada!',
@@ -450,7 +453,7 @@ export default function PropertyDetail() {
   );
   if (!prop) return null;
 
-  const rating = parseFloat(prop.calificacion_promedio) || 0;
+  const rating = Number.parseFloat(prop.calificacion_promedio) || 0;
   const tipoLabel = TIPO_LABELS[prop.tipo] || prop.tipo || 'Alojamiento';
   const normalizedTipo = getNormalizedTipo(prop.tipo);
   const theme = TIPO_THEMES[normalizedTipo] || TIPO_THEMES.otro;
@@ -499,7 +502,7 @@ export default function PropertyDetail() {
           {prop.duracion_maxima && (
             <span style={{ color: 'var(--secondary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <Calendar size={16} />
-              <span>Estancia máx: {prop.duracion_maxima} {parseInt(prop.duracion_maxima) === 1 ? 'día' : 'días'}</span>
+              <span>Estancia máx: {prop.duracion_maxima} {Number.parseInt(prop.duracion_maxima) === 1 ? 'día' : 'días'}</span>
             </span>
           )}
           <span className="badge badge-aceptada">{tipoLabel}</span>
@@ -714,7 +717,7 @@ export default function PropertyDetail() {
           <section style={{ borderBottom: 'none', padding: 0 }}>
             <SistemaReputacion
               targetUser={`${prop.host_nombre || ''} ${prop.host_apellido || ''}`.trim()}
-              initialRating={parseFloat(prop.calificacion_promedio) || 0}
+              initialRating={Number.parseFloat(prop.calificacion_promedio) || 0}
               initialReviews={prop.resenas || []}
               propiedadId={prop.id}
               userReservation={prop.ya_reservado}
@@ -830,14 +833,14 @@ export default function PropertyDetail() {
 
                 <div className="booking-date-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
                   <div className="form-group">
-                    <label>Llegada</label>
-                    <input type="date" className="form-control" required
+                    <label htmlFor="booking-fecha-inicio">Llegada</label>
+                    <input id="booking-fecha-inicio" type="date" className="form-control" required
                       min={new Date().toISOString().split('T')[0]}
                       value={booking.fecha_inicio} onChange={e => setBooking(b => ({ ...b, fecha_inicio: e.target.value }))} />
                   </div>
                   <div className="form-group">
-                    <label>Salida</label>
-                    <input type="date" className="form-control" required
+                    <label htmlFor="booking-fecha-fin">Salida</label>
+                    <input id="booking-fecha-fin" type="date" className="form-control" required
                       min={booking.fecha_inicio || new Date().toISOString().split('T')[0]}
                       value={booking.fecha_fin} onChange={e => setBooking(b => ({ ...b, fecha_fin: e.target.value }))} />
                   </div>
@@ -875,7 +878,7 @@ export default function PropertyDetail() {
                 <div className="form-group">
                   <label>Huéspedes (Máx. {cuposDisponiblesFechas || 1})</label>
                   <input type="number" className="form-control" min="1" max={cuposDisponiblesFechas || 1} required
-                    value={booking.num_huespedes} onChange={e => setBooking(b => ({ ...b, num_huespedes: parseInt(e.target.value) || 1 }))} />
+                    value={booking.num_huespedes} onChange={e => setBooking(b => ({ ...b, num_huespedes: Number.parseInt(e.target.value) || 1 }))} />
                   {cuposDisponiblesFechas < (prop.capacidad || 1) && (
                     <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'block', marginTop: 4 }}>
                       Disponible para reservar hasta {cuposDisponiblesFechas} cama(s) simultáneas en este rango.
@@ -883,13 +886,13 @@ export default function PropertyDetail() {
                   )}
                 </div>
                 <div className="form-group">
-                  <label>Evento académico</label>
-                  <input type="text" className="form-control" placeholder="Ej: Congreso de Ingeniería 2026"
+                  <label htmlFor="booking-evento">Evento académico</label>
+                  <input id="booking-evento" type="text" className="form-control" placeholder="Ej: Congreso de Ingeniería 2026"
                     value={booking.evento} onChange={e => setBooking(b => ({ ...b, evento: e.target.value }))} />
                 </div>
                 <div className="form-group">
-                  <label>Mensaje al anfitrión</label>
-                  <textarea className="form-control" placeholder="Preséntate y cuéntale al anfitrión sobre tu visita..."
+                  <label htmlFor="booking-mensaje">Mensaje al anfitrión</label>
+                  <textarea id="booking-mensaje" className="form-control" placeholder="Preséntate y cuéntale al anfitrión sobre tu visita..."
                     value={booking.mensaje} onChange={e => setBooking(b => ({ ...b, mensaje: e.target.value }))} />
                 </div>
                 
@@ -930,8 +933,9 @@ export default function PropertyDetail() {
         onCancel={() => setReportModal({ open: false, motivo: '', comentario: '', processing: false })}
       >
         <div style={{ display: 'grid', gap: 12, textAlign: 'left', marginTop: 12 }}>
-          <label style={{ fontWeight: 700, fontSize: '0.85rem' }}>Motivo del reporte *</label>
+          <label htmlFor="report-motivo" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Motivo del reporte *</label>
           <select 
+            id="report-motivo"
             className="form-control"
             value={reportModal.motivo}
             onChange={e => setReportModal(m => ({ ...m, motivo: e.target.value }))}
@@ -943,8 +947,9 @@ export default function PropertyDetail() {
             <option value="Otro motivo">Otro motivo</option>
           </select>
 
-          <label style={{ fontWeight: 700, fontSize: '0.85rem' }}>Detalles adicionales (opcional)</label>
+          <label htmlFor="report-comentario" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Detalles adicionales (opcional)</label>
           <textarea
+            id="report-comentario"
             className="form-control"
             rows={3}
             placeholder="Describe brevemente lo ocurrido..."

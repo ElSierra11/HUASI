@@ -295,8 +295,11 @@ export default function NotificationBell() {
                 return (
                   <div
                     key={notif.id}
+                    role="button"
+                    tabIndex={0}
                     className="notif-item"
                     onClick={() => handleNotifClick(notif)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNotifClick(notif); } }}
                     style={{
                       display: 'flex',
                       alignItems: 'flex-start',

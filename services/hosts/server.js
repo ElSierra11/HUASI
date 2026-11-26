@@ -29,7 +29,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use((req, res, next) => {
   if (req.headers['x-user-id']) {
     req.user = {
-      id: parseInt(req.headers['x-user-id']),
+      id: Number.parseInt(req.headers['x-user-id']),
       email: req.headers['x-user-email'],
       role: req.headers['x-user-role']
     };

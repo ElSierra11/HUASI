@@ -162,7 +162,7 @@ router.post('/', async (req, res) => {
     }
 
     // Verificar capacidad estricta de huéspedes
-    const huespedesNum = parseInt(num_huespedes) || 1;
+    const huespedesNum = Number.parseInt(num_huespedes) || 1;
     if (huespedesNum < 1) {
       return res.status(400).json({ error: 'El número de huéspedes debe ser al menos 1' });
     }
@@ -210,7 +210,7 @@ router.post('/', async (req, res) => {
       [propiedad_id, fecha_inicio, fecha_fin]
     );
 
-    const huespedesOcupados = parseInt(ocupacionQuery.rows[0].huespedes_ocupados, 10);
+    const huespedesOcupados = Number.parseInt(ocupacionQuery.rows[0].huespedes_ocupados, 10);
     const cuposDisponibles = Math.max(0, capacidadTotal - huespedesOcupados);
 
     if (huespedesOcupados >= capacidadTotal) {

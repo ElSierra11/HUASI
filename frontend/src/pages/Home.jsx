@@ -67,13 +67,13 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchPropiedades();
-    fetchMetricas();
+    void fetchPropiedades();
+    void fetchMetricas();
   }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchPropiedades();
+    void fetchPropiedades();
   };
 
   const scrollToSection = (id) => {
@@ -91,19 +91,19 @@ export default function Home() {
     if (catId === 'habitacion') {
       updatedFilters.tipo = 'habitacion';
       setFilters(f => ({ ...f, tipo: 'habitacion' }));
-      fetchPropiedades({ tipo: 'habitacion' });
+      void fetchPropiedades({ tipo: 'habitacion' });
     } else if (catId === 'habitacion_compartida') {
       updatedFilters.tipo = 'habitacion_compartida';
       setFilters(f => ({ ...f, tipo: 'habitacion_compartida' }));
-      fetchPropiedades({ tipo: 'habitacion_compartida' });
+      void fetchPropiedades({ tipo: 'habitacion_compartida' });
     } else if (catId === 'sofa') {
       updatedFilters.tipo = 'sofa';
       setFilters(f => ({ ...f, tipo: 'sofa' }));
-      fetchPropiedades({ tipo: 'sofa' });
+      void fetchPropiedades({ tipo: 'sofa' });
     } else {
       updatedFilters.tipo = '';
       setFilters(f => ({ ...f, tipo: '' }));
-      fetchPropiedades({ tipo: '' });
+      void fetchPropiedades({ tipo: '' });
     }
   };
 
@@ -486,10 +486,12 @@ export default function Home() {
       {/* ===== MODAL LIGHTBOX AGRANDAR VIDEO ===== */}
       {isVideoModalOpen && (
         <div 
+          role="presentation"
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fadeIn"
           onClick={() => setIsVideoModalOpen(false)}
         >
           <div 
+            role="presentation"
             className="relative max-w-md w-full bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-700 flex flex-col items-center"
             onClick={(e) => e.stopPropagation()}
           >
@@ -736,7 +738,7 @@ export default function Home() {
                 onClick={() => {
                   const newCampus = c === 'Todos' ? '' : c;
                   setFilters(f => ({ ...f, campus: newCampus }));
-                  fetchPropiedades({ campus: newCampus });
+                  void fetchPropiedades({ campus: newCampus });
                 }}
                 className={`px-4 py-1.5 rounded-full text-[0.75rem] font-bold transition-all duration-200 border cursor-pointer whitespace-nowrap ${
                   isSelected
@@ -823,7 +825,7 @@ export default function Home() {
             className="bg-white dark:bg-slate-800 border border-ucc-border dark:border-slate-700 text-ucc-navy dark:text-white hover:bg-ucc-green-light hover:text-ucc-green font-bold text-xs px-4 py-2 rounded-full transition-all duration-200 cursor-pointer"
             onClick={() => {
               setFilters({ busqueda: '', tipo: '', ciudad: '', campus: '', fecha_inicio: '', fecha_fin: '' });
-              fetchPropiedades({ busqueda: '', tipo: '', ciudad: '', campus: '', fecha_inicio: '', fecha_fin: '' });
+              void fetchPropiedades({ busqueda: '', tipo: '', ciudad: '', campus: '', fecha_inicio: '', fecha_fin: '' });
             }}
           >
             Limpiar filtros
@@ -843,7 +845,7 @@ export default function Home() {
           actionLabel="Limpiar todos los filtros"
           onAction={() => {
             setFilters({ busqueda: '', tipo: '', ciudad: '', campus: '', fecha_inicio: '', fecha_fin: '' });
-            fetchPropiedades({ busqueda: '', tipo: '', ciudad: '', campus: '', fecha_inicio: '', fecha_fin: '' });
+            void fetchPropiedades({ busqueda: '', tipo: '', ciudad: '', campus: '', fecha_inicio: '', fecha_fin: '' });
           }}
         />
       ) : (

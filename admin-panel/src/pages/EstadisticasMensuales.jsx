@@ -22,7 +22,7 @@ export default function EstadisticasMensuales() {
   const { showToast } = useToast();
 
   useEffect(() => {
-    fetchStats();
+    void fetchStats();
   }, []);
 
   const fetchStats = async () => {

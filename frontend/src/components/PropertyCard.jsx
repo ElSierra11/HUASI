@@ -87,7 +87,7 @@ const TIPO_THEMES = {
 
 export default function PropertyCard({ propiedad }) {
   const navigate = useNavigate();
-  const rating = parseFloat(propiedad.calificacion_promedio) || 0;
+  const rating = Number.parseFloat(propiedad.calificacion_promedio) || 0;
   const normalizedTipo = getNormalizedTipo(propiedad.tipo);
   const theme = TIPO_THEMES[normalizedTipo] || TIPO_THEMES.otro;
   const icon = TIPO_ICON[normalizedTipo] || TIPO_ICON.otro;
@@ -99,8 +99,11 @@ export default function PropertyCard({ propiedad }) {
 
   return (
     <div 
+      role="button"
+      tabIndex={0}
       className="group bg-white dark:bg-slate-800/90 rounded-xl-custom border border-ucc-border/50 dark:border-slate-700/60 hover:border-ucc-green/40 dark:hover:border-emerald-500/40 shadow-custom-sm hover:shadow-custom-md hover:-translate-y-1.5 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col h-full" 
       onClick={() => navigate(`/propiedad/${propiedad.id}`)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/propiedad/${propiedad.id}`); } }}
     >
       {/* Icon Card Header */}
       <div 

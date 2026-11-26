@@ -118,7 +118,7 @@ export default function OlvidoPassword() {
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label>Correo Institucional UCC</label>
+              <label htmlFor="reset-email">Correo Institucional UCC</label>
               <div style={{ position: 'relative' }}>
                 <Mail size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                 <input

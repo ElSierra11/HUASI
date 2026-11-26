@@ -37,7 +37,7 @@ const isProd = process.env.NODE_ENV === 'production' || !!process.env.DATABASE_U
 
 // ============ OTP CONFIG & HELPERS ============
 // 1440 minutos = 24 horas para que los estudiantes nunca se queden bloqueados si el correo tarda en llegar
-const OTP_WINDOW_MINUTES = parseInt(process.env.OTP_WINDOW_MINUTES || '1440', 10);
+const OTP_WINDOW_MINUTES = Number.parseInt(process.env.OTP_WINDOW_MINUTES || '1440', 10);
 const MAX_OTP_ATTEMPTS = 5;
 const OTP_LOCKOUT_MINUTES = 5;
 const RESEND_COOLDOWN_SECONDS = 30;
@@ -455,7 +455,7 @@ router.post('/register', async (req, res) => {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
     if (!emailRegex.test(cleanEmail)) {
       return res.status(400).json({ error: 'Debes ingresar un correo electrónico válido' });
     }
@@ -1055,11 +1055,11 @@ router.get('/admin/sidebar-counters', async (req, res) => {
     ]);
 
     res.json({
-      verificaciones_pendientes: parseInt(verifRes.rows[0].count, 10) || 0,
-      alojamientos_pendientes: parseInt(aljRes.rows[0].count, 10) || 0,
-      reportes_abiertos: parseInt(pqrRes.rows[0].count, 10) || 0,
-      total_usuarios: parseInt(usersRes.rows[0].count, 10) || 0,
-      usuarios_online: parseInt(onlineRes.rows[0].count, 10) || 0
+      verificaciones_pendientes: Number.parseInt(verifRes.rows[0].count, 10) || 0,
+      alojamientos_pendientes: Number.parseInt(aljRes.rows[0].count, 10) || 0,
+      reportes_abiertos: Number.parseInt(pqrRes.rows[0].count, 10) || 0,
+      total_usuarios: Number.parseInt(usersRes.rows[0].count, 10) || 0,
+      usuarios_online: Number.parseInt(onlineRes.rows[0].count, 10) || 0
     });
   } catch (err) {
     console.error('Error obteniendo contadores de sidebar:', err);
@@ -1083,11 +1083,11 @@ router.get('/admin/notificaciones-procesos', async (req, res) => {
     ]);
 
     const resumen = {
-      total_pendientes_alojamiento: parseInt(pendientesAlojRes.rows[0].count, 10) || 0,
-      total_en_correccion_alojamiento: parseInt(correccionAlojRes.rows[0].count, 10) || 0,
-      total_nuevos_registros_24h: parseInt(nuevosRegistros24hRes.rows[0].count, 10) || 0,
-      total_registros_sin_verificar: parseInt(sinVerificarRes.rows[0].count, 10) || 0,
-      total_alertas_activas: (parseInt(pendientesAlojRes.rows[0].count, 10) || 0) + (parseInt(nuevosRegistros24hRes.rows[0].count, 10) || 0)
+      total_pendientes_alojamiento: Number.parseInt(pendientesAlojRes.rows[0].count, 10) || 0,
+      total_en_correccion_alojamiento: Number.parseInt(correccionAlojRes.rows[0].count, 10) || 0,
+      total_nuevos_registros_24h: Number.parseInt(nuevosRegistros24hRes.rows[0].count, 10) || 0,
+      total_registros_sin_verificar: Number.parseInt(sinVerificarRes.rows[0].count, 10) || 0,
+      total_alertas_activas: (Number.parseInt(pendientesAlojRes.rows[0].count, 10) || 0) + (Number.parseInt(nuevosRegistros24hRes.rows[0].count, 10) || 0)
     };
 
     // 2. Alojamientos en proceso (nuevas publicaciones y pendientes de dictamen)
@@ -1283,18 +1283,18 @@ router.get('/admin/dashboard-stats', async (req, res) => {
 
     res.json({
       propiedades: {
-        total: parseInt(propStats.rows[0].total || 0),
-        activas: parseInt(propStats.rows[0].activas || 0),
-        inactivas: parseInt(propStats.rows[0].inactivas || 0),
-        tipos: propTypes.rows.map(r => ({ tipo: r.tipo, cantidad: parseInt(r.cantidad) }))
+        total: Number.parseInt(propStats.rows[0].total || 0),
+        activas: Number.parseInt(propStats.rows[0].activas || 0),
+        inactivas: Number.parseInt(propStats.rows[0].inactivas || 0),
+        tipos: propTypes.rows.map(r => ({ tipo: r.tipo, cantidad: Number.parseInt(r.cantidad) }))
       },
       reservas_por_mes: reservasPorMes.rows.map(r => ({
         mes: r.mes,
-        total: parseInt(r.total || 0),
-        aprobadas: parseInt(r.aprobadas || 0),
-        pendientes: parseInt(r.pendientes || 0),
-        rechazadas: parseInt(r.rechazadas || 0),
-        canceladas: parseInt(r.canceladas || 0)
+        total: Number.parseInt(r.total || 0),
+        aprobadas: Number.parseInt(r.aprobadas || 0),
+        pendientes: Number.parseInt(r.pendientes || 0),
+        rechazadas: Number.parseInt(r.rechazadas || 0),
+        canceladas: Number.parseInt(r.canceladas || 0)
       }))
     });
   } catch (err) {
@@ -1348,18 +1348,18 @@ router.get('/admin/estadisticas-mensuales', async (req, res) => {
     res.json({
       campus: campusStats.rows.map(c => ({
         campus: c.campus,
-        total_alojamientos: parseInt(c.total_alojamientos || 0),
-        activos: parseInt(c.activos || 0)
+        total_alojamientos: Number.parseInt(c.total_alojamientos || 0),
+        activos: Number.parseInt(c.activos || 0)
       })),
       historico_reservas: historicoMensual.rows.map(h => ({
         mes: h.mes,
-        total_reservas: parseInt(h.total_reservas || 0),
-        reservas_aceptadas: parseInt(h.reservas_aceptadas || 0),
-        reservas_rechazadas: parseInt(h.reservas_rechazadas || 0)
+        total_reservas: Number.parseInt(h.total_reservas || 0),
+        reservas_aceptadas: Number.parseInt(h.reservas_aceptadas || 0),
+        reservas_rechazadas: Number.parseInt(h.reservas_rechazadas || 0)
       })),
       propiedades_mensuales: propiedadesMensuales.rows.map(p => ({
         mes: p.mes,
-        nuevos_alojamientos: parseInt(p.nuevos_alojamientos || 0)
+        nuevos_alojamientos: Number.parseInt(p.nuevos_alojamientos || 0)
       }))
     });
   } catch (err) {
@@ -1414,9 +1414,9 @@ router.delete('/admin/usuarios/:id', async (req, res) => {
     }
 
     const { id } = req.params;
-    const targetId = parseInt(id, 10);
+    const targetId = Number.parseInt(id, 10);
 
-    if (isNaN(targetId)) {
+    if (Number.isNaN(targetId)) {
       return res.status(400).json({ error: 'ID de usuario inválido' });
     }
 
@@ -1665,7 +1665,7 @@ router.post('/activity/heartbeat', async (req, res) => {
     let userId = req.user?.id;
 
     if (!userId && req.headers['x-user-id']) {
-      userId = parseInt(req.headers['x-user-id'], 10);
+      userId = Number.parseInt(req.headers['x-user-id'], 10);
     }
 
     if (!userId && req.headers.cookie) {
@@ -1679,7 +1679,7 @@ router.post('/activity/heartbeat', async (req, res) => {
     }
 
     if (!userId && bodyUserId) {
-      userId = parseInt(bodyUserId, 10);
+      userId = Number.parseInt(bodyUserId, 10);
     }
 
     if (!userId) {
@@ -1751,7 +1751,7 @@ router.post('/activity/event', async (req, res) => {
       return res.status(400).json({ error: 'tipo_evento y descripcion son obligatorios' });
     }
 
-    let userId = req.user?.id || (req.headers['x-user-id'] ? parseInt(req.headers['x-user-id'], 10) : null) || (bodyUserId ? parseInt(bodyUserId, 10) : null);
+    let userId = req.user?.id || (req.headers['x-user-id'] ? Number.parseInt(req.headers['x-user-id'], 10) : null) || (bodyUserId ? Number.parseInt(bodyUserId, 10) : null);
     const safeDispositivo = dispositivo || (userId ? 'Escritorio' : 'Invitado');
 
     await pool.query(
@@ -1804,14 +1804,14 @@ router.get('/admin/actividad/resumen', async (req, res) => {
     const rolesMap = { estudiante: 0, anfitrion: 0, admin: 0 };
     rolesRes.rows.forEach(r => {
       if (rolesMap[r.role] !== undefined) {
-        rolesMap[r.role] = parseInt(r.count, 10);
+        rolesMap[r.role] = Number.parseInt(r.count, 10);
       }
     });
 
     res.json({
-      usuarios_online: parseInt(onlineRes.rows[0].count, 10) || 0,
-      activos_hoy: parseInt(hoyRes.rows[0].count, 10) || 0,
-      interacciones_hoy: parseInt(totalEventosRes.rows[0].count, 10) || 0,
+      usuarios_online: Number.parseInt(onlineRes.rows[0].count, 10) || 0,
+      activos_hoy: Number.parseInt(hoyRes.rows[0].count, 10) || 0,
+      interacciones_hoy: Number.parseInt(totalEventosRes.rows[0].count, 10) || 0,
       desglose_roles: rolesMap,
       rutas_populares: rutasRes.rows
     });
@@ -1866,7 +1866,7 @@ router.get('/admin/actividad/feed', async (req, res) => {
       return res.status(403).json({ error: 'Acceso denegado' });
     }
 
-    const limit = parseInt(req.query.limit, 10) || 60;
+    const limit = Number.parseInt(req.query.limit, 10) || 60;
     const filterTipo = req.query.tipo;
 
     let query = `
@@ -1977,7 +1977,7 @@ router.get('/admin/actividad/usuario/:id', async (req, res) => {
       return res.status(403).json({ error: 'Acceso denegado' });
     }
 
-    const userId = parseInt(req.params.id, 10);
+    const userId = Number.parseInt(req.params.id, 10);
     const [userRes, actRes] = await Promise.all([
       pool.query(`
         SELECT id, nombre, apellido, email, role, campus, foto_perfil, ultimo_acceso, ultima_ruta, dispositivo, created_at,

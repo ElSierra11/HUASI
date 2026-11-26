@@ -41,7 +41,7 @@ export default function Dashboard({ onActionFinished }) {
   const [approvingId, setApprovingId] = useState(null); // ID en proceso
 
   useEffect(() => {
-    fetchStats();
+    void fetchStats();
   }, []);
 
   const fetchStats = async () => {
@@ -698,7 +698,7 @@ export default function Dashboard({ onActionFinished }) {
                     
                     const [year, month] = d.mes.split('-');
                     const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-                    const mesLabel = `${monthNames[parseInt(month) - 1]} ${year.substring(2)}`;
+                    const mesLabel = `${monthNames[Number.parseInt(month) - 1]} ${year.substring(2)}`;
 
                     return (
                       <g key={d.mes}>
@@ -745,7 +745,7 @@ export default function Dashboard({ onActionFinished }) {
               {monthsData.map((d) => {
                 const [year, month] = d.mes.split('-');
                 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-                const label = `${monthNames[parseInt(month) - 1]} ${year}`;
+                const label = `${monthNames[Number.parseInt(month) - 1]} ${year}`;
                 return (
                   <div key={d.mes} style={{ background: 'var(--bg-surface-hover)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>

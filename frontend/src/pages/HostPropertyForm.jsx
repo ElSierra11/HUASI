@@ -104,7 +104,7 @@ export default function HostPropertyForm() {
       const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
       const data = await res.json();
       if (data && data.length > 0) {
-        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+        return { lat: Number.parseFloat(data[0].lat), lng: Number.parseFloat(data[0].lon) };
       }
       return null;
     } catch {
@@ -211,16 +211,16 @@ export default function HostPropertyForm() {
       <form onSubmit={handleSubmit} className="card" style={{ padding: 32 }}>
 
         <div className="form-group">
-          <label>Título del anuncio *</label>
-          <input type="text" className="form-control" placeholder="Ej: Casa 1 en Villa Toledo - Habitación compartida 10 camas" required maxLength={80}
+          <label htmlFor="prop-titulo">Título del anuncio *</label>
+          <input id="prop-titulo" type="text" className="form-control" placeholder="Ej: Casa 1 en Villa Toledo - Habitación compartida 10 camas" required maxLength={80}
             value={form.titulo} onChange={e => updateField('titulo', e.target.value)} />
           <small style={{ color: 'var(--text-muted)' }}>{form.titulo.length}/80 caracteres · Sé específico y breve.</small>
           {errors.titulo && <small style={{ color: 'var(--danger)' }}>{errors.titulo}</small>}
         </div>
 
         <div className="form-group">
-          <label>Descripción *</label>
-          <textarea className="form-control" placeholder="Describe tu espacio, dormitorios, número de camas, horarios, acceso y por qué es ideal para estudiantes o profesores..." required maxLength={500}
+          <label htmlFor="prop-descripcion">Descripción *</label>
+          <textarea id="prop-descripcion" className="form-control" placeholder="Describe tu espacio, dormitorios, número de camas, horarios, acceso y por qué es ideal para estudiantes o profesores..." required maxLength={500}
             value={form.descripcion} onChange={e => updateField('descripcion', e.target.value)} rows={4} />
           <small style={{ color: 'var(--text-muted)' }}>{form.descripcion.length}/500 caracteres · Menciona comodidades, ubicación y reglas.</small>
           {errors.descripcion && <small style={{ color: 'var(--danger)' }}>{errors.descripcion}</small>}
@@ -228,8 +228,8 @@ export default function HostPropertyForm() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
           <div className="form-group">
-            <label>Tipo de alojamiento *</label>
-            <select className="form-control" value={form.tipo} onChange={e => updateField('tipo', e.target.value)}>
+            <label htmlFor="prop-tipo">Tipo de alojamiento *</label>
+            <select id="prop-tipo" className="form-control" value={form.tipo} onChange={e => updateField('tipo', e.target.value)}>
               <option value="habitacion">Habitación privada</option>
               <option value="habitacion_compartida">Habitación compartida / Múltiples camas</option>
               <option value="cama">Cama individual</option>
@@ -240,8 +240,8 @@ export default function HostPropertyForm() {
             </select>
           </div>
           <div className="form-group">
-            <label>Capacidad (camas / huéspedes) *</label>
-            <input type="number" inputMode="numeric" className="form-control" min="1" max="60" required
+            <label htmlFor="prop-capacidad">Capacidad (camas / huéspedes) *</label>
+            <input id="prop-capacidad" type="number" inputMode="numeric" className="form-control" min="1" max="60" required
               value={form.capacidad} onChange={e => updateField('capacidad', e.target.value)} />
             <small style={{ color: 'var(--text-muted)' }}>Capacidad de 1 a 60 camas o huéspedes.</small>
             {errors.capacidad && <small style={{ color: 'var(--danger)' }}>{errors.capacidad}</small>}
@@ -250,8 +250,8 @@ export default function HostPropertyForm() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
           <div className="form-group">
-            <label>Campus UCC más cercano *</label>
-            <select required className="form-control" value={form.campus_cercano} onChange={e => updateField('campus_cercano', e.target.value)}>
+            <label htmlFor="prop-campus">Campus UCC más cercano *</label>
+            <select id="prop-campus" required className="form-control" value={form.campus_cercano} onChange={e => updateField('campus_cercano', e.target.value)}>
               <option value="">Selecciona la sede...</option>
               <option value="Santa Marta">Santa Marta</option>
               <option value="Bogotá">Bogotá</option>
@@ -270,8 +270,8 @@ export default function HostPropertyForm() {
             {errors.campus_cercano && <small style={{ color: 'var(--danger)' }}>{errors.campus_cercano}</small>}
           </div>
           <div className="form-group">
-            <label>Duración máxima del hospedaje (días)</label>
-            <input type="number" inputMode="numeric" className="form-control" min="1" max="365" placeholder="Ej: 15"
+            <label htmlFor="prop-duracion">Duración máxima del hospedaje (días)</label>
+            <input id="prop-duracion" type="number" inputMode="numeric" className="form-control" min="1" max="365" placeholder="Ej: 15"
               value={form.duracion_maxima} onChange={e => updateField('duracion_maxima', e.target.value)} />
             <small style={{ color: 'var(--text-muted)' }}>Opcional: ayuda a filtrar solicitudes poco realistas.</small>
             {errors.duracion_maxima && <small style={{ color: 'var(--danger)' }}>{errors.duracion_maxima}</small>}
@@ -280,14 +280,14 @@ export default function HostPropertyForm() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
           <div className="form-group">
-            <label>Dirección *</label>
-            <input type="text" className="form-control" placeholder="Calle, número, edificio..." required
+            <label htmlFor="prop-direccion">Dirección *</label>
+            <input id="prop-direccion" type="text" className="form-control" placeholder="Calle, número, edificio..." required
               value={form.direccion} onChange={e => updateField('direccion', e.target.value)} />
             {errors.direccion && <small style={{ color: 'var(--danger)' }}>{errors.direccion}</small>}
           </div>
           <div className="form-group">
-            <label>Barrio</label>
-            <input type="text" className="form-control" placeholder="Ej: Laureles, Chapinero, Bavaria..."
+            <label htmlFor="prop-barrio">Barrio</label>
+            <input id="prop-barrio" type="text" className="form-control" placeholder="Ej: Laureles, Chapinero, Bavaria..."
               value={form.barrio} onChange={e => updateField('barrio', e.target.value)} />
             {errors.barrio && <small style={{ color: 'var(--danger)' }}>{errors.barrio}</small>}
           </div>
@@ -306,7 +306,7 @@ export default function HostPropertyForm() {
         />
 
         <div className="form-group" style={{ marginTop: 12 }}>
-          <label>Amenidades</label>
+          <span style={{ display: 'block', fontWeight: 700, marginBottom: 6 }}>Amenidades</span>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', marginBottom: 10 }}>Selecciona solo las que realmente ofreces; 4–6 es suficiente.</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             {AMENIDADES_OPCIONES.map(a => (
@@ -325,8 +325,8 @@ export default function HostPropertyForm() {
         </div>
 
         <div className="form-group">
-          <label>Reglas del lugar</label>
-          <textarea className="form-control" placeholder="Ej: No fumar, no mascotas, llegada hasta las 10pm..."
+          <label htmlFor="prop-reglas">Reglas del lugar</label>
+          <textarea id="prop-reglas" className="form-control" placeholder="Ej: No fumar, no mascotas, llegada hasta las 10pm..."
             value={form.reglas} onChange={e => updateField('reglas', e.target.value)} rows={3} />
         </div>
 

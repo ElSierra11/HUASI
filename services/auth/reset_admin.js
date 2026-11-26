@@ -13,4 +13,4 @@ async function resetAdmin() {
   }
 }
 
-resetAdmin();
+void resetAdmin();

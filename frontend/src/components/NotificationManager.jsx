@@ -52,7 +52,7 @@ export default function NotificationManager() {
 
     if (perm === 'granted') {
       await subscribeUserToPush();
-      showPushNotification({
+      void showPushNotification({
         title: 'Notificaciones en segundo plano activadas',
         body: '¡Listo! Te avisaremos en tu pantalla de bloqueo y barra de notificaciones incluso con la app cerrada.',
         icon: '/huasi-monograma.png',
@@ -86,7 +86,7 @@ export default function NotificationManager() {
             const prev = previousGuestReservasRef.current.find((p) => p.id === curr.id);
             if (prev && prev.estado !== curr.estado) {
               // El estado cambió (ej. de pendiente a aceptada o rechazada)
-              notifyBookingStatusChange({
+              void notifyBookingStatusChange({
                 estado: curr.estado,
                 propertyTitle: curr.titulo || 'tu alojamiento',
                 hostName: curr.host_nombre ? `${curr.host_nombre} ${curr.host_apellido || ''}`.trim() : ''
@@ -106,7 +106,7 @@ export default function NotificationManager() {
             if (curr.estado === 'pendiente') {
               const prev = previousHostReservasRef.current.find((p) => p.id === curr.id);
               if (!prev) {
-                notifyNewBookingRequest({
+                void notifyNewBookingRequest({
                   guestName: curr.guest_nombre ? `${curr.guest_nombre} ${curr.guest_apellido || ''}`.trim() : 'Un estudiante',
                   propertyTitle: curr.titulo || 'tu alojamiento'
                 });
@@ -123,7 +123,7 @@ export default function NotificationManager() {
           
           if (latestProps.length > 0) {
             const rawLastId = localStorage.getItem('huasi_last_known_prop_id');
-            const lastKnownId = rawLastId ? parseInt(rawLastId, 10) : null;
+            const lastKnownId = rawLastId ? Number.parseInt(rawLastId, 10) : null;
             const currentMaxId = Math.max(...latestProps.map(p => p.id));
 
             if (lastKnownId === null) {
@@ -133,7 +133,7 @@ export default function NotificationManager() {
               // Se detectó al menos un nuevo alojamiento publicado
               const newProps = latestProps.filter(p => p.id > lastKnownId && p.host_id !== user.id);
               newProps.forEach(p => {
-                notifyNewProperty({
+                void notifyNewProperty({
                   propertyId: p.id,
                   propertyTitle: p.titulo || 'Nuevo Alojamiento',
                   tipo: p.tipo || 'Habitación',
@@ -155,7 +155,7 @@ export default function NotificationManager() {
     };
 
     // Ejecutar verificación inicial
-    checkReservationsChanges();
+    void checkReservationsChanges();
 
     // Polling cada 12 segundos para detectar cambios de reservas y nuevos alojamientos
     const interval = setInterval(checkReservationsChanges, 12000);
@@ -167,7 +167,7 @@ export default function NotificationManager() {
     const handleImmediatePropPublished = (e) => {
       const p = e.detail;
       if (p) {
-        notifyNewProperty({
+        void notifyNewProperty({
           propertyId: p.id,
           propertyTitle: p.titulo || 'Nuevo Alojamiento',
           tipo: p.tipo || 'Habitación',
@@ -186,7 +186,7 @@ export default function NotificationManager() {
         try {
           const p = JSON.parse(e.data);
           if (p && (!user || p.host_id !== user.id)) {
-            notifyNewProperty({
+            void notifyNewProperty({
               propertyId: p.id,
               propertyTitle: p.titulo || 'Nuevo Alojamiento',
               tipo: p.tipo || 'Habitación',

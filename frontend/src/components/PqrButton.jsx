@@ -9,7 +9,7 @@ export default function PqrButton() {
   const toggleModal = () => setIsOpen(!isOpen);
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(email);
+    void navigator.clipboard.writeText(email);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -46,6 +46,7 @@ export default function PqrButton() {
       {/* Modal de PQRs */}
       {isOpen && (
         <div
+          role="presentation"
           style={{
             position: 'fixed',
             top: 0,
@@ -63,6 +64,7 @@ export default function PqrButton() {
           onClick={toggleModal}
         >
           <div
+            role="presentation"
             style={{
               background: 'var(--bg-card)',
               color: 'var(--text)',

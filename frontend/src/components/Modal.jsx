@@ -44,8 +44,8 @@ export default function Modal({
     'btn btn-primary';
 
   return createPortal(
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-box" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" role="presentation" onClick={onCancel}>
+      <div className="modal-box" role="presentation" onClick={e => e.stopPropagation()}>
         <div className={`modal-icon ${type}`}>{ICONS[type]}</div>
         {title && <h2 className="modal-title">{title}</h2>}
         {message && <p className="modal-message">{message}</p>}

@@ -228,16 +228,16 @@ router.get('/metricas/globales', async (req, res) => {
         `SELECT ROUND(AVG(calificacion)::numeric, 1) as promedio, COUNT(*) as total FROM resenas`
       );
       if (resQuery.rows.length > 0 && resQuery.rows[0].promedio !== null) {
-        resenasStats.promedio = parseFloat(resQuery.rows[0].promedio);
-        resenasStats.total = parseInt(resQuery.rows[0].total, 10);
+        resenasStats.promedio = Number.parseFloat(resQuery.rows[0].promedio);
+        resenasStats.total = Number.parseInt(resQuery.rows[0].total, 10);
       }
     } catch (e) {
       console.warn('Error calculando promedio de resenas:', e.message);
     }
 
     res.json({
-      alojamientos_disponibles: parseInt(propsRes.rows[0].total, 10) || 0,
-      campus_cubiertos: Math.max(13, parseInt(campusRes.rows[0].total, 10) || 13),
+      alojamientos_disponibles: Number.parseInt(propsRes.rows[0].total, 10) || 0,
+      campus_cubiertos: Math.max(13, Number.parseInt(campusRes.rows[0].total, 10) || 13),
       calificacion_promedio: resenasStats.total > 0 && resenasStats.promedio !== null ? resenasStats.promedio.toFixed(1) : null,
       total_resenas: resenasStats.total,
       comunidad_solidaria: '100%'
@@ -322,7 +322,7 @@ router.get('/', async (req, res) => {
     // Filtro por host_id
     if (host_id) {
       query += ` AND p.host_id = $${paramIndex++}`;
-      params.push(parseInt(host_id, 10));
+      params.push(Number.parseInt(host_id, 10));
     }
 
     if (tipo) {
@@ -332,7 +332,7 @@ router.get('/', async (req, res) => {
 
     if (capacidad_min) {
       query += ` AND p.capacidad >= $${paramIndex++}`;
-      params.push(parseInt(capacidad_min));
+      params.push(Number.parseInt(capacidad_min));
     }
 
     if (barrio) {
@@ -375,7 +375,7 @@ router.get('/', async (req, res) => {
     query += ` GROUP BY p.id, u.nombre, u.apellido, u.foto_perfil`;
     query += ` ORDER BY p.created_at DESC`;
     query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
-    params.push(parseInt(limit), parseInt(offset));
+    params.push(Number.parseInt(limit), Number.parseInt(offset));
 
     const result = await pool.query(query, params);
 
@@ -383,7 +383,7 @@ router.get('/', async (req, res) => {
     const propiedadesList = result.rows.map(p => {
       const pCopy = { ...p };
       pCopy.direccion = 'Dirección exacta oculta';
-      pCopy.huespedes_actuales = parseInt(p.huespedes_actuales, 10) || 0;
+      pCopy.huespedes_actuales = Number.parseInt(p.huespedes_actuales, 10) || 0;
       pCopy.esta_lleno = pCopy.huespedes_actuales >= pCopy.capacidad;
       pCopy.cupos_disponibles = Math.max(0, pCopy.capacidad - pCopy.huespedes_actuales);
       return pCopy;
@@ -395,9 +395,9 @@ router.get('/', async (req, res) => {
 
     res.json({
       propiedades: propiedadesList,
-      total: parseInt(total.rows[0].count),
-      limit: parseInt(limit),
-      offset: parseInt(offset)
+      total: Number.parseInt(total.rows[0].count),
+      limit: Number.parseInt(limit),
+      offset: Number.parseInt(offset)
     });
   } catch (err) {
     console.error('Error listando propiedades:', err);
@@ -546,7 +546,7 @@ router.get('/:id', async (req, res) => {
     } catch (e) { console.error('Error cargando reservas aceptadas:', e); }
 
     const propiedadData = result.rows[0];
-    propiedadData.huespedes_actuales = parseInt(propiedadData.huespedes_actuales, 10) || 0;
+    propiedadData.huespedes_actuales = Number.parseInt(propiedadData.huespedes_actuales, 10) || 0;
     propiedadData.esta_lleno = propiedadData.huespedes_actuales >= propiedadData.capacidad;
     propiedadData.cupos_disponibles = Math.max(0, propiedadData.capacidad - propiedadData.huespedes_actuales);
 
@@ -614,7 +614,7 @@ router.post('/', async (req, res) => {
       `INSERT INTO propiedades (host_id, titulo, descripcion, direccion, barrio, ciudad, tipo, capacidad, amenidades, reglas, latitud, longitud, campus_cercano, duracion_maxima, es_pago, precio_por_noche, estado_aprobacion, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, FALSE, NULL, 'pendiente_revision', FALSE)
        RETURNING *`,
-      [req.user.id, String(titulo).trim(), String(descripcion).trim(), String(direccion).trim(), barrio ? String(barrio).trim() : null, ciudadFinal, tipoFinal, parseInt(capacidad, 10), amenidadesArr, reglas ? String(reglas).trim() : null, latitud || null, longitud || null, campus_cercano ? String(campus_cercano).trim() : null, duracion_maxima ? parseInt(duracion_maxima, 10) : null]
+      [req.user.id, String(titulo).trim(), String(descripcion).trim(), String(direccion).trim(), barrio ? String(barrio).trim() : null, ciudadFinal, tipoFinal, Number.parseInt(capacidad, 10), amenidadesArr, reglas ? String(reglas).trim() : null, latitud || null, longitud || null, campus_cercano ? String(campus_cercano).trim() : null, duracion_maxima ? Number.parseInt(duracion_maxima, 10) : null]
     );
 
     const nuevaPropiedad = result.rows[0];
@@ -738,11 +738,11 @@ router.put('/:id', async (req, res) => {
        es_pago = FALSE, precio_por_noche = NULL,
        updated_at = NOW()
        WHERE id = $16 RETURNING *`,
-      [titulo ? String(titulo).trim() : null, descripcion ? String(descripcion).trim() : null, direccion ? String(direccion).trim() : null, barrio ? String(barrio).trim() : null, ciudadFinal, tipoFinal, capacidad ? parseInt(capacidad, 10) : null,
+      [titulo ? String(titulo).trim() : null, descripcion ? String(descripcion).trim() : null, direccion ? String(direccion).trim() : null, barrio ? String(barrio).trim() : null, ciudadFinal, tipoFinal, capacidad ? Number.parseInt(capacidad, 10) : null,
        amenidadesArr, reglas ? String(reglas).trim() : null,
-       campusFinal, duracion_maxima ? parseInt(duracion_maxima, 10) : null,
-       latitud !== undefined ? (latitud ? parseFloat(latitud) : null) : null,
-       longitud !== undefined ? (longitud ? parseFloat(longitud) : null) : null,
+       campusFinal, duracion_maxima ? Number.parseInt(duracion_maxima, 10) : null,
+       latitud !== undefined ? (latitud ? Number.parseFloat(latitud) : null) : null,
+       longitud !== undefined ? (longitud ? Number.parseFloat(longitud) : null) : null,
        nuevoEstado, nuevoActivo,
        id]
     );
@@ -856,10 +856,10 @@ router.get('/host/mis', async (req, res) => {
 
     const propiedadesList = result.rows.map(p => {
       const confirmados = Array.isArray(p.huespedes_confirmados) ? p.huespedes_confirmados : [];
-      const totalOcupados = confirmados.reduce((sum, h) => sum + (parseInt(h.num_huespedes, 10) || 1), 0);
+      const totalOcupados = confirmados.reduce((sum, h) => sum + (Number.parseInt(h.num_huespedes, 10) || 1), 0);
       const huespedesHoy = confirmados
         .filter(h => h.es_activo_hoy)
-        .reduce((sum, h) => sum + (parseInt(h.num_huespedes, 10) || 1), 0);
+        .reduce((sum, h) => sum + (Number.parseInt(h.num_huespedes, 10) || 1), 0);
 
       return {
         ...p,
@@ -923,7 +923,7 @@ router.get('/admin/todas', async (req, res) => {
     query += ` GROUP BY p.id, u.nombre, u.apellido, u.email, u.telefono, u.foto_perfil, u.verificado, u_rev.nombre, u_rev.apellido`;
     query += ` ORDER BY CASE WHEN p.estado_aprobacion = 'pendiente_revision' THEN 0 WHEN p.estado_aprobacion = 'en_correccion' THEN 1 ELSE 2 END, p.created_at DESC`;
     query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
-    params.push(parseInt(limit, 10), parseInt(offset, 10));
+    params.push(Number.parseInt(limit, 10), Number.parseInt(offset, 10));
 
     const result = await pool.query(query, params);
 
@@ -990,7 +990,7 @@ router.patch('/admin/:id/dictamen', async (req, res) => {
     );
 
     // Enviar notificación formal por correo electrónico al host
-    sendInspectionEmail({
+    void sendInspectionEmail({
       to: propiedad.host_email,
       hostNombre: `${propiedad.host_nombre} ${propiedad.host_apellido}`,
       tituloPropiedad: propiedad.titulo,
@@ -1028,7 +1028,7 @@ router.post('/:id/reportar', async (req, res) => {
       await pool.query(
         `INSERT INTO reportes (user_id, propiedad_id, motivo, comentario, created_at)
          VALUES ($1, $2, $3, $4, NOW())`,
-        [req.user.id, parseInt(id, 10), motivo, comentario || null]
+        [req.user.id, Number.parseInt(id, 10), motivo, comentario || null]
       );
     } catch (dbErr) {
       console.log('[Reportes] Nota: Reporte registrado en bitácora de auditoría.');
@@ -1088,7 +1088,7 @@ router.delete('/:id', async (req, res) => {
 
     console.log(`🗑️ [Alojamiento Eliminado] ID: ${id} ("${propiedad.titulo}") por usuario ID: ${req.user.id} (${req.user.role})`);
 
-    res.json({ message: 'Alojamiento eliminado exitosamente', id: parseInt(id, 10) });
+    res.json({ message: 'Alojamiento eliminado exitosamente', id: Number.parseInt(id, 10) });
   } catch (err) {
     console.error('Error eliminando alojamiento:', err);
     res.status(500).json({ error: 'Error interno del servidor al eliminar el alojamiento' });

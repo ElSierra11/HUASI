@@ -68,7 +68,7 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label>Correo Institucional</label>
+            <label htmlFor="login-email">Correo Institucional</label>
             <div style={{ position: 'relative' }}>
               <Mail size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
               <input
@@ -85,7 +85,7 @@ export default function Login() {
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label>Contraseña</label>
+            <label htmlFor="login-password">Contraseña</label>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <Lock size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none' }} />
               <input

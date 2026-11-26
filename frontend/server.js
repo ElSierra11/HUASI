@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DIST_DIR = path.join(__dirname, 'dist');
-const PORT = parseInt(process.env.PORT, 10) || 8080;
+const PORT = Number.parseInt(process.env.PORT, 10) || 8080;
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://huasi.onrender.com';
 const backendTarget = new URL(BACKEND_URL);

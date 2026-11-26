@@ -16,7 +16,7 @@ export default function Privacidad() {
           </p>
         </section>
 
-        <section style={{ marginBottom: 32 }} className="card" style={{ background: '#f8fafc', padding: 24, border: '1px solid var(--border)', borderRadius: 8, marginBottom: 24 }}>
+        <section className="card" style={{ background: '#f8fafc', padding: 24, border: '1px solid var(--border)', borderRadius: 8, marginBottom: 24 }}>
           <h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
             <Eye size={20} color="var(--success)" /> Datos Públicos y Visibles
           </h2>
@@ -32,7 +32,7 @@ export default function Privacidad() {
           </ul>
         </section>
 
-        <section style={{ marginBottom: 32 }} className="card" style={{ background: '#f8fafc', padding: 24, border: '1px solid var(--border)', borderRadius: 8, marginBottom: 24 }}>
+        <section className="card" style={{ background: '#f8fafc', padding: 24, border: '1px solid var(--border)', borderRadius: 8, marginBottom: 24 }}>
           <h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
             <EyeOff size={20} color="var(--danger)" /> Datos Privados y Protegidos
           </h2>

@@ -88,7 +88,7 @@ function requireAuth(req, res, next) {
 
   if (req.headers['x-user-id']) {
     req.user = {
-      id: parseInt(req.headers['x-user-id']),
+      id: Number.parseInt(req.headers['x-user-id']),
       email: req.headers['x-user-email'],
       role: req.headers['x-user-role']
     };
@@ -117,7 +117,7 @@ router.use('/uploads/chat', express.static(UPLOADS_DIR));
 router.post('/upload-audio', requireAuth, uploadAudio.single('audio'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo de audio' });
-    const duration = parseFloat(req.body.duration || 0);
+    const duration = Number.parseFloat(req.body.duration || 0);
     const urlPrefix = process.env.CHAT_PUBLIC_URL
       ? `${process.env.CHAT_PUBLIC_URL}/uploads/chat/`
       : `/api/chat/uploads/chat/`;
@@ -195,7 +195,7 @@ router.post('/conversaciones', requireAuth, async (req, res) => {
     const userId = req.user.id;
     const { otro_usuario_id } = req.body;
     if (!otro_usuario_id) return res.status(400).json({ error: 'Se requiere otro_usuario_id' });
-    if (parseInt(otro_usuario_id) === userId) return res.status(400).json({ error: 'No puedes chatear contigo mismo' });
+    if (Number.parseInt(otro_usuario_id) === userId) return res.status(400).json({ error: 'No puedes chatear contigo mismo' });
 
     const existing = await pool.query(`
       SELECT id FROM conversaciones
@@ -219,8 +219,8 @@ router.post('/conversaciones', requireAuth, async (req, res) => {
 router.get('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
-    const convId = parseInt(req.params.id);
-    if (isNaN(convId)) return res.status(400).json({ error: 'ID de conversación inválido' });
+    const convId = Number.parseInt(req.params.id);
+    if (Number.isNaN(convId)) return res.status(400).json({ error: 'ID de conversación inválido' });
 
     const conv = await pool.query(
       'SELECT * FROM conversaciones WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)',
@@ -288,8 +288,8 @@ router.get('/conversaciones/:id/mensajes', requireAuth, async (req, res) => {
 router.put('/conversaciones/:id/leer', requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
-    const convId = parseInt(req.params.id);
-    if (isNaN(convId)) return res.status(400).json({ error: 'ID de conversación inválido' });
+    const convId = Number.parseInt(req.params.id);
+    if (Number.isNaN(convId)) return res.status(400).json({ error: 'ID de conversación inválido' });
 
     const conv = await pool.query(
       'SELECT * FROM conversaciones WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)',

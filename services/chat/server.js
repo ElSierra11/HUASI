@@ -43,7 +43,7 @@ app.use(cookieParser());
 app.use((req, res, next) => {
   if (req.headers['x-user-id']) {
     req.user = {
-      id: parseInt(req.headers['x-user-id']),
+      id: Number.parseInt(req.headers['x-user-id']),
       email: req.headers['x-user-email'],
       role: req.headers['x-user-role']
     };
@@ -169,7 +169,7 @@ io.on('connection', (socket) => {
   socket.join(`user_${userId}`);
 
   // Entregar mensajes pendientes al usuario que se acaba de conectar
-  (async () => {
+  void (async () => {
     try {
       if (await hasDeliveredCols()) {
         const pending = await pool.query(`
@@ -356,8 +356,8 @@ io.on('connection', (socket) => {
     const { conversacion_id } = data || {};
     if (!conversacion_id) return;
     try {
-      const convId = parseInt(conversacion_id);
-      if (isNaN(convId)) return;
+      const convId = Number.parseInt(conversacion_id);
+      if (Number.isNaN(convId)) return;
 
       if (await hasDeliveredCols()) {
         await pool.query(

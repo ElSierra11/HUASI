@@ -156,7 +156,7 @@ export default function RecuperarPassword() {
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label>Nueva Contraseña (mínimo 6 caracteres)</label>
+              <label htmlFor="new-password">Nueva Contraseña (mínimo 6 caracteres)</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <Lock size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none' }} />
                 <input
@@ -188,7 +188,7 @@ export default function RecuperarPassword() {
             </div>
 
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label>Confirmar Nueva Contraseña</label>
+              <label htmlFor="confirm-password">Confirmar Nueva Contraseña</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <Lock size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none' }} />
                 <input

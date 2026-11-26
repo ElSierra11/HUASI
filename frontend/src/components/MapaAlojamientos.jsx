@@ -6,11 +6,11 @@ import { useNavigate } from 'react-router-dom';
 export function calculateDistance(lat1, lon1, lat2, lon2) {
   try {
     if (!lat1 || !lon1 || !lat2 || !lon2) return null;
-    const nLat1 = parseFloat(lat1);
-    const nLon1 = parseFloat(lon1);
-    const nLat2 = parseFloat(lat2);
-    const nLon2 = parseFloat(lon2);
-    if (isNaN(nLat1) || isNaN(nLon1) || isNaN(nLat2) || isNaN(nLon2)) return null;
+    const nLat1 = Number.parseFloat(lat1);
+    const nLon1 = Number.parseFloat(lon1);
+    const nLat2 = Number.parseFloat(lat2);
+    const nLon2 = Number.parseFloat(lon2);
+    if (Number.isNaN(nLat1) || Number.isNaN(nLon1) || Number.isNaN(nLat2) || Number.isNaN(nLon2)) return null;
 
     const R = 6371;
     const dLat = (nLat2 - nLat1) * Math.PI / 180;
@@ -56,9 +56,9 @@ export function normalizeString(str = '') {
 export function getPropertyCoordinates(prop, idx = 0) {
   try {
     if (prop && prop.latitud && prop.longitud) {
-      const lat = parseFloat(prop.latitud);
-      const lng = parseFloat(prop.longitud);
-      if (!isNaN(lat) && !isNaN(lng)) {
+      const lat = Number.parseFloat(prop.latitud);
+      const lng = Number.parseFloat(prop.longitud);
+      if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
         return { lat, lng };
       }
     }
@@ -173,9 +173,9 @@ export default function MapaAlojamientos({ propiedades = [] }) {
   const resolvePropertyCoords = (prop, idx = 0) => {
     // Exactas en BD
     if (prop?.latitud && prop?.longitud) {
-      const lat = parseFloat(prop.latitud);
-      const lng = parseFloat(prop.longitud);
-      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng, approximate: false };
+      const lat = Number.parseFloat(prop.latitud);
+      const lng = Number.parseFloat(prop.longitud);
+      if (!Number.isNaN(lat) && !Number.isNaN(lng)) return { lat, lng, approximate: false };
     }
     // Geocodificadas en memoria
     const cached = geocodedCacheRef.current[prop?.id];
@@ -213,8 +213,8 @@ export default function MapaAlojamientos({ propiedades = [] }) {
 
         if (data && data.length > 0) {
           geocodedCacheRef.current[prop.id] = {
-            lat: parseFloat(data[0].lat),
-            lng: parseFloat(data[0].lon),
+            lat: Number.parseFloat(data[0].lat),
+            lng: Number.parseFloat(data[0].lon),
             approximate: false
           };
         } else {
@@ -411,7 +411,7 @@ export default function MapaAlojamientos({ propiedades = [] }) {
 
       const bounds = window.L.latLngBounds();
 
-      if (userLocation && !isNaN(userLocation.lat) && !isNaN(userLocation.lng)) {
+      if (userLocation && !Number.isNaN(userLocation.lat) && !Number.isNaN(userLocation.lng)) {
         bounds.extend([userLocation.lat, userLocation.lng]);
       }
 
@@ -420,14 +420,14 @@ export default function MapaAlojamientos({ propiedades = [] }) {
       safeProps.forEach((prop, idx) => {
         try {
           const coordResult = resolvePropertyCoords(prop, idx);
-          if (!coordResult || isNaN(coordResult.lat) || isNaN(coordResult.lng)) return;
+          if (!coordResult || Number.isNaN(coordResult.lat) || Number.isNaN(coordResult.lng)) return;
           const { lat, lng, approximate } = coordResult;
 
-          const dist = (userLocation && !isNaN(userLocation.lat) && !isNaN(userLocation.lng))
+          const dist = (userLocation && !Number.isNaN(userLocation.lat) && !Number.isNaN(userLocation.lng))
             ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
             : null;
 
-          if (dist && maxDistance < 9999 && parseFloat(dist) > maxDistance) return;
+          if (dist && maxDistance < 9999 && Number.parseFloat(dist) > maxDistance) return;
 
           bounds.extend([lat, lng]);
 
@@ -579,7 +579,7 @@ export default function MapaAlojamientos({ propiedades = [] }) {
   // Geocodificar propiedades sin coords cuando cambia la lista
   useEffect(() => {
     if (propiedades && propiedades.length > 0) {
-      geocodePropertiesWithoutCoords(propiedades);
+      void geocodePropertiesWithoutCoords(propiedades);
     }
   }, [propiedades]);
 

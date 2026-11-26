@@ -72,26 +72,26 @@ export default function useActivityTracker() {
 
   // 1. Envío al montar y al cambiar de ruta
   useEffect(() => {
-    sendHeartbeat(location.pathname);
+    void sendHeartbeat(location.pathname);
   }, [location.pathname]);
 
   // 2. Latido continuo de presencia cada 25 segundos y en interacción
   useEffect(() => {
-    sendHeartbeat();
+    void sendHeartbeat();
 
     const interval = setInterval(() => {
-      sendHeartbeat();
+      void sendHeartbeat();
     }, 25000);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        sendHeartbeat();
+        void sendHeartbeat();
       }
     };
 
     const handleInteraction = () => {
       if (Date.now() - lastPingRef.current >= 15000) {
-        sendHeartbeat();
+        void sendHeartbeat();
       }
     };
 

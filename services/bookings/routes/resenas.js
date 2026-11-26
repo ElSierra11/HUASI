@@ -148,8 +148,8 @@ router.get('/propiedad/:id', async (req, res) => {
 
     res.json({
       resenas: result.rows,
-      promedio: parseFloat(promedio.rows[0].promedio) || 0,
-      total: parseInt(promedio.rows[0].total) || 0
+      promedio: Number.parseFloat(promedio.rows[0].promedio) || 0,
+      total: Number.parseInt(promedio.rows[0].total) || 0
     });
   } catch (err) {
     console.error('Error listando reseñas:', err);

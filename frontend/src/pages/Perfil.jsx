@@ -57,7 +57,7 @@ export default function Perfil() {
     const perm = await requestNotificationPermission();
     setNotifPerm(perm);
     if (perm === 'granted') {
-      showPushNotification({
+      void showPushNotification({
         title: 'Notificaciones HUASI configuradas',
         body: '¡Todo listo! Recibirás avisos de reservas, mensajes y nuevos alojamientos en tiempo real.',
         icon: '/huasi-monograma.png',
@@ -246,22 +246,22 @@ export default function Perfil() {
           <h3 style={{ fontSize: '1.2rem', marginBottom: 20 }}>Editar Información</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
             <div className="form-group">
-              <label>Nombre</label>
-              <input type="text" className="form-control" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
+              <label htmlFor="perfil-nombre">Nombre</label>
+              <input id="perfil-nombre" type="text" className="form-control" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
             </div>
             <div className="form-group">
-              <label>Apellido</label>
-              <input type="text" className="form-control" value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} />
+              <label htmlFor="perfil-apellido">Apellido</label>
+              <input id="perfil-apellido" type="text" className="form-control" value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} />
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginTop: 16 }}>
             <div className="form-group">
-              <label><Phone size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} /> Teléfono de contacto</label>
-              <input type="tel" className="form-control" value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} />
+              <label htmlFor="perfil-telefono"><Phone size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} /> Teléfono de contacto</label>
+              <input id="perfil-telefono" type="tel" className="form-control" value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} />
             </div>
             <div className="form-group">
-              <label>Campus UCC</label>
-              <select required className="form-control" value={form.campus} onChange={e => setForm(f => ({ ...f, campus: e.target.value }))}>
+              <label htmlFor="perfil-campus">Campus UCC</label>
+              <select id="perfil-campus" required className="form-control" value={form.campus} onChange={e => setForm(f => ({ ...f, campus: e.target.value }))}>
                 <option value="">Selecciona tu sede...</option>
                 <option value="Santa Marta">Santa Marta</option>
                 <option value="Bogotá">Bogotá</option>
@@ -280,8 +280,9 @@ export default function Perfil() {
             </div>
           </div>
           <div className="form-group" style={{ marginTop: 16 }}>
-            <label>Rol en la Comunidad UCC</label>
+            <label htmlFor="perfil-rol">Rol en la Comunidad UCC</label>
             <select
+              id="perfil-rol"
               className="form-control"
               value={form.rol_universitario}
               onChange={e => setForm(f => ({ ...f, rol_universitario: e.target.value }))}
@@ -317,8 +318,9 @@ export default function Perfil() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
             {/* Estudio */}
             <div className="form-group">
-              <label>Hábitos de estudio preferidos</label>
+              <label htmlFor="pref-estudio">Hábitos de estudio preferidos</label>
               <select 
+                id="pref-estudio"
                 className="form-control" 
                 value={prefForm.estudio} 
                 onChange={e => setPrefForm(f => ({ ...f, estudio: e.target.value }))}
@@ -330,8 +332,9 @@ export default function Perfil() {
 
             {/* Ruido */}
             <div className="form-group">
-              <label>Nivel de tolerancia al ruido / música</label>
+              <label htmlFor="pref-ruido">Nivel de tolerancia al ruido / música</label>
               <select 
+                id="pref-ruido"
                 className="form-control" 
                 value={prefForm.ruido} 
                 onChange={e => setPrefForm(f => ({ ...f, ruido: e.target.value }))}
@@ -344,8 +347,9 @@ export default function Perfil() {
 
             {/* Mascotas */}
             <div className="form-group">
-              <label>¿Aceptas / convives con mascotas?</label>
+              <label htmlFor="pref-mascotas">¿Aceptas / convives con mascotas?</label>
               <select 
+                id="pref-mascotas"
                 className="form-control" 
                 value={prefForm.mascotas} 
                 onChange={e => setPrefForm(f => ({ ...f, mascotas: e.target.value }))}
@@ -357,8 +361,9 @@ export default function Perfil() {
 
             {/* Visitas */}
             <div className="form-group">
-              <label>¿Permites / realizas visitas de amigos?</label>
+              <label htmlFor="pref-visitas">¿Permites / realizas visitas de amigos?</label>
               <select 
+                id="pref-visitas"
                 className="form-control" 
                 value={prefForm.visitas} 
                 onChange={e => setPrefForm(f => ({ ...f, visitas: e.target.value }))}
@@ -370,8 +375,9 @@ export default function Perfil() {
 
             {/* Fumar */}
             <div className="form-group">
-              <label>¿Tolerancia al humo / cigarrillo?</label>
+              <label htmlFor="pref-fumar">¿Tolerancia al humo / cigarrillo?</label>
               <select 
+                id="pref-fumar"
                 className="form-control" 
                 value={prefForm.fumar} 
                 onChange={e => setPrefForm(f => ({ ...f, fumar: e.target.value }))}

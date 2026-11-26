@@ -96,12 +96,12 @@ export default function MisReservas() {
       const parts = cleanStr.split('-');
       if (parts.length === 3) {
         const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-        if (!isNaN(d.getTime())) {
+        if (!Number.isNaN(d.getTime())) {
           return d.toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
         }
       }
       const d = new Date(dateStr);
-      if (!isNaN(d.getTime())) {
+      if (!Number.isNaN(d.getTime())) {
         return d.toLocaleDateString('es-CO');
       }
       return cleanStr;
@@ -115,7 +115,7 @@ export default function MisReservas() {
     try {
       const cleanStr = String(dateStr).split('T')[0];
       const d = new Date(cleanStr + 'T23:59:59');
-      return !isNaN(d.getTime()) && d < new Date();
+      return !Number.isNaN(d.getTime()) && d < new Date();
     } catch {
       return false;
     }
@@ -549,7 +549,7 @@ export default function MisReservas() {
         onCancel={() => setReviewModal({ open: false, reservaId: null, calificacion: 5, comentario: '' })}
       >
         <div style={{ display: 'grid', gap: 12, textAlign: 'left', marginTop: 8 }}>
-          <label style={{ fontWeight: 600 }}>Calificación</label>
+          <span style={{ fontWeight: 600 }}>Calificación</span>
           <div style={{ display: 'flex', gap: 6 }}>
             {[1,2,3,4,5].map(v => (
               <button key={v} type="button" onClick={() => setReviewModal(m => ({ ...m, calificacion: v }))} style={{ border: '1px solid var(--border)', background: reviewModal.calificacion >= v ? 'var(--accent-light)' : 'white', color: reviewModal.calificacion >= v ? 'var(--accent-hover)' : 'var(--text-muted)', borderRadius: 999, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
@@ -557,8 +557,8 @@ export default function MisReservas() {
               </button>
             ))}
           </div>
-          <label style={{ fontWeight: 600 }}>Comentario</label>
-          <textarea className="form-control" rows={4} value={reviewModal.comentario} onChange={e => setReviewModal(m => ({ ...m, comentario: e.target.value }))} placeholder="Describe la experiencia, puntualidad y convivencia." />
+          <label htmlFor="review-modal-comentario" style={{ fontWeight: 600 }}>Comentario</label>
+          <textarea id="review-modal-comentario" className="form-control" rows={4} value={reviewModal.comentario} onChange={e => setReviewModal(m => ({ ...m, comentario: e.target.value }))} placeholder="Describe la experiencia, puntualidad y convivencia." />
         </div>
       </Modal>
     </div>

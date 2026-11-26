@@ -112,8 +112,8 @@ module.exports.enviarPushAUsuario = enviarPushAUsuario;
 router.get('/', async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'No autenticado' });
   try {
-    const limit = Math.min(parseInt(req.query.limit) || 30, 100);
-    const offset = parseInt(req.query.offset) || 0;
+    const limit = Math.min(Number.parseInt(req.query.limit) || 30, 100);
+    const offset = Number.parseInt(req.query.offset) || 0;
     const soloNoLeidas = req.query.no_leidas === 'true';
 
     const whereClause = soloNoLeidas
@@ -137,8 +137,8 @@ router.get('/', async (req, res) => {
 
     res.json({
       notificaciones: rows.rows,
-      total: parseInt(countResult.rows[0].total),
-      no_leidas: parseInt(countResult.rows[0].no_leidas),
+      total: Number.parseInt(countResult.rows[0].total),
+      no_leidas: Number.parseInt(countResult.rows[0].no_leidas),
     });
   } catch (err) {
     console.error('[Notificaciones] Error listando:', err.message);
@@ -154,7 +154,7 @@ router.get('/count', async (req, res) => {
       `SELECT COUNT(*) AS no_leidas FROM notificaciones WHERE user_id = $1 AND leida = FALSE`,
       [req.user.id]
     );
-    res.json({ no_leidas: parseInt(result.rows[0].no_leidas) });
+    res.json({ no_leidas: Number.parseInt(result.rows[0].no_leidas) });
   } catch (err) {
     res.status(500).json({ error: 'Error interno del servidor' });
   }

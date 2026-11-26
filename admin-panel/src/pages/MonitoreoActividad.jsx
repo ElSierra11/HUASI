@@ -83,14 +83,14 @@ export default function MonitoreoActividad({ onActionFinished }) {
   };
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [filterTipo]);
 
   // Intervalo de actualización automática
   useEffect(() => {
     if (autoRefresh) {
       timerRef.current = setInterval(() => {
-        fetchData(false);
+        void fetchData(false);
       }, 12000);
     }
     return () => {
@@ -717,6 +717,8 @@ export default function MonitoreoActividad({ onActionFinished }) {
                 return (
                   <div
                     key={item.id || idx}
+                    role="button"
+                    tabIndex={0}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -729,6 +731,7 @@ export default function MonitoreoActividad({ onActionFinished }) {
                       cursor: item.user_id ? 'pointer' : 'default'
                     }}
                     onClick={() => item.user_id && handleOpenUserAudit(item.user_id)}
+                    onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && item.user_id) { e.preventDefault(); handleOpenUserAudit(item.user_id); } }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
@@ -1078,8 +1081,8 @@ export default function MonitoreoActividad({ onActionFinished }) {
           {resumen.rutas_populares && resumen.rutas_populares.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {resumen.rutas_populares.map((r, i) => {
-                const maxVisits = Math.max(...resumen.rutas_populares.map(item => parseInt(item.visitas, 10) || 1));
-                const percent = Math.min(100, Math.round(((parseInt(r.visitas, 10) || 0) / maxVisits) * 100));
+                const maxVisits = Math.max(...resumen.rutas_populares.map(item => Number.parseInt(item.visitas, 10) || 1));
+                const percent = Math.min(100, Math.round(((Number.parseInt(r.visitas, 10) || 0) / maxVisits) * 100));
 
                 return (
                   <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

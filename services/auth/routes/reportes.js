@@ -17,7 +17,7 @@ router.post('/', async (req, res) => {
     }
 
     // No se puede reportar a sí mismo
-    if (parseInt(reportado_id) === req.user.id) {
+    if (Number.parseInt(reportado_id) === req.user.id) {
       return res.status(400).json({ error: 'No puedes reportarte a ti mismo' });
     }
 

@@ -72,7 +72,7 @@ function AudioMessageBubble({ url, duration = 0, isMine }) {
     audioRef.current = audio;
 
     const onLoaded = () => {
-      if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration) && audio.duration > 0) {
+      if (audio.duration && !Number.isNaN(audio.duration) && Number.isFinite(audio.duration) && audio.duration > 0) {
         setAudioDuration(Math.round(audio.duration));
       }
     };
@@ -121,9 +121,9 @@ function AudioMessageBubble({ url, duration = 0, isMine }) {
   };
 
   const handleSeek = (e) => {
-    const t = parseFloat(e.target.value);
+    const t = Number.parseFloat(e.target.value);
     setCurrentTime(t);
-    if (audioRef.current && !isNaN(t)) audioRef.current.currentTime = t;
+    if (audioRef.current && !Number.isNaN(t)) audioRef.current.currentTime = t;
   };
 
   const formatSecs = (sec) => {
@@ -175,7 +175,7 @@ function LocationBubble({ lat, lng, isMine = false }) {
   const osmStaticUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=15&size=210x130&markers=${lat},${lng}`;
 
   useEffect(() => {
-    loadLeaflet().then(ok => setLeafletReady(ok));
+    void loadLeaflet().then(ok => setLeafletReady(ok));
   }, []);
 
   return (
@@ -346,7 +346,7 @@ export default function ChatWidget({ isFullPage = false }) {
     const targetUserId = searchParams?.get('user');
     const targetConvId = searchParams?.get('conv') || searchParams?.get('conversacion');
     if (targetUserId) {
-      api.post('/chat/conversaciones', { otro_usuario_id: parseInt(targetUserId) })
+      api.post('/chat/conversaciones', { otro_usuario_id: Number.parseInt(targetUserId) })
         .then(res => {
           const convId = res.data.conversacion_id;
           return api.get('/chat/conversaciones').then(r => {
@@ -377,7 +377,7 @@ export default function ChatWidget({ isFullPage = false }) {
       const targetUserId = e.detail?.userId;
       if (!targetUserId || !user) return;
       setOpen(true);
-      api.post('/chat/conversaciones', { otro_usuario_id: parseInt(targetUserId) })
+      api.post('/chat/conversaciones', { otro_usuario_id: Number.parseInt(targetUserId) })
         .then(res => {
           const convId = res.data.conversacion_id;
           return api.get('/chat/conversaciones').then(r => {
@@ -546,7 +546,7 @@ export default function ChatWidget({ isFullPage = false }) {
         setUnreadTotal(p => p + 1);
         const senderName = msg.sender_nombre ? `${msg.sender_nombre} ${msg.sender_apellido || ''}`.trim() : 'Estudiante HUASI';
         const preview = msg.tipo === 'imagen' ? 'Te envió una foto' : msg.tipo === 'audio' ? 'Te envió una nota de voz' : msg.tipo === 'ubicacion' ? 'Compartió su ubicación' : msg.contenido;
-        notifyChatMessage({ senderName, messageText: preview, conversacionId: msg.conversacion_id });
+        void notifyChatMessage({ senderName, messageText: preview, conversacionId: msg.conversacion_id });
       }
     });
 
@@ -582,7 +582,7 @@ export default function ChatWidget({ isFullPage = false }) {
       setCallData(data);
       setCallType(data.callType || 'audio');
       setCallState('incoming');
-      notifyIncomingCall({
+      void notifyIncomingCall({
         callerName: data.callerName || 'Usuario HUASI',
         callType: data.callType || 'audio'
       });
@@ -1066,8 +1066,8 @@ export default function ChatWidget({ isFullPage = false }) {
     e.preventDefault();
     if (!bookingForm.propiedad_id || !bookingForm.fecha_inicio || !bookingForm.fecha_fin) { alert('Por favor completa todos los campos.'); return; }
     try {
-      const selectedProp = otherUserProperties.find(p => p.id === parseInt(bookingForm.propiedad_id));
-      await api.post('/reservas', { propiedad_id: parseInt(bookingForm.propiedad_id), fecha_inicio: bookingForm.fecha_inicio, fecha_fin: bookingForm.fecha_fin, mensaje: bookingForm.mensaje, num_huespedes: parseInt(bookingForm.num_huespedes) });
+      const selectedProp = otherUserProperties.find(p => p.id === Number.parseInt(bookingForm.propiedad_id));
+      await api.post('/reservas', { propiedad_id: Number.parseInt(bookingForm.propiedad_id), fecha_inicio: bookingForm.fecha_inicio, fecha_fin: bookingForm.fecha_fin, mensaje: bookingForm.mensaje, num_huespedes: Number.parseInt(bookingForm.num_huespedes) });
       setShowBookingModal(false);
       if (socketRef.current) {
         socketRef.current.emit('send_message', { conversacion_id: activeConv.id, contenido: `Solicitud de reserva: He solicitado reservar "${selectedProp?.titulo || 'Alojamiento'}" del ${bookingForm.fecha_inicio} al ${bookingForm.fecha_fin}.`, tipo: 'texto' });
@@ -1160,8 +1160,8 @@ export default function ChatWidget({ isFullPage = false }) {
 
     if (tipo === 'ubicacion') {
       const parts = msg.contenido.replace('[ubicacion]', '').split(',');
-      const lat = meta?.lat ?? parseFloat(parts[0] || 0);
-      const lng = meta?.lng ?? parseFloat(parts[1] || 0);
+      const lat = meta?.lat ?? Number.parseFloat(parts[0] || 0);
+      const lng = meta?.lng ?? Number.parseFloat(parts[1] || 0);
       if (!lat || !lng) return <p>Ubicación compartida</p>;
       return <LocationBubble lat={lat} lng={lng} isMine={isMine} />;
     }
@@ -1270,8 +1270,8 @@ export default function ChatWidget({ isFullPage = false }) {
   const renderImageLightbox = () => {
     if (!selectedImage) return null;
     return (
-      <div className="chat-image-lightbox" onClick={() => setSelectedImage(null)}>
-        <div className="chat-lightbox-header" onClick={e => e.stopPropagation()}>
+      <div className="chat-image-lightbox" role="presentation" onClick={() => setSelectedImage(null)}>
+        <div className="chat-lightbox-header" role="presentation" onClick={e => e.stopPropagation()}>
           <button className="chat-lightbox-back-btn" onClick={() => setSelectedImage(null)} title="Retornar al chat">
             <ArrowLeft size={19} />
             <span>Retornar al chat</span>
@@ -1293,7 +1293,7 @@ export default function ChatWidget({ isFullPage = false }) {
             </button>
           </div>
         </div>
-        <div className="chat-lightbox-content" onClick={e => e.stopPropagation()}>
+        <div className="chat-lightbox-content" role="presentation" onClick={e => e.stopPropagation()}>
           <img src={selectedImage} alt="Imagen ampliada" className="chat-lightbox-img" />
         </div>
       </div>
@@ -1331,7 +1331,14 @@ export default function ChatWidget({ isFullPage = false }) {
             </div>
           ) : (
             filteredConvs.map(conv => (
-              <div key={conv.id} className={`chat-w-list-item ${activeConv?.id === conv.id ? 'active' : ''}`} onClick={() => setActiveConv(conv)}>
+              <div
+                key={conv.id}
+                role="button"
+                tabIndex={0}
+                className={`chat-w-list-item ${activeConv?.id === conv.id ? 'active' : ''}`}
+                onClick={() => setActiveConv(conv)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveConv(conv); } }}
+              >
                 <div className="chat-w-avatar">{getInitials(conv)}</div>
                 <div className="chat-w-list-info">
                   <div className="chat-w-list-top">
@@ -1424,24 +1431,24 @@ export default function ChatWidget({ isFullPage = false }) {
             <h4 style={{ margin: '0 0 12px', fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>Solicitar Reserva</h4>
             <form onSubmit={handleCreateReservation} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Alojamiento</label>
-                <select className="form-control" style={{ padding: '8px 12px', fontSize: '0.85rem' }} value={bookingForm.propiedad_id} onChange={e => setBookingForm(p => ({ ...p, propiedad_id: e.target.value }))}>
+                <label htmlFor="chat-booking-propiedad" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Alojamiento</label>
+                <select id="chat-booking-propiedad" className="form-control" style={{ padding: '8px 12px', fontSize: '0.85rem' }} value={bookingForm.propiedad_id} onChange={e => setBookingForm(p => ({ ...p, propiedad_id: e.target.value }))}>
                   {otherUserProperties.map(p => <option key={p.id} value={p.id}>{p.titulo}</option>)}
                 </select>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Llegada</label>
-                  <input type="date" className="form-control" style={{ padding: '8px 10px', fontSize: '0.8rem' }} value={bookingForm.fecha_inicio} onChange={e => setBookingForm(p => ({ ...p, fecha_inicio: e.target.value }))} required />
+                  <label htmlFor="chat-booking-inicio" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Llegada</label>
+                  <input id="chat-booking-inicio" type="date" className="form-control" style={{ padding: '8px 10px', fontSize: '0.8rem' }} value={bookingForm.fecha_inicio} onChange={e => setBookingForm(p => ({ ...p, fecha_inicio: e.target.value }))} required />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Salida</label>
-                  <input type="date" className="form-control" style={{ padding: '8px 10px', fontSize: '0.8rem' }} value={bookingForm.fecha_fin} onChange={e => setBookingForm(p => ({ ...p, fecha_fin: e.target.value }))} required />
+                  <label htmlFor="chat-booking-fin" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Salida</label>
+                  <input id="chat-booking-fin" type="date" className="form-control" style={{ padding: '8px 10px', fontSize: '0.8rem' }} value={bookingForm.fecha_fin} onChange={e => setBookingForm(p => ({ ...p, fecha_fin: e.target.value }))} required />
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Mensaje para el anfitrión</label>
-                <textarea className="form-control" rows="2" style={{ padding: '8px 12px', fontSize: '0.82rem', minHeight: 60 }} value={bookingForm.mensaje} onChange={e => setBookingForm(p => ({ ...p, mensaje: e.target.value }))} />
+                <label htmlFor="chat-booking-mensaje" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Mensaje para el anfitrión</label>
+                <textarea id="chat-booking-mensaje" className="form-control" rows="2" style={{ padding: '8px 12px', fontSize: '0.82rem', minHeight: 60 }} value={bookingForm.mensaje} onChange={e => setBookingForm(p => ({ ...p, mensaje: e.target.value }))} />
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 10 }}>
                 <button type="button" className="btn btn-secondary" style={{ flex: 1, padding: '8px 12px', fontSize: '0.85rem', borderRadius: 8 }} onClick={() => setShowBookingModal(false)}>Cancelar</button>
@@ -1508,7 +1515,7 @@ export default function ChatWidget({ isFullPage = false }) {
                 style={{ display: 'none' }}
                 onChange={e => {
                   if (e.target.files && e.target.files.length > 0) {
-                    handleImageUpload(e.target.files);
+                    void handleImageUpload(e.target.files);
                     e.target.value = '';
                   }
                 }}
@@ -1521,7 +1528,7 @@ export default function ChatWidget({ isFullPage = false }) {
                 style={{ display: 'none' }}
                 onChange={e => {
                   if (e.target.files && e.target.files.length > 0) {
-                    handleImageUpload(e.target.files);
+                    void handleImageUpload(e.target.files);
                     e.target.value = '';
                   }
                 }}

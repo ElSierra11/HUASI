@@ -39,7 +39,7 @@ export default function HostOccupancyCalendar({ propiedades = [] }) {
 
   // Capacidad total de las propiedades activas
   const totalCapacity = useMemo(() => {
-    return activeProperties.reduce((sum, p) => sum + (parseInt(p.capacidad, 10) || 0), 0);
+    return activeProperties.reduce((sum, p) => sum + (Number.parseInt(p.capacidad, 10) || 0), 0);
   }, [activeProperties]);
 
   // Todas las reservas confirmadas agregadas
@@ -118,7 +118,7 @@ export default function HostOccupancyCalendar({ propiedades = [] }) {
         return start <= dayStr && dayStr < end;
       });
 
-      const occupiedBeds = dayReservations.reduce((sum, r) => sum + (parseInt(r.num_huespedes, 10) || 1), 0);
+      const occupiedBeds = dayReservations.reduce((sum, r) => sum + (Number.parseInt(r.num_huespedes, 10) || 1), 0);
       const availableBeds = Math.max(0, totalCapacity - occupiedBeds);
       const isToday = dayStr === todayStr;
       const isSelected = dayStr === selectedDayStr;
@@ -149,7 +149,7 @@ export default function HostOccupancyCalendar({ propiedades = [] }) {
       return start <= selectedDayStr && selectedDayStr < end;
     });
 
-    const occupiedBeds = dayReservations.reduce((sum, r) => sum + (parseInt(r.num_huespedes, 10) || 1), 0);
+    const occupiedBeds = dayReservations.reduce((sum, r) => sum + (Number.parseInt(r.num_huespedes, 10) || 1), 0);
     const availableBeds = Math.max(0, totalCapacity - occupiedBeds);
 
     let formattedDate = selectedDayStr;
@@ -193,7 +193,7 @@ export default function HostOccupancyCalendar({ propiedades = [] }) {
       const s = new Date(startStr.split('T')[0] + 'T00:00:00');
       const e = endStr ? new Date(endStr.split('T')[0] + 'T00:00:00') : null;
       const opt = { day: 'numeric', month: 'short' };
-      if (e && !isNaN(e.getTime())) {
+      if (e && !Number.isNaN(e.getTime())) {
         return `${s.toLocaleDateString('es-CO', opt)} - ${e.toLocaleDateString('es-CO', opt)}`;
       }
       return s.toLocaleDateString('es-CO', opt);
@@ -362,7 +362,10 @@ export default function HostOccupancyCalendar({ propiedades = [] }) {
               return (
                 <div
                   key={cell.key}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedDayStr(cell.dayStr)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedDayStr(cell.dayStr); } }}
                   style={{
                     minHeight: 88,
                     padding: 6,

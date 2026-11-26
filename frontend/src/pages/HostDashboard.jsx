@@ -88,7 +88,7 @@ export default function HostDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const totalPendientes = propiedades.reduce((sum, p) => sum + (parseInt(p.reservas_pendientes) || 0), 0);
+  const totalPendientes = propiedades.reduce((sum, p) => sum + (Number.parseInt(p.reservas_pendientes) || 0), 0);
   const totalHuespedesConfirmados = propiedades.reduce((sum, p) => sum + (p.huespedes_ocupados_total || 0), 0);
   const totalHuespedesHoy = propiedades.reduce((sum, p) => sum + (p.huespedes_hospedados_hoy || 0), 0);
   
@@ -152,7 +152,7 @@ export default function HostDashboard() {
     if (!dateStr) return 'Reciente';
     try {
       const d = new Date(dateStr);
-      if (!isNaN(d.getTime())) {
+      if (!Number.isNaN(d.getTime())) {
         return d.toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
       }
       return String(dateStr);
@@ -167,7 +167,7 @@ export default function HostDashboard() {
       const start = new Date(startStr);
       const end = endStr ? new Date(endStr) : null;
       const opt = { day: 'numeric', month: 'short' };
-      if (end && !isNaN(end.getTime())) {
+      if (end && !Number.isNaN(end.getTime())) {
         return `${start.toLocaleDateString('es-CO', opt)} - ${end.toLocaleDateString('es-CO', opt)}`;
       }
       return start.toLocaleDateString('es-CO', opt);
@@ -279,7 +279,14 @@ export default function HostDashboard() {
           </div>
         </div>
 
-        <div className="stat-card" onClick={() => setActiveTab('resenas')} style={{ cursor: 'pointer' }}>
+        <div
+          className="stat-card"
+          role="button"
+          tabIndex={0}
+          onClick={() => setActiveTab('resenas')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveTab('resenas'); } }}
+          style={{ cursor: 'pointer' }}
+        >
           <div className="stat-icon" style={{ color: '#d97706', background: 'rgba(245, 158, 11, 0.12)' }}><Star size={24} fill="#d97706" /></div>
           <div className="stat-content">
             <div className="stat-value">{promedioGeneral}</div>
@@ -463,7 +470,7 @@ export default function HostDashboard() {
 
                         <span style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}>
                           <Star size={14} fill="#d97706" color="#d97706" />
-                          <strong>{parseFloat(p.calificacion_promedio) > 0 ? parseFloat(p.calificacion_promedio).toFixed(1) : 'Nuevo'}</strong>
+                          <strong>{Number.parseFloat(p.calificacion_promedio) > 0 ? Number.parseFloat(p.calificacion_promedio).toFixed(1) : 'Nuevo'}</strong>
                           <span style={{ color: 'var(--text-muted)' }}>({p.num_resenas || 0} reseñas)</span>
                         </span>
                       </div>

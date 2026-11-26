@@ -85,7 +85,7 @@ export default function Usuarios({ onActionFinished }) {
   const [isWhatsappModalOpen, setIsWhatsappModalOpen] = useState(false);
 
   useEffect(() => {
-    fetchUsuarios();
+    void fetchUsuarios();
   }, []);
 
   const fetchUsuarios = async () => {
@@ -223,7 +223,7 @@ export default function Usuarios({ onActionFinished }) {
 
   const handleCopyPassword = () => {
     if (resetResult?.nueva_password) {
-      navigator.clipboard.writeText(resetResult.nueva_password);
+      void navigator.clipboard.writeText(resetResult.nueva_password);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     }

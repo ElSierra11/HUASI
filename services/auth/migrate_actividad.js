@@ -51,4 +51,4 @@ async function migrateActividad() {
   }
 }
 
-migrateActividad();
+void migrateActividad();

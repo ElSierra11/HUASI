@@ -85,7 +85,7 @@ export default function Verificacion() {
       setTimeout(() => {
         setIsScanningOCR(false);
         setStep(3); // Ir al paso de verificación facial
-        startCamera();
+        void startCamera();
       }, 3000);
     } catch (err) {
       clearInterval(interval);
@@ -158,8 +158,9 @@ export default function Verificacion() {
         <div className="card p-8">
           <h2 className="text-lg font-bold mb-6 flex items-center gap-2"><GraduationCap /> Información Institucional</h2>
           <div className="form-group mb-4">
-            <label>Universidad / Institución</label>
+            <label htmlFor="verif-universidad">Universidad / Institución</label>
             <input 
+              id="verif-universidad"
               type="text" 
               className="form-control" 
               value={form.universidad} 
@@ -167,8 +168,9 @@ export default function Verificacion() {
             />
           </div>
           <div className="form-group mb-6">
-            <label>Tipo de Vínculo</label>
+            <label htmlFor="verif-vinculo">Tipo de Vínculo</label>
             <select 
+              id="verif-vinculo"
               className="form-control" 
               value={form.tipo_vinculo} 
               onChange={e => setForm(f => ({ ...f, tipo_vinculo: e.target.value }))}

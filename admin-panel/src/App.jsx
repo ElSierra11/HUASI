@@ -51,7 +51,7 @@ function App() {
   };
 
   useEffect(() => {
-    fetchCounters();
+    void fetchCounters();
     const interval = setInterval(fetchCounters, 15000); // Actualización periódica en vivo
     return () => clearInterval(interval);
   }, [user]);
@@ -183,6 +183,7 @@ function App() {
       {user && sidebarOpen && (
         <div
           className="sidebar-overlay"
+          role="presentation"
           onClick={() => setSidebarOpen(false)}
         />
       )}

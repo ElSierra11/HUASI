@@ -91,7 +91,7 @@ export default function Alojamientos({ onActionFinished }) {
   };
 
   useEffect(() => {
-    fetchAlojamientos();
+    void fetchAlojamientos();
   }, []);
 
   // Sincronizar filtros si se navega desde una notificación
@@ -738,9 +738,11 @@ export default function Alojamientos({ onActionFinished }) {
 
       {/* ================= MODAL DE INSPECCIÓN Y DICTAMEN ================= */}
       {inspectionModal.open && inspectionModal.property && (
-        <div className="modal-overlay" onClick={() => !inspectionModal.processing && setInspectionModal(prev => ({ ...prev, open: false }))}>
+        <div className="modal-overlay" role="presentation" onClick={() => !inspectionModal.processing && setInspectionModal(prev => ({ ...prev, open: false }))}>
           <div 
             className="modal-content" 
+            role="dialog"
+            aria-modal="true"
             onClick={e => e.stopPropagation()} 
             style={{ maxWidth: '820px', width: '95%', maxHeight: '90vh', overflowY: 'auto', padding: 'clamp(16px, 3vw, 26px)' }}
           >
@@ -885,10 +887,11 @@ export default function Alojamientos({ onActionFinished }) {
 
             {/* Observaciones Oficiales / Feedback al Host */}
             <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+              <label htmlFor="admin-inspection-notas" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
                 Observaciones del Revisor (Se notificarán por correo al anfitrión):
               </label>
               <textarea 
+                id="admin-inspection-notas"
                 className="form-control" 
                 rows={3} 
                 placeholder="Indica observaciones de felicitación, requerimientos de fotos adicionales o motivos de rechazo..."
@@ -948,8 +951,8 @@ export default function Alojamientos({ onActionFinished }) {
 
       {/* Modal Confirmación Desactivar/Reactivar */}
       {toggleModal.open && (
-        <div className="modal-overlay" onClick={() => !toggleModal.processing && setToggleModal(prev => ({ ...prev, open: false }))}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px', padding: '24px' }}>
+        <div className="modal-overlay" role="presentation" onClick={() => !toggleModal.processing && setToggleModal(prev => ({ ...prev, open: false }))}>
+          <div className="modal-content" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px', padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
               {toggleModal.action === 'desactivar' ? (
                 <Ban size={22} color="var(--danger)" />
@@ -994,8 +997,8 @@ export default function Alojamientos({ onActionFinished }) {
 
       {/* Modal Confirmación Eliminar Alojamiento */}
       {deleteModal.open && (
-        <div className="modal-overlay" onClick={() => !deleteModal.processing && setDeleteModal(prev => ({ ...prev, open: false }))}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px', padding: '24px' }}>
+        <div className="modal-overlay" role="presentation" onClick={() => !deleteModal.processing && setDeleteModal(prev => ({ ...prev, open: false }))}>
+          <div className="modal-content" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px', padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
               <Trash2 size={24} color="var(--danger)" />
               <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: 'var(--danger)' }}>

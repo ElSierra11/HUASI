@@ -267,6 +267,7 @@ export default function Navbar() {
 
       {/* Mobile Overlay */}
       <div 
+        role="presentation"
         className={`mobile-nav-overlay ${menuOpen ? 'open' : ''}`}
         onClick={() => setMenuOpen(false)}
       />

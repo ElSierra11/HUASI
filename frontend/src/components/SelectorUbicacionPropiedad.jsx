@@ -15,8 +15,8 @@ export default function SelectorUbicacionPropiedad({
   const markerRef = useRef(null);
 
   const [coords, setCoords] = useState(() => {
-    if (latitud && longitud && !isNaN(parseFloat(latitud)) && !isNaN(parseFloat(longitud))) {
-      return { lat: parseFloat(latitud), lng: parseFloat(longitud) };
+    if (latitud && longitud && !Number.isNaN(Number.parseFloat(latitud)) && !Number.isNaN(Number.parseFloat(longitud))) {
+      return { lat: Number.parseFloat(latitud), lng: Number.parseFloat(longitud) };
     }
     const defaultCampus = campus && UCC_CAMPUS_COORDS[campus] ? UCC_CAMPUS_COORDS[campus] : UCC_CAMPUS_COORDS['Santa Marta'];
     return defaultCampus || { lat: 11.2263, lng: -74.1868 };
@@ -156,7 +156,7 @@ export default function SelectorUbicacionPropiedad({
 
   // Actualizar marcador cuando cambian coordenadas
   const updateMapPosition = (newLat, newLng, zoom = 16) => {
-    if (!newLat || !newLng || isNaN(newLat) || isNaN(newLng)) return;
+    if (!newLat || !newLng || Number.isNaN(newLat) || Number.isNaN(newLng)) return;
     setCoords({ lat: newLat, lng: newLng });
     setIsValidated(true);
 
@@ -189,8 +189,8 @@ export default function SelectorUbicacionPropiedad({
       const data = await response.json();
 
       if (data && data.length > 0) {
-        const foundLat = parseFloat(data[0].lat);
-        const foundLng = parseFloat(data[0].lon);
+        const foundLat = Number.parseFloat(data[0].lat);
+        const foundLng = Number.parseFloat(data[0].lon);
         updateMapPosition(foundLat, foundLng, 16);
         setGeoMsg({ type: 'success', text: `Ubicación encontrada: ${data[0].display_name.split(',').slice(0, 3).join(', ')}` });
       } else {

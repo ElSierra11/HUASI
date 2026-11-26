@@ -44,7 +44,7 @@ export default function Reportes({ onActionFinished }) {
   const [submittingDeleteProp, setSubmittingDeleteProp] = useState(false);
 
   useEffect(() => {
-    fetchReportes();
+    void fetchReportes();
   }, []);
 
   const fetchReportes = async () => {
@@ -85,7 +85,7 @@ export default function Reportes({ onActionFinished }) {
       setIsResolveModalOpen(false);
       showToast('Reporte marcado como resuelto', 'success');
       if (onActionFinished) onActionFinished();
-      fetchReportes(); // Refrescar reporte completo
+      void fetchReportes(); // Refrescar reporte completo
     } catch (err) {
       console.error(err);
       showToast('Error al resolver el reporte', 'error');
@@ -125,7 +125,7 @@ export default function Reportes({ onActionFinished }) {
       setIsBlockModalOpen(false);
       showToast('Usuario bloqueado con éxito. Se inhabilitó su cuenta.', 'success');
       if (onActionFinished) onActionFinished();
-      fetchReportes();
+      void fetchReportes();
     } catch (err) {
       console.error(err);
       showToast('Error al bloquear al usuario', 'error');
@@ -148,7 +148,7 @@ export default function Reportes({ onActionFinished }) {
       setIsDeletePropModalOpen(false);
       showToast('Publicación de alojamiento eliminada con éxito', 'success');
       if (onActionFinished) onActionFinished();
-      fetchReportes(); // Refrescar reporte completo
+      void fetchReportes(); // Refrescar reporte completo
     } catch (err) {
       console.error(err);
       showToast('Error al eliminar la publicación del alojamiento', 'error');

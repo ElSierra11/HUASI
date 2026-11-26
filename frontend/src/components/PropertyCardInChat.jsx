@@ -53,7 +53,7 @@ const TIPO_THEMES = {
  */
 export default function PropertyCardInChat({ propiedad }) {
   const navigate = useNavigate();
-  const rating = parseFloat(propiedad.calificacion_promedio) || 0;
+  const rating = Number.parseFloat(propiedad.calificacion_promedio) || 0;
   const tipoNorm = getNormalizedTipo(propiedad.tipo);
   const theme = TIPO_THEMES[tipoNorm] || TIPO_THEMES.otro;
   const Icon = TIPO_ICON[tipoNorm] || TIPO_ICON.otro;

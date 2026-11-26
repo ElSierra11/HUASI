@@ -89,7 +89,7 @@ export default function NotificationCenter({ onCountChange }) {
 
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.ready.then((reg) => {
-        reg.showNotification(title, {
+        void reg.showNotification(title, {
           body,
           icon: '/huasi-monograma.png',
           badge: '/huasi-monograma.png',
@@ -153,7 +153,7 @@ export default function NotificationCenter({ onCountChange }) {
   };
 
   useEffect(() => {
-    fetchNotificaciones();
+    void fetchNotificaciones();
     // Sondeo periódico cada 20 segundos
     const interval = setInterval(() => fetchNotificaciones(true), 20000);
     return () => clearInterval(interval);
@@ -237,7 +237,7 @@ export default function NotificationCenter({ onCountChange }) {
       <button
         onClick={() => {
           setOpen(prev => !prev);
-          if (!open) fetchNotificaciones(true);
+          if (!open) void fetchNotificaciones(true);
         }}
         title="Centro de notificaciones de personas y alojamientos en proceso"
         style={{
@@ -289,6 +289,7 @@ export default function NotificationCenter({ onCountChange }) {
           {/* Overlay oscuro solo en mobile */}
           {isMobile && (
             <div
+              role="presentation"
               onClick={() => setOpen(false)}
               style={{
                 position: 'fixed',
@@ -600,7 +601,10 @@ export default function NotificationCenter({ onCountChange }) {
                 return (
                   <div
                     key={item.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => markSingleAsRead(item.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); markSingleAsRead(item.id); } }}
                     style={{
                       padding: '12px 14px',
                       borderRadius: 12,

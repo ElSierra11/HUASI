@@ -16,4 +16,4 @@ async function check() {
   console.log('No match found');
 }
 
-check();
+void check();

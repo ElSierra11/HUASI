@@ -46,7 +46,7 @@ export default function SistemaReputacion({
     if (rev.created_at || rev.date) {
       try {
         const d = new Date(rev.created_at || rev.date);
-        if (!isNaN(d.getTime())) {
+        if (!Number.isNaN(d.getTime())) {
           formattedDate = d.toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
         }
       } catch {
@@ -73,7 +73,7 @@ export default function SistemaReputacion({
     ? (currentReviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1)
     : (Number(initialRating) > 0 ? Number(initialRating).toFixed(1) : 'Nuevo');
 
-  const isTrustedHost = parseFloat(computedRating) >= 4.5;
+  const isTrustedHost = Number.parseFloat(computedRating) >= 4.5;
 
   const handleOpenReviewForm = () => {
     if (!user) {
@@ -169,7 +169,7 @@ export default function SistemaReputacion({
             <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text)' }}>Calificar tu estancia en este alojamiento</h4>
             
             <div>
-              <label style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: 6 }}>Calificación General (1 a 5 estrellas)</label>
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: 6 }}>Calificación General (1 a 5 estrellas)</span>
               <div style={{ display: 'flex', gap: 8 }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
@@ -198,8 +198,9 @@ export default function SistemaReputacion({
             </div>
 
             <div>
-              <label style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: 6 }}>Tu Opinión y Recomendación Comunitaria</label>
+              <label htmlFor="reputacion-comentario" style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: 6 }}>Tu Opinión y Recomendación Comunitaria</label>
               <textarea
+                id="reputacion-comentario"
                 rows="3"
                 value={newRating.comentario}
                 onChange={e => setNewRating(r => ({ ...r, comentario: e.target.value }))}

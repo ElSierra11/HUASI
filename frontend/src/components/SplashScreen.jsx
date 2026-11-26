@@ -35,7 +35,6 @@ export default function SplashScreen({ onFinish }) {
         position: 'fixed',
         inset: 0,
         width: '100vw',
-        height: '100vh',
         height: '100dvh',
         background: 'radial-gradient(circle at 50% 40%, #0d7c3d 0%, #064e3b 100%)',
         display: 'flex',

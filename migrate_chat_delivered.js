@@ -31,4 +31,4 @@ async function migrate() {
   }
 }
 
-migrate();
+void migrate();

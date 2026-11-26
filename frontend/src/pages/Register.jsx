@@ -264,7 +264,7 @@ export default function Register() {
     const newOtpValue = newOtp.join('');
     if (newOtpValue.length === 6) {
       // Verificar automáticamente si se ingresaron los 6 dígitos
-      verifyOtpCode(newOtpValue);
+      void verifyOtpCode(newOtpValue);
     }
 
     if (index < 5) {
@@ -296,7 +296,7 @@ export default function Register() {
       otpRefs.current[5]?.focus();
       if (newOtp.join('').length === 6) {
         // Verificar automáticamente si se pegó un código de 6 dígitos
-        verifyOtpCode(newOtp.join(''));
+        void verifyOtpCode(newOtp.join(''));
       }
     }
   };
@@ -618,7 +618,7 @@ export default function Register() {
             </div>
 
             <div className="form-group">
-              <label>Correo Electrónico Institucional</label>
+              <label htmlFor="register-email">Correo Electrónico Institucional</label>
               <input id="register-email" type="email" required className="form-control"
                 placeholder={emailPlaceholder}
                 autoComplete="email"
@@ -645,13 +645,13 @@ export default function Register() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
               <div className="form-group">
-                <label>Nombre</label>
-                <input type="text" required className="form-control"
+                <label htmlFor="register-nombre">Nombre</label>
+                <input id="register-nombre" type="text" required className="form-control"
                   value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
               </div>
               <div className="form-group">
-                <label>Apellido</label>
-                <input type="text" required className="form-control"
+                <label htmlFor="register-apellido">Apellido</label>
+                <input id="register-apellido" type="text" required className="form-control"
                   value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} />
               </div>
             </div>
@@ -677,7 +677,7 @@ export default function Register() {
             </div>
 
             <div className="form-group" style={{ marginBottom: 16 }}>
-              <label>Ciudad donde estudias</label>
+              <label htmlFor="register-ciudad">Ciudad donde estudias</label>
               <select id="register-ciudad" required className="form-control" value={form.campus} onChange={e => setForm(f => ({ ...f, campus: e.target.value }))}>
                 <option value="">Selecciona tu ciudad...</option>
                 {CIUDADES.map(c => (
@@ -688,10 +688,11 @@ export default function Register() {
 
             {/* Rol Institucional */}
             <div className="form-group" style={{ marginBottom: 16 }}>
-              <label>Rol en la Comunidad Universitaria *</label>
+              <label htmlFor="register-rol">Rol en la Comunidad Universitaria *</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <GraduationCap size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none', zIndex: 1 }} />
                 <select
+                  id="register-rol"
                   required
                   className="form-control"
                   style={{ paddingLeft: 44 }}
@@ -712,10 +713,11 @@ export default function Register() {
 
             {/* Teléfono */}
             <div className="form-group" style={{ marginBottom: 16 }}>
-              <label>Teléfono de Contacto</label>
+              <label htmlFor="register-telefono">Teléfono de Contacto</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <Phone size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none' }} />
                 <input
+                  id="register-telefono"
                   type="tel"
                   required
                   className="form-control"
@@ -732,10 +734,11 @@ export default function Register() {
             {/* Tipo y Número de Documento */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Tipo de Documento</label>
+                <label htmlFor="register-tipo-doc">Tipo de Documento</label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <CreditCard size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none', zIndex: 1 }} />
                   <select
+                    id="register-tipo-doc"
                     required
                     className="form-control"
                     style={{ paddingLeft: 44 }}
@@ -753,8 +756,9 @@ export default function Register() {
                 )}
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Número de Documento</label>
+                <label htmlFor="register-numero-doc">Número de Documento</label>
                 <input
+                  id="register-numero-doc"
                   type="text"
                   required
                   className="form-control"
@@ -770,7 +774,7 @@ export default function Register() {
 
             <div className="form-group" style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label style={{ margin: 0 }}>Contraseña</label>
+                <label htmlFor="register-password" style={{ margin: 0 }}>Contraseña</label>
                 {form.password && (
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: pwdStrength.color }}>
                     Seguridad: {pwdStrength.text}
@@ -780,6 +784,7 @@ export default function Register() {
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <Lock size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none' }} />
                 <input
+                  id="register-password"
                   type={showPassword ? "text" : "password"}
                   required
                   className="form-control"
@@ -880,7 +885,7 @@ export default function Register() {
             {/* Confirmar Contraseña */}
             <div className="form-group" style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label style={{ margin: 0 }}>Confirmar Contraseña</label>
+                <label htmlFor="register-confirm-password" style={{ margin: 0 }}>Confirmar Contraseña</label>
                 {form.confirmPassword && (
                   form.password === form.confirmPassword
                     ? <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0d7c3d', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -894,6 +899,7 @@ export default function Register() {
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <Lock size={18} style={{ position: 'absolute', left: 14, color: 'var(--text-muted)', pointerEvents: 'none' }} />
                 <input
+                  id="register-confirm-password"
                   type={showConfirmPassword ? 'text' : 'password'}
                   required
                   className="form-control"
@@ -995,7 +1001,7 @@ export default function Register() {
             )}
 
             <div className="form-group" style={{ textAlign: 'center' }}>
-              <label style={{ marginBottom: 12, display: 'block', fontWeight: 600, color: 'var(--text-primary)' }}>Código OTP (6 dígitos)</label>
+              <span style={{ marginBottom: 12, display: 'block', fontWeight: 600, color: 'var(--text-primary)' }}>Código OTP (6 dígitos)</span>
 
               <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '8px', margin: '8px 0 8px' }}>
                 {otpArray.map((digit, index) => (
