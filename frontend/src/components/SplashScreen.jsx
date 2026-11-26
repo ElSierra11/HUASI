@@ -11,18 +11,20 @@ export default function SplashScreen({ onFinish }) {
       htmlSplash.parentNode.removeChild(htmlSplash);
     }
 
-    // Duración de la pantalla de bienvenida antes de iniciar fade out (1.1 segundos)
+    // Duración breve de la pantalla de bienvenida para no penalizar FCP/LCP
+    let finishTimer;
     const timer = setTimeout(() => {
       setFading(true);
-      // Duración de la transición fade out (400ms)
-      const finishTimer = setTimeout(() => {
+      finishTimer = setTimeout(() => {
         setMounted(false);
         if (onFinish) onFinish();
-      }, 400);
-      return () => clearTimeout(finishTimer);
-    }, 1100);
+      }, 220);
+    }, 120);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (finishTimer) clearTimeout(finishTimer);
+    };
   }, [onFinish]);
 
   if (!mounted) return null;

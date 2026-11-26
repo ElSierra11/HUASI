@@ -1,31 +1,32 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import SplashScreen from './components/SplashScreen';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BottomNavBar from './components/layout/BottomNavBar';
 import ProtectedRoute from './components/ProtectedRoute';
-import ChatWidget from './components/ChatWidget';
 import PqrButton from './components/PqrButton';
 import PwaInstallBanner from './components/PwaInstallBanner';
 import NotificationManager from './components/NotificationManager';
 import Home from './pages/Home';
-import PropertyDetail from './pages/PropertyDetail';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import OlvidoPassword from './pages/OlvidoPassword';
-import RecuperarPassword from './pages/RecuperarPassword';
-import MisReservas from './pages/MisReservas';
-import Chat from './pages/Chat';
-import HostDashboard from './pages/HostDashboard';
-import HostPropertyForm from './pages/HostPropertyForm';
-import HostReservas from './pages/HostReservas';
-import Perfil from './pages/Perfil';
-import Verificacion from './pages/Verificacion';
-import Terminos from './pages/Terminos';
-import Privacidad from './pages/Privacidad';
-import QuienesSomos from './pages/QuienesSomos';
 import useActivityTracker from './hooks/useActivityTracker';
+
+const ChatWidget = lazy(() => import('./components/ChatWidget'));
+const PropertyDetail = lazy(() => import('./pages/PropertyDetail'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const OlvidoPassword = lazy(() => import('./pages/OlvidoPassword'));
+const RecuperarPassword = lazy(() => import('./pages/RecuperarPassword'));
+const MisReservas = lazy(() => import('./pages/MisReservas'));
+const Chat = lazy(() => import('./pages/Chat'));
+const HostDashboard = lazy(() => import('./pages/HostDashboard'));
+const HostPropertyForm = lazy(() => import('./pages/HostPropertyForm'));
+const HostReservas = lazy(() => import('./pages/HostReservas'));
+const Perfil = lazy(() => import('./pages/Perfil'));
+const Verificacion = lazy(() => import('./pages/Verificacion'));
+const Terminos = lazy(() => import('./pages/Terminos'));
+const Privacidad = lazy(() => import('./pages/Privacidad'));
+const QuienesSomos = lazy(() => import('./pages/QuienesSomos'));
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -40,7 +41,8 @@ function App() {
       {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
       <Navbar />
       <main className="main-content flex-1">
-        <Routes>
+        <Suspense fallback={<div className="flex justify-center items-center min-h-[50vh]"><div className="spinner" /></div>}>
+          <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/propiedad/:id" element={<PropertyDetail />} />
           <Route path="/login" element={<Login />} />
@@ -68,10 +70,15 @@ function App() {
             </div>
           } />
         </Routes>
+        </Suspense>
       </main>
       {!isChatRoute && <Footer />}
       <NotificationManager />
-      {!hideFloatingWidgets && <ChatWidget />}
+      {!hideFloatingWidgets && (
+        <Suspense fallback={null}>
+          <ChatWidget />
+        </Suspense>
+      )}
       {!hideFloatingWidgets && <PqrButton />}
       <PwaInstallBanner />
       <BottomNavBar />

@@ -250,6 +250,7 @@ export default function Navbar() {
           className="inline-flex items-center justify-center p-2 rounded-full hover:bg-ucc-green-light transition-all duration-200"
           style={{ border: 'none', background: 'transparent', cursor: 'pointer', outline: 'none' }}
           title={darkMode ? 'Activar modo claro' : 'Activar modo oscuro'}
+          aria-label={darkMode ? 'Activar modo claro' : 'Activar modo oscuro'}
         >
           {darkMode ? <Sun size={18} className="text-amber-500 fill-amber-500 animate-pulse" /> : <Moon size={18} className="text-ucc-muted" />}
         </button>
