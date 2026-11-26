@@ -142,34 +142,11 @@ const sendViaResend = async (toEmail, toName, subject, htmlContent) => {
   return data;
 };
 
-const sendOtpEmail = async (email, nombre, otp) => {
-  console.log(`📧 [Email Sending] Enviando código OTP a: ${safeLog(email)}`);
-
-  const htmlBody = `
-    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-      <div style="text-align: center; margin-bottom: 20px;">
-        <h2 style="color: #0d7c3d; margin: 0; font-size: 22px;">HUASI — Hospedaje Solidario</h2>
-        <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Verificación de Correo Institucional Universitario</p>
-      </div>
-      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 20px;">
-        <p style="color: #166534; font-size: 14px; margin: 0 0 8px 0; font-weight: bold;">Tu código de verificación es:</p>
-        <span style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #0d7c3d; display: inline-block;">${otp}</span>
-        <p style="color: #64748b; font-size: 12px; margin: 8px 0 0 0;">⏱️ Válido por 24 horas</p>
-      </div>
-      <p style="color: #334155; font-size: 14px; line-height: 1.5;">
-        Hola <strong>${nombre || 'Usuario'}</strong>, ingresa este código en HUASI para verificar tu correo institucional.
-      </p>
-      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-      <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
-        Si no solicitaste este registro, ignora este correo.
-      </p>
-    </div>
-  `;
-
+const sendEmailWithFallback = async ({ email, nombre, subject, fromName, htmlBody, errorPrefix }) => {
   // ===== MÉTODO 1: Brevo HTTP REST API (Recomendado en Render) =====
   if (process.env.BREVO_API_KEY) {
     try {
-      return await sendViaBrevo(email, nombre, 'Código de Verificación OTP - HUASI UCC', htmlBody);
+      return await sendViaBrevo(email, nombre, subject, htmlBody);
     } catch (brevoErr) {
       console.warn(`⚠️ [Brevo API Error] ${safeLog(brevoErr.message)}`);
     }
@@ -178,9 +155,9 @@ const sendOtpEmail = async (email, nombre, otp) => {
   // ===== MÉTODO 2: Resend HTTP REST API (Recomendado en Render) =====
   if (process.env.RESEND_API_KEY) {
     try {
-      return await sendViaResend(email, nombre, 'Código de Verificación OTP - HUASI UCC', htmlBody);
+      return await sendViaResend(email, nombre, subject, htmlBody);
     } catch (resendErr) {
-      console.warn(`⚠️ [Resend API Error] ${resendErr.message}`);
+      console.warn(`⚠️ [Resend API Error] ${safeLog(resendErr.message)}`);
     }
   }
 
@@ -193,9 +170,9 @@ const sendOtpEmail = async (email, nombre, otp) => {
       const encodeHeader = (str) => `=?UTF-8?B?${Buffer.from(str, 'utf-8').toString('base64')}?=`;
 
       const rawMessage = [
-        `From: ${encodeHeader('HUASI — Hospedaje Solidario')} <${process.env.GMAIL_USER || 'huasicorrespondencia@gmail.com'}>`,
+        `From: ${encodeHeader(fromName)} <${process.env.GMAIL_USER || 'huasicorrespondencia@gmail.com'}>`,
         `To: ${email}`,
-        `Subject: ${encodeHeader('Código de Verificación OTP - HUASI UCC')}`,
+        `Subject: ${encodeHeader(subject)}`,
         `MIME-Version: 1.0`,
         `Content-Type: text/html; charset=utf-8`,
         `Content-Transfer-Encoding: base64`,
@@ -232,11 +209,10 @@ const sendOtpEmail = async (email, nombre, otp) => {
     const transporter = createSmtpTransporter();
     const senderEmail = process.env.SMTP_USER || process.env.GMAIL_USER || 'huasicorrespondencia@gmail.com';
 
-    // Timeout de 8 segundos para evitar que se cuelgue en Render
     const sendPromise = transporter.sendMail({
-      from: `"HUASI — Hospedaje Solidario" <${senderEmail}>`,
+      from: `"${fromName}" <${senderEmail}>`,
       to: email,
-      subject: 'Código de Verificación OTP - HUASI UCC',
+      subject,
       html: htmlBody,
     });
 
@@ -245,12 +221,46 @@ const sendOtpEmail = async (email, nombre, otp) => {
     );
 
     const info = await Promise.race([sendPromise, timeoutPromise]);
-    console.log(`✅ [SMTP] Email OTP enviado a ${safeLog(email)}. Id: ${safeLog(info.messageId)}`);
+    console.log(`✅ [SMTP] Email enviado a ${safeLog(email)}. Id: ${safeLog(info.messageId)}`);
     return info;
   } catch (smtpErr) {
-    console.error(`❌ [SMTP Error] ${smtpErr.message}`);
-    throw new Error(`No se pudo enviar el correo: ${smtpErr.message}`);
+    console.error(`❌ [SMTP Error] ${safeLog(smtpErr.message)}`);
+    throw new Error(`${errorPrefix}: ${smtpErr.message}`);
   }
+};
+
+const sendOtpEmail = async (email, nombre, otp) => {
+  console.log(`📧 [Email Sending] Enviando código OTP a: ${safeLog(email)}`);
+
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h2 style="color: #0d7c3d; margin: 0; font-size: 22px;">HUASI — Hospedaje Solidario</h2>
+        <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Verificación de Correo Institucional Universitario</p>
+      </div>
+      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 20px;">
+        <p style="color: #166534; font-size: 14px; margin: 0 0 8px 0; font-weight: bold;">Tu código de verificación es:</p>
+        <span style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #0d7c3d; display: inline-block;">${otp}</span>
+        <p style="color: #64748b; font-size: 12px; margin: 8px 0 0 0;">⏱️ Válido por 24 horas</p>
+      </div>
+      <p style="color: #334155; font-size: 14px; line-height: 1.5;">
+        Hola <strong>${nombre || 'Usuario'}</strong>, ingresa este código en HUASI para verificar tu correo institucional.
+      </p>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+      <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
+        Si no solicitaste este registro, ignora este correo.
+      </p>
+    </div>
+  `;
+
+  return sendEmailWithFallback({
+    email,
+    nombre,
+    subject: 'Código de Verificación OTP - HUASI UCC',
+    fromName: 'HUASI — Hospedaje Solidario',
+    htmlBody,
+    errorPrefix: 'No se pudo enviar el correo'
+  });
 };
 
 const sendOtpEmailBackground = async (email, nombre, otp) => {
@@ -313,90 +323,14 @@ const sendResetPasswordEmail = async (email, nombre, resetLink) => {
     </div>
   `;
 
-  // ===== MÉTODO 1: Brevo HTTP REST API (Puerto 443) =====
-  if (process.env.BREVO_API_KEY) {
-    try {
-      return await sendViaBrevo(email, nombre, '🔑 Recuperación de Contraseña - HUASI UCC', htmlBody);
-    } catch (brevoErr) {
-      console.warn(`⚠️ [Brevo Error] ${safeLog(brevoErr.message)}`);
-    }
-  }
-
-  // ===== MÉTODO 2: Resend HTTP REST API (Puerto 443) =====
-  if (process.env.RESEND_API_KEY) {
-    try {
-      return await sendViaResend(email, nombre, '🔑 Recuperación de Contraseña - HUASI UCC', htmlBody);
-    } catch (resendErr) {
-      console.warn(`⚠️ [Resend Error] ${resendErr.message}`);
-    }
-  }
-
-  // ===== MÉTODO 3: OAuth2 REST API (Funciona en Render si hay refresh token) =====
-  const oauthCreds = getGmailOAuthCredentials();
-  if (oauthCreds.clientId && oauthCreds.clientSecret && oauthCreds.refreshToken) {
-    try {
-      console.log(`  [OAuth2] Intentando enviar correo de recuperación vía Gmail REST API...`);
-      const accessToken = await getGmailAccessToken();
-      const encodeHeader = (str) => `=?UTF-8?B?${Buffer.from(str, 'utf-8').toString('base64')}?=`;
-
-      const rawMessage = [
-        `From: ${encodeHeader('HUASI — Seguridad UCC')} <${process.env.GMAIL_USER || 'huasicorrespondencia@gmail.com'}>`,
-        `To: ${email}`,
-        `Subject: ${encodeHeader('🔑 Recuperación de Contraseña - HUASI UCC')}`,
-        `MIME-Version: 1.0`,
-        `Content-Type: text/html; charset=utf-8`,
-        `Content-Transfer-Encoding: base64`,
-        ``,
-        Buffer.from(htmlBody, 'utf-8').toString('base64'),
-      ].join('\r\n');
-
-      const encodedMessage = Buffer.from(rawMessage, 'utf-8').toString('base64url');
-
-      const gmailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ raw: encodedMessage }),
-      });
-
-      const result = await gmailRes.json();
-      if (!gmailRes.ok) {
-        throw new Error(result.error?.message || 'Error enviando email via Gmail API');
-      }
-
-      console.log(`✅ [Gmail OAuth2 API] Email de recuperación enviado con éxito. Id: ${safeLog(result.id)}`);
-      return result;
-    } catch (oauthErr) {
-      console.warn(`⚠️ [OAuth2 Error] ${safeLog(oauthErr.message)}`);
-    }
-  }
-
-  // ===== MÉTODO 4: SMTP con Nodemailer =====
-  try {
-    console.log(`  [SMTP] Intentando enviar correo de recuperación vía SMTP...`);
-    const transporter = createSmtpTransporter();
-    const senderEmail = process.env.SMTP_USER || process.env.GMAIL_USER || 'huasicorrespondencia@gmail.com';
-
-    const sendPromise = transporter.sendMail({
-      from: `"HUASI — Seguridad UCC" <${senderEmail}>`,
-      to: email,
-      subject: '🔑 Recuperación de Contraseña - HUASI UCC',
-      html: htmlBody,
-    });
-
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('SMTP timeout: Render bloquea puertos SMTP salientes (usa BREVO_API_KEY o RESEND_API_KEY)')), 8000)
-    );
-
-    const info = await Promise.race([sendPromise, timeoutPromise]);
-    console.log(`✅ [SMTP] Email de recuperación enviado a ${safeLog(email)}. Id: ${safeLog(info.messageId)}`);
-    return info;
-  } catch (smtpErr) {
-    console.error(`❌ [SMTP Error] ${smtpErr.message}`);
-    throw new Error(`No se pudo enviar el correo de recuperación: ${smtpErr.message}`);
-  }
+  return sendEmailWithFallback({
+    email,
+    nombre,
+    subject: '🔑 Recuperación de Contraseña - HUASI UCC',
+    fromName: 'HUASI — Seguridad UCC',
+    htmlBody,
+    errorPrefix: 'No se pudo enviar el correo de recuperación'
+  });
 };
 
 // Endpoint de diagnóstico de email
