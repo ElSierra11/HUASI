@@ -56,13 +56,7 @@ export default function WhatsappSurveyModal({ isOpen, onClose, usuarios = [], sh
     }
   });
 
-  const [template, setTemplate] = useState(() => {
-    try {
-      return localStorage.getItem(STORAGE_MSG_KEY) || DEFAULT_TEMPLATE;
-    } catch {
-      return DEFAULT_TEMPLATE;
-    }
-  });
+  const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
 
   const [filterTab, setFilterTab] = useState('pendientes'); // 'pendientes' | 'enviados' | 'todos' | 'sin_telefono'
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,15 +69,6 @@ export default function WhatsappSurveyModal({ isOpen, onClose, usuarios = [], sh
       // Ignorar si localStorage no está disponible
     }
   }, [sentMap]);
-
-  useEffect(() => {
-    try {
-      const sanitizedTemplate = String(template || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').slice(0, 2000);
-      localStorage.setItem(STORAGE_MSG_KEY, sanitizedTemplate);
-    } catch {
-      // Ignorar si localStorage no está disponible
-    }
-  }, [template]);
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -198,12 +183,14 @@ export default function WhatsappSurveyModal({ isOpen, onClose, usuarios = [], sh
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" role="presentation" onClick={onClose}>
       <div
         className="modal-content"
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
         style={{ maxWidth: 820, width: '95vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
       >
         {/* Cabecera */}

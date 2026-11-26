@@ -124,7 +124,12 @@ export function AuthProvider({ children }) {
       foto_perfil: u.foto_perfil ? String(u.foto_perfil) : null
     };
     setUser(safeUser);
-    localStorage.setItem('stayu_user', JSON.stringify(safeUser));
+    localStorage.setItem('stayu_user', JSON.stringify({
+      id: Number.isFinite(safeUser.id) ? safeUser.id : 0,
+      role: safeUser.role === 'admin' ? 'admin' : (safeUser.role === 'host' ? 'host' : 'guest'),
+      verificado: safeUser.verificado === true,
+      email_verificado: safeUser.email_verificado === true
+    }));
   };
 
   // Como ya no manejamos token manual, solo devolvemos si hay user autenticado

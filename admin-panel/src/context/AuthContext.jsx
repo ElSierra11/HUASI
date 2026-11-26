@@ -38,7 +38,11 @@ export function AuthProvider({ children }) {
           verificado: Boolean(res.data.verificado)
         };
         setUser(safeUser);
-        localStorage.setItem('stayu_admin_user', JSON.stringify(safeUser));
+        localStorage.setItem('stayu_admin_user', JSON.stringify({
+          id: Number.isFinite(safeUser.id) ? safeUser.id : 0,
+          role: 'admin',
+          verificado: safeUser.verificado === true
+        }));
       })
       .catch(() => {
         // Si /me falla, verificar si hay token válido (no expirado) en localStorage
