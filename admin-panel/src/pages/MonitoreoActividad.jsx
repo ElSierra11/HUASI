@@ -731,7 +731,7 @@ export default function MonitoreoActividad({ onActionFinished }) {
                       cursor: item.user_id ? 'pointer' : 'default'
                     }}
                     onClick={() => item.user_id && handleOpenUserAudit(item.user_id)}
-                    onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && item.user_id) { e.preventDefault(); handleOpenUserAudit(item.user_id); } }}
+                    onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && item.user_id) { e.preventDefault(); void handleOpenUserAudit(item.user_id); } }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
